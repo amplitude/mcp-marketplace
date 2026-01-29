@@ -18,8 +18,8 @@
       "author": {
         "name": "Amplitude"
       },
-      "homepage": "https://github.com/amplitude/marketplace",
-      "repository": "https://github.com/amplitude/marketplace",
+      "homepage": "https://github.com/amplitude/mcp-marketplace",
+      "repository": "https://github.com/amplitude/mcp-marketplace",
       "license": "MIT",
       "keywords": [
         "analytics",
@@ -29,8 +29,7 @@
         "feedback",
         "analysis"
       ],
-      "category": "analytics",
-      "mcp": ["amplitude"]
+      "category": "analytics"
     }
   ]
 }
