@@ -10,7 +10,19 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 | Plugin | Description |
 |--------|-------------|
-| [skills](./plugins/skills/) | Reusable analysis skills – chart analysis, dashboard reviews, feedback synthesis |
+| [amplitude-analysis](./plugins/amplitude-analysis/) | Reusable analysis skills – chart analysis, dashboard reviews, feedback synthesis |
+
+---
+
+## Quick Start
+
+```bash
+# Add the Amplitude marketplace (one-time)
+/plugin marketplace add amplitude/mcp-marketplace
+
+# Install the amplitude-analysis plugin
+/plugin install amplitude-analysis@amplitude
+```
 
 ---
 
@@ -20,7 +32,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 .claude-plugin/
   marketplace.json        # Marketplace catalog
 plugins/
-  skills/
+  amplitude-analysis/
     .claude-plugin/
       plugin.json         # Plugin manifest
     skills/

@@ -1,8 +1,20 @@
-# Skills Plugin
+# Amplitude Analysis Plugin
 
 > Reusable analysis skills for Amplitude – chart analysis, dashboard reviews, feedback synthesis, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude**.
+
+---
+
+## Installation
+
+```bash
+# Add the Amplitude marketplace (one-time)
+/plugin marketplace add amplitude/mcp-marketplace
+
+# Install this plugin
+/plugin install amplitude-analysis@amplitude
+```
 
 ---
 
