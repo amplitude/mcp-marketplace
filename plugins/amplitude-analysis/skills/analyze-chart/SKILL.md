@@ -8,7 +8,7 @@ description: Performs deep analysis of a specific Amplitude chart to explain tre
 ## When to Use
 
 - A metric spiked or dropped unexpectedly
-- You need to understand what's driving a trend
+- You need to understand what’s driving a trend
 - Preparing a detailed, evidence-backed analysis for stakeholders
 - Investigating differences between user or event segments
 
@@ -26,7 +26,7 @@ description: Performs deep analysis of a specific Amplitude chart to explain tre
 
 - Use **Reading chart data** to retrieve the chart definition and data
 - If chart data cannot be retrieved or is empty, **do not proceed**
-  - Explain what's missing (time range, event, filters, permissions)
+  - Explain what’s missing (time range, event, filters, permissions)
   - Ask the user to correct the chart or provide a valid chart
 
 Capture and restate:
@@ -39,7 +39,7 @@ Capture and restate:
 
 ### Step 2: Identify the Pattern and Change Window
 
-Use **Analyzing chart** to characterize what's happening:
+Use **Analyzing chart** to characterize what’s happening:
 
 - **Spike / Drop**: Sudden change on specific date(s)
 - **Trend**: Gradual increase or decrease over time
@@ -53,29 +53,32 @@ Explicitly identify:
 
 ---
 
-### Step 3: Correlate with Context (Required for Anomalies)
+### Step 3: Investigate Likely Drivers (Bounded)
+
+Instead of broad slicing, use **guided segmentation**:
+
+1. Use **Finding the right event properties** to identify the most relevant properties for explaining the change
+2. Select **up to 9 high-signal properties** (e.g. platform, country, plan, version)
+3. Re-run **Analyzing chart** with these properties in mind to determine:
+   - Which segments contribute most to the change
+   - Whether the pattern is localized or broad-based
+   - Only fetch up to 3 charts at a time when using `Amplitude:query_charts`
+
+Avoid testing more than 9 properties in aggregate unless the user explicitly asks for deeper exploration.
+
+---
+
+### Step 4: Correlate with Context (Required for Anomalies)
 
 For spikes, drops, or unexpected shifts, gather contextual signals in the same timeframe:
 
 - Use **Getting experiments** to identify active experiments or flags
 - Use **Getting deployments** to identify releases or rollouts
 - Use **Searching for content** to surface annotations or relevant documentation
+- Use `Amplitude:get_feedback_insights` to search customer feedback trends that might explain the change
+- Use `Amplitude:get_feedback_mentions` to pull in specific customer mentions if there's a likely feedback trend tied to what's being explained.
 
 Determine whether any contextual changes align temporally with the chart pattern.
-
----
-
-### Step 4: Investigate Likely Drivers (Bounded)
-
-Instead of broad slicing, use **guided segmentation**:
-
-1. Use **Finding the right event properties** to identify the most relevant properties for explaining the change
-2. Select **up to 3 high-signal properties** (e.g. platform, country, plan, version)
-3. Re-run **Analyzing chart** with these properties in mind to determine:
-   - Which segments contribute most to the change
-   - Whether the pattern is localized or broad-based
-
-Avoid testing more than 3 properties unless the user explicitly asks for deeper exploration.
 
 ---
 
@@ -119,5 +122,5 @@ Always include:
 - Always compare against a clear baseline period
 - Distinguish **observations** from **hypotheses**
 - Prefer high-signal segmentation over exhaustive slicing
-- Note data quality issues (low volume, incomplete periods, heavy "(none)" values)
+- Note data quality issues (low volume, incomplete periods, heavy “(none)” values)
 - Do **not** create or edit charts unless the user explicitly asks
