@@ -13,7 +13,7 @@
       "name": "amplitude-analysis",
       "source": "./plugins/amplitude-analysis",
       "strict": false,
-      "description": "Reusable analysis skills for Amplitude - chart analysis, dashboard reviews, feedback synthesis, and more",
+      "description": "Reusable analysis skills for Amplitude - chart analysis, dashboard reviews, feedback synthesis, account health analysis, and more",
       "version": "1.0.0",
       "author": {
         "name": "Amplitude"
@@ -27,7 +27,9 @@
         "charts",
         "dashboards",
         "feedback",
-        "analysis"
+        "analysis",
+        "account-health",
+        "customer-success"
       ],
       "category": "analytics"
     }

@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart analysis, dashboard reviews, feedback synthesis, and more.
+> Reusable analysis skills for Amplitude – chart analysis, dashboard reviews, feedback synthesis, account health analysis, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude**.
 
@@ -22,6 +22,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 | Skill | What it does |
 | ----- | ------------ |
+| **analyze-account-health** | Summarize B2B account health – usage patterns, engagement trends, risk signals, expansion opportunities |
 | **analyze-chart** | Deep dive into a specific chart to explain trends, anomalies, and likely drivers |
 | **analyze-dashboard** | Synthesize dashboards into talking points, surface concerns, connect quant to qual |
 | **analyze-feedback** | Synthesize customer feedback into themes (requests, bugs, pain points, praise) |
@@ -42,9 +43,10 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 **Just ask naturally** – skills auto-trigger based on your request:
 
 ```
-"Analyze this chart: [URL]"                    → analyze-chart activates
-"Review my KPI dashboard before the meeting"   → analyze-dashboard activates
+"Analyze this chart: [URL]"                        → analyze-chart activates
+"Review my KPI dashboard before the meeting"       → analyze-dashboard activates
 "What are customers saying about the new feature?" → analyze-feedback activates
+"How healthy is Acme Corp's account?"              → analyze-account-health activates
 ```
 
 ### Example Workflows
@@ -69,6 +71,13 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 2. Skill retrieves feedback from all connected sources
 3. Skill groups into themes with representative quotes
 4. You get prioritized issues with actionable recommendations
+
+#### Account Health Analysis
+
+1. Ask: "Prepare an account review for Acme Corp before our QBR"
+2. Skill analyzes usage trends, engagement, and user-level activity
+3. Skill correlates behavioral data with customer feedback
+4. You get a health score, risk factors, champions to leverage, and specific CS recommendations
 
 ---
 
