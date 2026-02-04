@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart analysis, dashboard reviews, feedback synthesis, account health analysis, and more.
+> Reusable analysis skills for Amplitude – chart creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude**.
 
@@ -25,7 +25,9 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 | **analyze-account-health** | Summarize B2B account health – usage patterns, engagement trends, risk signals, expansion opportunities |
 | **analyze-chart** | Deep dive into a specific chart to explain trends, anomalies, and likely drivers |
 | **analyze-dashboard** | Synthesize dashboards into talking points, surface concerns, connect quant to qual |
+| **analyze-experiment** | Design A/B tests, analyze running or completed experiments, interpret results with statistical rigor |
 | **analyze-feedback** | Synthesize customer feedback into themes (requests, bugs, pain points, praise) |
+| **create-chart** | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization |
 
 ---
 
@@ -47,6 +49,8 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 "Review my KPI dashboard before the meeting"       → analyze-dashboard activates
 "What are customers saying about the new feature?" → analyze-feedback activates
 "How healthy is Acme Corp's account?"              → analyze-account-health activates
+"Analyze the results of our onboarding experiment" → analyze-experiment activates
+"Create a chart showing weekly active users"       → create-chart activates
 ```
 
 ### Example Workflows
@@ -78,6 +82,20 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 2. Skill analyzes usage trends, engagement, and user-level activity
 3. Skill correlates behavioral data with customer feedback
 4. You get a health score, risk factors, champions to leverage, and specific CS recommendations
+
+#### Experiment Analysis
+
+1. Ask: "Should we ship the new checkout flow experiment?"
+2. Skill retrieves experiment configuration and results
+3. Skill evaluates statistical significance, segment performance, and guardrail metrics
+4. You get a ship/no-ship recommendation with confidence levels and business impact
+
+#### Chart Creation
+
+1. Ask: "Create a chart showing weekly AI feature users over the last 90 days"
+2. Skill discovers relevant events and validates data availability
+3. Skill builds the chart definition with proper filters and groupings
+4. You get a working chart URL with explanation of methodology and initial insights
 
 ---
 
