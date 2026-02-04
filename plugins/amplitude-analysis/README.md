@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, and more.
+> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude**.
 
@@ -28,6 +28,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 | **analyze-experiment** | Design A/B tests, analyze running or completed experiments, interpret results with statistical rigor |
 | **analyze-feedback** | Synthesize customer feedback into themes (requests, bugs, pain points, praise) |
 | **create-chart** | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization |
+| **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
 
 ---
 
@@ -51,6 +52,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 "How healthy is Acme Corp's account?"              → analyze-account-health activates
 "Analyze the results of our onboarding experiment" → analyze-experiment activates
 "Create a chart showing weekly active users"       → create-chart activates
+"Build a dashboard for our growth team"            → create-dashboard activates
 ```
 
 ### Example Workflows
@@ -96,6 +98,13 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 2. Skill discovers relevant events and validates data availability
 3. Skill builds the chart definition with proper filters and groupings
 4. You get a working chart URL with explanation of methodology and initial insights
+
+#### Dashboard Creation
+
+1. Ask: "Build an executive dashboard for our product launch"
+2. Skill clarifies audience, decisions, and review cadence
+3. Skill finds existing charts and identifies gaps needing new charts
+4. You get a structured dashboard with logical sections, appropriate layouts, and context
 
 ---
 

@@ -10,7 +10,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 | Plugin | Description |
 |--------|-------------|
-| [amplitude-analysis](./plugins/amplitude-analysis/) | Reusable analysis skills – chart creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health |
+| [amplitude-analysis](./plugins/amplitude-analysis/) | Reusable analysis skills – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health |
 
 ---
 
@@ -42,6 +42,7 @@ plugins/
       analyze-experiment/
       analyze-feedback/
       create-chart/
+      create-dashboard/
     README.md
 ```
 
