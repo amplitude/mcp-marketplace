@@ -80,20 +80,89 @@ If incomplete, explain what's missing and stop.
 
 Use `Amplitude:query_experiment` (primary metric only) to assess:
 
-**Traffic Balance:**
+**Traffic Balance (SRM Check):**
 - Report actual traffic split per variant (e.g., 48.2% control, 51.8% treatment)
-- **Flag if >10% deviation from expected** (e.g., 50/50 should be 45-55% range)
-- Severe imbalance indicates instrumentation issue
+- **Use `srmDetected` field from API:** Flag if `srmDetected: true`
+- SRM (Sample Ratio Mismatch) indicates the observed traffic split deviates significantly from the expected allocation
+- If SRM detected, report the expected vs. actual allocation with specific percentages
+- Severe SRM can indicate instrumentation issues or bucketing problems that may invalidate results
 
-**Sample Size:**
+**Sample Size Analysis:**
+
+**A. Current Sample Assessment:**
 - Report total users per variant with specific numbers
 - **Flag if <100 users per variant** (insufficient for any conclusion)
 - **Flag if 100-1000 users** (directional signals only, not confident decision)
 - Need 1000+ per variant for confident decisions
 
-**Sample Ratio Mismatch (SRM):**
-- If traffic split deviates >5% from expected, flag as SRM
-- Severe SRM can invalidate results
+**B. Statistical Power Analysis:**
+- **Target effect size:** What minimum lift would be meaningful for the business? (typically 2-5% for conversion metrics)
+- **Achieved power:** Given current sample size and observed variance, what's the probability of detecting the target effect if it exists?
+- **Power interpretation:**
+  - <50%: Severely underpowered - likely to miss real effects
+  - 50-70%: Underpowered - high risk of false negatives
+  - 70-80%: Marginally adequate - consider extending if p-value is borderline
+  - 80%+: Well-powered - sufficient to detect target effect size
+- **If underpowered:** Calculate additional sample size needed to reach 80% power
+- **Recommendation:** If power <70% and results are inconclusive, extend duration rather than making premature decision
+
+**C. Precision Analysis (Confidence Interval Width):**
+- **CI width for primary metric:** Report the width of the 95% confidence interval as percentage of baseline
+- **Precision assessment:**
+  - CI width >10% of baseline: Low precision - effect size uncertainty too high for confident decisions
+  - CI width 5-10% of baseline: Moderate precision - acceptable for directional decisions
+  - CI width <5% of baseline: High precision - narrow enough for confident decisions
+- **Actionability threshold:** Is the CI narrow enough to distinguish between practically significant and negligible effects?
+  - If lower CI bound suggests meaningful lift but upper bound is marginal, precision may be insufficient
+  - Example: If target is +5% lift and CI is [-2%, +12%], too wide to confidently conclude effect exceeds target
+- **Recommendation:** If CI too wide, extend duration or increase traffic allocation to improve precision
+
+**Comprehensive Data Quality Flags:**
+
+The `Amplitude:query_experiment` API returns multiple boolean flags that assess statistical validity. Check and document each:
+
+1. **statsAssumptionsMetForWholeExperiment:**
+   - Indicates whether core statistical assumptions are satisfied (normality, independence)
+   - **If false:** Results may not be reliable; consider non-parametric approaches or longer runtime
+   - Impact: High - affects all statistical conclusions
+
+2. **hasSuspiciousUplift:**
+   - Flags unexpectedly large effect sizes that may indicate data quality issues
+   - **If true:** Verify instrumentation, check for bot traffic, or segment anomalies
+   - Impact: High - may indicate measurement error rather than real effect
+
+3. **isVariancePositive:**
+   - Confirms metric variance is positive (mathematically required for statistical tests)
+   - **If false:** Critical data quality issue - metric may be constant or incorrectly computed
+   - Impact: Critical - statistical tests invalid if false
+
+4. **isConfidenceIntervalNotFlipped:**
+   - Ensures lower CI bound < upper CI bound (mathematical consistency check)
+   - **If false:** Indicates calculation error or data corruption
+   - Impact: Critical - results cannot be trusted
+
+5. **isStandardErrorLargeEnough:**
+   - Checks if standard error is sufficient for reliable inference
+   - **If false:** High variance or very small sample may produce unreliable confidence intervals
+   - Impact: Medium - affects precision of estimates
+
+6. **isPointEstimateInsideConfidenceInterval:**
+   - Validates that point estimate falls within its confidence interval (consistency check)
+   - **If false:** Calculation error or numerical instability
+   - Impact: High - indicates statistical computation issues
+
+7. **isMeanValid:**
+   - Confirms mean value is a valid number (not NaN, not infinite)
+   - **If false:** Data quality issue - check for null values or computation errors
+   - Impact: Critical - cannot analyze if mean is invalid
+
+**For each flag that fails (returns false or true for suspicious uplift), document:**
+- Which flag failed
+- What it means in plain language
+- Specific impact on result reliability
+- Recommended action (extend duration, investigate instrumentation, etc.)
+
+**If all flags pass:** Note this explicitly as strong data quality signal
 
 **Temporal Stability:**
 - Check if primary metric is stable day-over-day
@@ -186,24 +255,30 @@ Use `groupByLimit: 10` to avoid overwhelming output.
 
 ---
 
-### Step 6: Assess Statistical Power & Duration
+### Step 6: Assess Duration & Runtime Sufficiency
 
-**Power Analysis:**
-Based on current sample sizes and observed variance, assess:
-- **Current statistical power:** Is it adequate to detect meaningful effects?
-- **Required sample size:** How many more users needed for p < 0.05?
-- **Estimated days to significance:** Given current traffic, how long to reach target sample?
-- **Duration assessment:** Has experiment run long enough given power constraints?
+**Duration Assessment:**
+Based on the power and precision analysis from Step 2, evaluate if the experiment has run long enough:
 
-**Interpretation:**
-- Low power (<60%): Experiment cannot reliably detect effects, need more data
-- Moderate power (60-80%): Trending toward conclusion, consider extending
-- High power (>80%): Sufficient data to draw conclusions
+**Runtime factors:**
+- **Minimum duration:** Has experiment run at least 1-2 weeks to capture full user lifecycle?
+- **Learning effects:** For feature changes, have users had time to adapt? (typically 3-7 days)
+- **Weekly seasonality:** Has experiment captured at least one complete week to account for day-of-week patterns?
+- **Business cycles:** For B2B products, has it run through full business week patterns?
 
-**Recommendation:**
-- If underpowered and p > 0.15: Extend duration or increase traffic
-- If powered and p < 0.05: Ready for decision
-- If powered and p > 0.15: Accept null result (no effect detected)
+**Integration with Step 2 power analysis:**
+- **If Step 2 showed adequate power (>80%) AND p < 0.05:** Experiment has sufficient data, duration is adequate
+- **If Step 2 showed low power (<70%) AND p > 0.05:** Inconclusive due to insufficient data, extend duration
+- **If Step 2 showed adequate power (>80%) AND p > 0.15:** Sufficient data to accept null result (no effect)
+- **If Step 2 showed adequate power but CI width too wide:** Need more data for precision, extend duration
+
+**Velocity projection (only if extending recommended):**
+- **Current daily enrollment:** Calculate users per day per variant
+- **Days to target sample:** Based on Step 2 power calculation, how many more days needed?
+- **Days to target precision:** Based on Step 2 CI width calculation, how many more days to reach desired precision?
+- **Recommendation:** Provide specific date when experiment should reach sufficient power/precision
+
+**Do NOT repeat the power calculations from Step 2** - reference those findings and focus on duration and timeline recommendations.
 
 ---
 
@@ -233,7 +308,7 @@ Use `Amplitude:get_session_replays`:
 
 **Before finalizing, verify you have included:**
 - ✓ All primary metric data (lift, CI, p-value, interpretation)
-- ✓ All data quality findings (traffic balance, sample size, SRM, with actual numbers)
+- ✓ All data quality findings (SRM, sample size, power, precision, all 7 validity flags with actual values)
 - ✓ All secondary metrics and guardrails (with actual values and significance)
 - ✓ All segment analysis tables (formatted with % of total exposures)
 - ✓ Statistical power assessment (current power, required sample, duration)
@@ -254,10 +329,34 @@ Present structured analysis:
 ---
 
 **Data Quality Assessment:**
-- **Traffic Balance:** Control [X%] | Treatment [Y%] [Flag if >10% deviation]
-- **Sample Size:** [Adequate/Moderate/Low] - [specific numbers]
-- **SRM Detected:** [Yes/No]
-- **Duration:** [Adequate/Need more time based on power analysis]
+
+**Traffic & SRM:**
+- **Traffic Balance:** Control [X%] | Treatment [Y%] (Expected: [X%] | [Y%])
+- **SRM Detected:** [Yes/No] [If yes, explain deviation severity]
+
+**Sample Size & Power:**
+- **Sample Size:** Control: [N] | Treatment: [N]
+- **Sample Adequacy:** [Adequate (>1000) / Moderate (100-1000) / Low (<100)]
+- **Statistical Power:** [X%] to detect [Y%] lift (Target: 80%+)
+- **Achieved Precision:** 95% CI width = [±X%] ([High <5% / Moderate 5-10% / Low >10%])
+
+**Statistical Validity Flags:**
+[Only include flags that failed - if all pass, state "All statistical validity checks passed"]
+- ❌ **statsAssumptionsMetForWholeExperiment:** Statistical assumptions not met - [brief impact]
+- ❌ **hasSuspiciousUplift:** Unusually large effect detected - [brief recommendation]
+- ❌ **isVariancePositive:** Invalid variance - [critical issue description]
+- ❌ **isConfidenceIntervalNotFlipped:** CI calculation error - [critical issue description]
+- ❌ **isStandardErrorLargeEnough:** Insufficient standard error - [impact on precision]
+- ❌ **isPointEstimateInsideConfidenceInterval:** Statistical inconsistency - [calculation issue]
+- ❌ **isMeanValid:** Invalid mean value - [data quality issue]
+
+**Duration:**
+- **Runtime:** [X days] (Started: [date])
+- **Sufficiency:** [Adequate - captured full user lifecycle / Need more time - [reason]]
+- **Recommendation:** [Continue running for X more days / Sufficient data to conclude]
+
+**Overall Data Quality:** [Excellent / Good / Concerns / Critical Issues]
+[One sentence summary of whether results can be trusted]
 
 ---
 
