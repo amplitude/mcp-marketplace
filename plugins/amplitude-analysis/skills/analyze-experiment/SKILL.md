@@ -292,14 +292,8 @@ Use `Amplitude:get_feedback_insights`:
 - For losses: look for `["bug", "complaint", "painPoint"]`
 - Check if themes align with experiment hypothesis
 
-Use `Amplitude:get_session_replays`:
-- Filter by treatment variant (use experiment flag property: `gp:[Experiment] experiment-name`)
-- For wins: observe users engaging with new feature
-- For losses: identify friction, confusion, or bugs
-- Watch 2-3 replays to understand behavior
-
 **Connect quantitative to qualitative:**
-- Explain the lift with user quotes or replay observations
+- Explain the lift with user quotes or feedback themes
 - Present 2-3 representative examples with specific details
 
 ---
@@ -312,7 +306,7 @@ Use `Amplitude:get_session_replays`:
 - ✓ All secondary metrics and guardrails (with actual values and significance)
 - ✓ All segment analysis tables (formatted with % of total exposures)
 - ✓ Statistical power assessment (current power, required sample, duration)
-- ✓ Qualitative insights (feedback themes and replay observations)
+- ✓ Qualitative insights (feedback themes)
 
 Present structured analysis:
 
@@ -410,8 +404,6 @@ Present structured analysis:
 **Why This Result:**
 - **[Feedback theme]** ([X mentions])
   - "[Quote]" - [Source] ([Date])
-- **[Session replay observation]**
-  - [What you observed in 2-3 replays with specific details]
 
 ---
 
