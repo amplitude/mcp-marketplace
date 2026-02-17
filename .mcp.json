@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "amplitude-analysis": {
+    "amplitude": {
       "type": "http",
       "url": "https://mcp.amplitude.com/mcp"
     }

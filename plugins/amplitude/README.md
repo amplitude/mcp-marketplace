@@ -13,7 +13,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 /plugin marketplace add amplitude/mcp-marketplace
 
 # Install this plugin
-/plugin install amplitude-analysis@amplitude
+/plugin install amplitude@amplitude
 ```
 
 ---
