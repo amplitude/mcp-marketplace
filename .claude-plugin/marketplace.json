@@ -10,8 +10,8 @@
   },
   "plugins": [
     {
-      "name": "amplitude-analysis",
-      "source": "./plugins/amplitude-analysis",
+      "name": "amplitude",
+      "source": "./plugins/amplitude",
       "strict": false,
       "description": "Reusable analysis skills for Amplitude - chart analysis, dashboard reviews, feedback synthesis, account health analysis, and more",
       "version": "1.0.0",
