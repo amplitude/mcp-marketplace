@@ -16,6 +16,7 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 ## Quick Start
 
+Installing on Claude:
 ```bash
 # Add the Amplitude marketplace (one-time)
 /plugin marketplace add amplitude/mcp-marketplace
@@ -23,6 +24,26 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 # Install the amplitude plugin
 /plugin install amplitude@amplitude
 ```
+
+Installing on Cursor:
+- Go to cursor settings
+- Click on Plugins
+- Look for the Amplitude Analytics plugin
+- Install the plugin
+- You can test if the skills exist by typing /
+- For the skills to work you need to have the amplitude MCP server
+- You can add the MCP server to cursor by going to agent settings
+- Agent settings -> Tools & MCP -> Add a new MCP server
+- Add the following server to the config:
+    "amplitude-us": {
+        "command": "npx",
+        "args": [
+            "-y",
+            "mcp-remote",
+            "https://mcp-server.prod.us-west-2.amplitude.com/v1/mcp"
+        ]
+    }
+- This should take you to the browser to complete the 0Auth flow
 
 ---
 
