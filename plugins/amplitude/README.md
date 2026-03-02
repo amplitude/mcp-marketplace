@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, and more.
+> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, daily briefs, weekly briefs, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 
@@ -50,6 +50,8 @@ Cursor:
 | **analyze-feedback** | Synthesize customer feedback into themes (requests, bugs, pain points, praise) |
 | **create-chart** | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization |
 | **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
+| **daily-brief** | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days |
+| **weekly-brief** | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations |
 
 ---
 
@@ -74,6 +76,8 @@ Cursor:
 "Analyze the results of our onboarding experiment" → analyze-experiment activates
 "Create a chart showing weekly active users"       → create-chart activates
 "Build a dashboard for our growth team"            → create-dashboard activates
+"Give me my daily download"                        → daily-brief activates
+"What happened this week?"                         → weekly-brief activates
 ```
 
 ### Example Workflows
@@ -126,6 +130,20 @@ Cursor:
 2. Skill clarifies audience, decisions, and review cadence
 3. Skill finds existing charts and identifies gaps needing new charts
 4. You get a structured dashboard with logical sections, appropriate layouts, and context
+
+#### Daily Brief
+
+1. Ask: "Give me my morning briefing" or "Anything I should know today?"
+2. Skill discovers your dashboards, queries charts, checks experiments, feedback, and deployments
+3. Skill identifies the biggest day-over-day changes and validates against false positives
+4. You get a concise, narrative briefing with key findings and concrete priorities for today
+
+#### Weekly Brief
+
+1. Ask: "Give me my weekly summary" or "What happened this week?"
+2. Skill gathers week-over-week trends across dashboards, experiments, feedback, and deployments
+3. Skill detects accelerating trends, inflection points, and new highs/lows over the trailing 4 weeks
+4. You get a shareable memo with key findings, what's working, and next week's priorities
 
 ---
 
