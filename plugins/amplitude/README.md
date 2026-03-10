@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, feedback synthesis, account health analysis, daily briefs, weekly briefs, and more.
+> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, feedback synthesis, account health analysis, daily briefs, weekly briefs, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 
@@ -52,6 +52,7 @@ Cursor:
 | **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
 | **daily-brief** | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days |
 | **weekly-brief** | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations |
+| **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
 
 ---
 
@@ -78,6 +79,7 @@ Cursor:
 "Build a dashboard for our growth team"            → create-dashboard activates
 "Give me my daily download"                        → daily-brief activates
 "What happened this week?"                         → weekly-brief activates
+"How are my active experiments going?"             → monitor-experiments activates
 ```
 
 ### Example Workflows
@@ -137,6 +139,13 @@ Cursor:
 2. Skill discovers your dashboards, queries charts, checks experiments, feedback, and deployments
 3. Skill identifies the biggest day-over-day changes and validates against false positives
 4. You get a concise, narrative briefing with key findings and concrete priorities for today
+
+#### Experiment Monitor
+
+1. Ask: "Check on experiments" or "What experiments are running?"
+2. Skill scans all active and recently completed experiments across projects
+3. Skill triages by importance — flagging stale decisions, long-running tests, and missing metrics
+4. You get a portfolio summary with deep-dives on the most impactful experiments, including statistical analysis and ship/iterate/abandon recommendations
 
 #### Weekly Brief
 
