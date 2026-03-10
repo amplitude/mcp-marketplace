@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, feedback synthesis, account health analysis, daily briefs, weekly briefs, and more.
+> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, opportunity discovery, feedback synthesis, account health analysis, daily and weekly briefs, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 
@@ -52,6 +52,7 @@ Cursor:
 | **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
 | **daily-brief** | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days |
 | **weekly-brief** | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations |
+| **discover-opportunities** | Discover product opportunities by mining analytics, experiments, replays, and feedback — synthesized into RICE-scored, actionable recommendations |
 | **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
 
 ---
@@ -78,8 +79,9 @@ Cursor:
 "Create a chart showing weekly active users"       → create-chart activates
 "Build a dashboard for our growth team"            → create-dashboard activates
 "Give me my daily download"                        → daily-brief activates
+"Find product opportunities"                       → discover-opportunities activates
+"Check on experiments"                             → monitor-experiments activates
 "What happened this week?"                         → weekly-brief activates
-"How are my active experiments going?"             → monitor-experiments activates
 ```
 
 ### Example Workflows
@@ -139,6 +141,13 @@ Cursor:
 2. Skill discovers your dashboards, queries charts, checks experiments, feedback, and deployments
 3. Skill identifies the biggest day-over-day changes and validates against false positives
 4. You get a concise, narrative briefing with key findings and concrete priorities for today
+
+#### Discover Opportunities
+
+1. Ask: "Find me the biggest product opportunities" or "Where are we losing users in onboarding?"
+2. Skill mines dashboards, funnels, experiments, feedback, and session replays for signals
+3. Skill synthesizes findings into structured opportunities with RICE scoring and multi-source evidence
+4. You get a prioritized list of actionable opportunities with specific recommendations and supporting data links
 
 #### Experiment Monitor
 
