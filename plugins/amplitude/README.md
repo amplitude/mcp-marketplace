@@ -1,6 +1,6 @@
 # Amplitude Analysis Plugin
 
-> Reusable analysis skills for Amplitude – chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, opportunity discovery, feedback synthesis, account health analysis, daily and weekly briefs, and more.
+> Use Amplitude MCP as an expert analyst and product manager via chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, opportunity discovery, feedback synthesis, account health analysis, daily and weekly briefs, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 
