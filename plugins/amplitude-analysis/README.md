@@ -77,3 +77,12 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 The Amplitude MCP connection is required for the skills to access your Amplitude data. Configure it in your MCP client settings.
 
 Get your API keys from: Amplitude → Settings → Projects → [Your Project] → API Keys
+
+### EU Data Residency
+
+By default, the plugin connects to the **US** endpoint. If your Amplitude organization is hosted in the **EU**, update the MCP server URL in your client config:
+
+| Region | Endpoint |
+|--------|----------|
+| US (default) | `https://mcp.amplitude.com/mcp` |
+| EU | `https://mcp.eu.amplitude.com/mcp` |

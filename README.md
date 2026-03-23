@@ -50,6 +50,15 @@ plugins/
 - **Amplitude account** with API access
 - **Node.js** – For the MCP server
 
+## EU Data Residency
+
+Plugins default to the **US** endpoint (`https://mcp.amplitude.com/mcp`). If your Amplitude organization is hosted in the **EU**, update the `url` in your MCP client config to point to the EU endpoint:
+
+| Region | Endpoint |
+|--------|----------|
+| US (default) | `https://mcp.amplitude.com/mcp` |
+| EU | `https://mcp.eu.amplitude.com/mcp` |
+
 ---
 
 ## Contributing
