@@ -1,6 +1,5 @@
 ---
 name: add-analytics-instrumentation
-disable-model-invocation: true
 description: >
   End-to-end analytics instrumentation workflow for a PR, branch, file,
   directory, or feature. Reads the code, discovers what events should be
