@@ -1,17 +1,18 @@
 ---
 name: diff-intake
 description: >
-Reads a PR or branch diff and produces a structured YAML change brief for
-downstream analytics instrumentation skills. Use this as the first step
-whenever a user shares a PR link, branch comparison, or raw diff and wants
-to understand what changed, what needs tracking, or how to instrument a
-feature. Trigger on phrases like "review this PR", "what changed in this
-branch", "help me instrument this diff", "check analytics coverage for this
-change", or any request to start the analytics review workflow.
+  Reads a PR or branch diff and produces a structured YAML change brief for
+  downstream analytics instrumentation skills. Use this as the first step
+  whenever a user shares a PR link, branch comparison, or raw diff and wants
+  to understand what changed, what needs tracking, or how to instrument a
+  feature. Trigger on phrases like "review this PR", "what changed in this
+  branch", "help me instrument this diff", "check analytics coverage for this
+  change", or any request to start the analytics review workflow.
 ---
 
 # diff-intake
-Follow this skill step by step
+
+Follow this skill step by step.
 You are step 1 of the analytics instrumentation workflow. Produce a compact
 YAML change brief that downstream skills (discover-event-surfaces,
 instrument-events) will consume. Keep the output machine-readable and

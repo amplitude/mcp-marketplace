@@ -36,6 +36,25 @@
         "discover-opportunities"
       ],
       "category": "analytics"
+    },
+    {
+      "name": "instrumentation",
+      "source": "./plugins/instrumentation",
+      "strict": false,
+      "description": "Analytics instrumentation skills for Amplitude",
+      "version": "1.0.0",
+      "author": {
+        "name": "Amplitude"
+      },
+      "homepage": "https://github.com/amplitude/mcp-marketplace",
+      "repository": "https://github.com/amplitude/mcp-marketplace",
+      "license": "MIT",
+      "keywords": [
+        "analytics",
+        "instrumentation",
+        "amplitude"
+      ],
+      "category": "analytics"
     }
   ]
 }
