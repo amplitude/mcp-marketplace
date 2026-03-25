@@ -23,7 +23,8 @@ succeeds. Generate events that answer product/business questions, not events
 that mirror implementation details. Aim for **breadth and quality** — a
 downstream skill will narrow the list.
 
-Read `references/best-practices.md` to understand core analytics philosophy
+Read `../instrument-events/references/best-practices.md` to understand core
+analytics philosophy
 
 ---
 
@@ -85,19 +86,10 @@ didn't see evidence for.
 
 ## 3. Determine naming conventions and fetch existing events
 
-Before generating candidates, determine how this codebase already names events
-and properties. Use this precedence order:
-
-1. **Codebase instrumentation first.** Invoke `discover-analytics-patterns` or
-   otherwise inspect real tracking call sites in the repository. If you can
-   infer a dominant convention from existing instrumentation, use that for both
-   event names and property names.
-2. **Amplitude MCP second.** If the codebase does not provide enough evidence,
-   use the MCP server to inspect existing events and infer:
-   - `event_naming_convention` from `eventType` values
-   - `property_naming_convention` from representative event property names
-3. **Best-practices fallback last.** If neither the codebase nor MCP yields a
-   clear convention, fall back to `references/best-practices.md`.
+Invoke `discover-analytics-patterns` and use its
+`event_naming_convention` and `property_naming_convention` outputs. That skill
+owns the naming-resolution procedure and precedence order. Do not redefine it
+here.
 
 Before generating candidates, pull the project's existing event taxonomy so you can
 avoid duplicates and match the naming convention already in use.
@@ -121,20 +113,6 @@ page is enough for pattern detection). This returns event objects with fields li
    already tracked. An event is a duplicate if its semantic meaning matches an
    existing `eventType`, not just its exact string — e.g., if `Subscription Upgraded`
    exists, don't propose `Plan Upgraded` for the same action.
-
-2. **MCP naming references** — If you had to fall back to MCP, study the
-   `eventType` values and representative property names and identify the dominant
-   patterns. Common conventions include:
-   - `Title Case With Spaces` (e.g., `Property Extracted`)
-   - `snake_case` (e.g., `property_extracted`)
-   - `camelCase` (e.g., `propertyExtracted`)
-   - `[Prefix] Action` patterns (e.g., `[Amplitude] Page Viewed`)
-   - Verb-first vs noun-first ordering for events
-   - `*_id`, `is_*`, flat keys vs nested objects for properties
-
-   Keep event and property conventions separate. They may differ. You'll apply
-   them in step 6 only if the codebase itself did not already establish a clear
-   dominant convention.
 
 ## 4. Generate candidate events
 
@@ -182,21 +160,14 @@ Every candidate must pass all three:
 
 ## 6. Name events
 
-**Match the existing instrumentation convention first.** Use this precedence:
-
-1. The dominant event naming convention inferred from analytics instrumentation
-   already present in the codebase
-2. If that is unclear, the `event_naming_convention` and`property_naming_convention` inferred from the MCP
-   server's existing events and properties
-3. If both are unclear or inconsistent, fall back to `references/best-practices.md`
-
+Use the naming conventions returned by `discover-analytics-patterns`.
 New events should look like they belong with the rest of the instrumentation:
 same casing, same word order, same delimiters, same prefix patterns, and the
 same level of specificity.
 
 If you later need to suggest property names in rationale or instrumentation
-hints, use the same precedence order for `property_naming_convention`:
-codebase first, MCP second, best-practices last.
+hints, use the `property_naming_convention` returned by
+`discover-analytics-patterns`.
 
 In all cases, use product-domain subjects (Property, User, Document), not code
 names (PropertyItem, ActionStore).
@@ -251,8 +222,8 @@ Output only the YAML block — no surrounding prose.
 event_candidates:
   source_summary: "<from change_brief.summary>"
   analytics_scope: "<from change_brief.classification.analytics_scope>"
-  event_naming_convention: "<from codebase instrumentation if available, otherwise MCP, otherwise best-practices>"
-  property_naming_convention: "<from codebase instrumentation if available, otherwise MCP, otherwise best-practices>"
+  event_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise best-practices>"
+  property_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise best-practices>"
 
   already_tracked:                         # omit if no duplicates found
     - existing_event: "Subscription Upgraded"

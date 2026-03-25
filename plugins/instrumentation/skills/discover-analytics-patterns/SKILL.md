@@ -22,6 +22,11 @@ call. This output helps engineers add new events that look consistent with the
 rest of the codebase. It should also tell downstream skills how event names and
 property names are typically written in code here.
 
+When determining naming conventions in this skill, use the following sources in strict order of preference:
+1. Events and properties observed from the Amplitude MCP server
+2. Real tracking call sites in the codebase
+3. `../instrument-events/references/best-practices.md`
+
 ---
 
 ## Step 1: Find tracking calls
@@ -31,22 +36,31 @@ Use two approaches based on what's available.
 ### If the Amplitude MCP is connected
 
 Call `get_events` (or equivalent) to fetch a sample of event names from the
-project. Then search the codebase for those event names using Grep to locate the
-actual tracking call sites.
+project. Use those results to choose a few representative non-system product
+events, then call `get_event_properties` for those events to inspect real
+property names. This is your primary naming reference.
+
+Do not infer naming conventions from bracket-prefixed Amplitude system names
+such as `[Amplitude], [Guides-Surveys], [Assistant], [Experiment]` for either events or properties. Exclude those from
+pattern detection. If the MCP sample is dominated by Amplitude system names or otherwise does not provide enough evidence, fall back to codebase
+inference for naming.
+
+Then search the codebase for the sampled non-system event names using Grep to
+locate the actual tracking call sites.
 
 ### If the Amplitude MCP is not available (fallback)
 
 Search the codebase for these signals using Grep. Cast a wide net — you can
 narrow down after:
 
-| What to search for | Why |
-|---|---|
-| `\.track\(` | Generic `.track()` method calls |
-| `ampli\.` | Ampli typed SDK calls (e.g. `ampli.myEvent(...)`) |
-| `amplitude\.track\|amplitude\.logEvent` | Direct Amplitude SDK calls |
-| `sendEvent` | Custom wrapper method names |
-| `from.*amplitude\|import.*amplitude\|require.*amplitude` | Import statements |
-| `https://api2\.amplitude\.com/2/httpapi` | HTTP API calls |
+| What to search for                                       | Why                                               |
+| -------------------------------------------------------- | ------------------------------------------------- |
+| `\.track\(`                                              | Generic `.track()` method calls                   |
+| `ampli\.`                                                | Ampli typed SDK calls (e.g. `ampli.myEvent(...)`) |
+| `amplitude\.track\|amplitude\.logEvent`                  | Direct Amplitude SDK calls                        |
+| `sendEvent`                                              | Custom wrapper method names                       |
+| `from.*amplitude\|import.*amplitude\|require.*amplitude` | Import statements                                 |
+| `https://api2\.amplitude\.com/2/httpapi`                 | HTTP API calls                                    |
 
 Also actively look for custom analytics wrappers — a codebase often wraps the
 raw SDK in a utility like `trackEvent()`, `track()`, or a React hook like
@@ -91,9 +105,9 @@ underneath. When documenting a wrapper pattern, note what it wraps (e.g.,
 
 ---
 
-## Step 3: Infer naming conventions from the codebase
+## Step 3: Resolve naming conventions
 
-From the tracking call sites you found, infer two conventions separately:
+Resolve two conventions separately:
 
 - `event_naming_convention` — casing, separators, word order, prefixes, and
   tense used for event names in instrumentation code. Examples: `Title Case`,
@@ -102,11 +116,21 @@ From the tracking call sites you found, infer two conventions separately:
   patterns used for event properties. Examples: `snake_case`, `camelCase`,
   `*_id`, `is_*`, flat keys vs nested objects.
 
-Prefer the patterns used in nearby, real instrumentation code over generic
-style guidance. If the codebase shows multiple conventions, call out the
-dominant one and note any meaningful local exceptions. If there is not enough
-evidence to infer one or both conventions, say so explicitly instead of
-guessing.
+Use this precedence order:
+
+1. **Amplitude MCP first.** If the observed `eventType` values and
+   property names returned by `get_event_properties` for a few representative
+   non-system events show a clear dominant convention, use that. Do not use
+   bracket-prefixed Amplitude system names as naming evidence.
+2. **Codebase second.** If the MCP evidence is unavailable, sparse, or
+   inconsistent, infer the dominant convention from nearby, real tracking call
+   sites in the repository. If the codebase shows multiple conventions, call
+   out the dominant one and note meaningful local exceptions.
+3. **Best-practices fallback last.** If neither MCP nor codebase evidence is
+   clear enough, fall back to `../instrument-events/references/best-practices.md`.
+
+Do not guess. If one or both conventions remain unclear even after checking
+those sources, say so explicitly.
 
 ---
 
@@ -115,8 +139,8 @@ guessing.
 Start with a short conventions section, then list each unique pattern.
 
 ```yaml
-event_naming_convention: "<dominant convention from codebase, or 'insufficient evidence'>"
-property_naming_convention: "<dominant convention from codebase, or 'insufficient evidence'>"
+event_naming_convention: "<from MCP if clear, otherwise codebase, otherwise best-practices, or 'insufficient evidence'>"
+property_naming_convention: "<from MCP if clear, otherwise codebase, otherwise best-practices, or 'insufficient evidence'>"
 ```
 
 Then, for each unique pattern, output a section in this format:
