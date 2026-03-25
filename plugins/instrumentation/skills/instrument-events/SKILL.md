@@ -82,13 +82,13 @@ property candidates. For each one, ask:
 should unlock a specific chart axis or filter. If you can't describe the chart
 it enables in one sentence, drop it.
 
-Naming precedence:
-1. Match the existing analytics instrumentation conventions in the codebase
-   first, for both event names and property names.
-2. If the codebase does not provide enough evidence, use the MCP server to
-   infer `event_naming_convention` and `property_naming_convention` from
-   existing events.
-3. If both are unclear, fall back to `references/best-practices.md`.
+Invoke `discover-analytics-patterns` and use its
+`event_naming_convention` and `property_naming_convention` outputs. That skill
+owns the naming-resolution procedure and precedence order. Do not redefine it
+here.
+
+This applies only to event and property naming. Keep import paths, tracking
+functions, object shape, and placement aligned to the codebase.
 
 **Stay in scope.** Only use variables available at the insertion point. If an
 important property exists elsewhere (e.g., in a parent component's state, in a
