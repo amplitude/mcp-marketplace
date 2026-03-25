@@ -1,6 +1,6 @@
-# Amplitude Analysis Plugin
+# Amplitude Analysis and Instrumentation Plugin
 
-> Use Amplitude MCP as an expert analyst and product manager via chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, opportunity discovery, feedback synthesis, account health analysis, daily and weekly briefs, and more.
+> Use Amplitude MCP as an expert analyst, product manager, and instrumentation partner via chart creation, dashboard creation, chart analysis, dashboard reviews, experiment analysis, experiment monitoring, opportunity discovery, feedback synthesis, account health analysis, daily and weekly briefs, analytics instrumentation workflows, and more.
 
 Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 
@@ -51,8 +51,13 @@ Cursor:
 | **create-chart** | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization |
 | **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
 | **daily-brief** | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days |
+| **diff-intake** | Read a PR, branch, or file diff and produce a compact change brief for downstream analytics instrumentation planning |
+| **discover-analytics-patterns** | Inspect the codebase for existing tracking wrappers, naming conventions, and analytics patterns before adding new events |
+| **discover-event-surfaces** | Turn a change brief into concrete event candidates, priorities, and likely instrumentation points |
 | **weekly-brief** | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations |
 | **discover-opportunities** | Discover product opportunities by mining analytics, experiments, replays, and feedback — synthesized into RICE-scored, actionable recommendations |
+| **instrument-events** | Convert priority events into a detailed, line-by-line instrumentation plan grounded in the target code |
+| **add-analytics-instrumentation** | Run the full end-to-end instrumentation workflow for a PR, branch, file, or feature request |
 | **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
 
 ---
@@ -81,6 +86,7 @@ Cursor:
 "Give me my daily download"                        → daily-brief activates
 "Find product opportunities"                       → discover-opportunities activates
 "Check on experiments"                             → monitor-experiments activates
+"Instrument the checkout flow"                     → add-analytics-instrumentation activates
 "What happened this week?"                         → weekly-brief activates
 ```
 
@@ -162,6 +168,13 @@ Cursor:
 2. Skill gathers week-over-week trends across dashboards, experiments, feedback, and deployments
 3. Skill detects accelerating trends, inflection points, and new highs/lows over the trailing 4 weeks
 4. You get a shareable memo with key findings, what's working, and next week's priorities
+
+#### Analytics Instrumentation
+
+1. Ask: "Instrument the onboarding flow" or "Run the full analytics instrumentation workflow on this PR"
+2. Skill inspects the diff and existing tracking patterns in the codebase
+3. Skill identifies the highest-value events and the exact handlers or callbacks where they belong
+4. You get a prioritized event list plus a concrete instrumentation plan an engineer can implement
 
 ---
 

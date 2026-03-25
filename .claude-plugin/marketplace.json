@@ -6,15 +6,15 @@
   },
   "metadata": {
     "description": "Amplitude analytics plugins for AI coding agents",
-    "version": "0.0.1"
+    "version": "0.1.0"
   },
   "plugins": [
     {
       "name": "amplitude",
       "source": "./plugins/amplitude",
       "strict": false,
-      "description": "Use Amplitude as an expert analyst - discover product opportunities, analyze charts, create dashboards, manage experiments, and understand users and accounts",
-      "version": "1.0.0",
+      "description": "Use Amplitude as an expert analyst and instrumentation partner - analyze charts, create dashboards, manage experiments, understand users and accounts, and plan analytics tracking",
+      "version": "1.1.0",
       "author": {
         "name": "Amplitude"
       },
@@ -28,31 +28,14 @@
         "dashboards",
         "feedback",
         "analysis",
+        "instrumentation",
+        "tracking",
         "account-health",
         "customer-success",
         "daily-brief",
         "weekly-brief",
         "monitor-experiments",
         "discover-opportunities"
-      ],
-      "category": "analytics"
-    },
-    {
-      "name": "instrumentation",
-      "source": "./plugins/instrumentation",
-      "strict": false,
-      "description": "Analytics instrumentation skills for Amplitude",
-      "version": "1.0.0",
-      "author": {
-        "name": "Amplitude"
-      },
-      "homepage": "https://github.com/amplitude/mcp-marketplace",
-      "repository": "https://github.com/amplitude/mcp-marketplace",
-      "license": "MIT",
-      "keywords": [
-        "analytics",
-        "instrumentation",
-        "amplitude"
       ],
       "category": "analytics"
     }

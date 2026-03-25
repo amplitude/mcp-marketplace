@@ -25,7 +25,7 @@ property names are typically written in code here.
 When determining naming conventions in this skill, use the following sources in strict order of preference:
 1. Events and properties observed from the Amplitude MCP server
 2. Real tracking call sites in the codebase
-3. `../instrument-events/references/best-practices.md`
+3. The `taxonomy` skill at `../taxonomy/SKILL.md`
 
 ---
 
@@ -126,8 +126,8 @@ Use this precedence order:
    inconsistent, infer the dominant convention from nearby, real tracking call
    sites in the repository. If the codebase shows multiple conventions, call
    out the dominant one and note meaningful local exceptions.
-3. **Best-practices fallback last.** If neither MCP nor codebase evidence is
-   clear enough, fall back to `../instrument-events/references/best-practices.md`.
+3. **Taxonomy fallback last.** If neither MCP nor codebase evidence is
+   clear enough, fall back to the `taxonomy` skill at `../taxonomy/SKILL.md`.
 
 Do not guess. If one or both conventions remain unclear even after checking
 those sources, say so explicitly.
@@ -139,8 +139,8 @@ those sources, say so explicitly.
 Start with a short conventions section, then list each unique pattern.
 
 ```yaml
-event_naming_convention: "<from MCP if clear, otherwise codebase, otherwise best-practices, or 'insufficient evidence'>"
-property_naming_convention: "<from MCP if clear, otherwise codebase, otherwise best-practices, or 'insufficient evidence'>"
+event_naming_convention: "<from MCP if clear, otherwise codebase, otherwise taxonomy skill, or 'insufficient evidence'>"
+property_naming_convention: "<from MCP if clear, otherwise codebase, otherwise taxonomy skill, or 'insufficient evidence'>"
 ```
 
 Then, for each unique pattern, output a section in this format:
