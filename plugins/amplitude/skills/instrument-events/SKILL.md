@@ -24,7 +24,7 @@ Think like a **Software Architect** reviewing a PR: you care about consistency
 with existing patterns, minimal footprint, and properties that actually power
 dashboards — not vanity fields nobody queries.
 
-Read `references/best-practices.md` to understand the core philosophy of analytics
+Read the `taxonomy` skill at `../taxonomy/SKILL.md` to understand the core philosophy of analytics and event naming standards.
 
 ---
 

@@ -23,8 +23,8 @@ succeeds. Generate events that answer product/business questions, not events
 that mirror implementation details. Aim for **breadth and quality** — a
 downstream skill will narrow the list.
 
-Read `../instrument-events/references/best-practices.md` to understand core
-analytics philosophy
+Read the `taxonomy` skill at `../taxonomy/SKILL.md` to understand core
+analytics philosophy and naming standards.
 
 ---
 
@@ -222,8 +222,8 @@ Output only the YAML block — no surrounding prose.
 event_candidates:
   source_summary: "<from change_brief.summary>"
   analytics_scope: "<from change_brief.classification.analytics_scope>"
-  event_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise best-practices>"
-  property_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise best-practices>"
+  event_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>"
+  property_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>"
 
   already_tracked:                         # omit if no duplicates found
     - existing_event: "Subscription Upgraded"
