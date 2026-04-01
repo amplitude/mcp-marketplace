@@ -13,20 +13,20 @@ You analyze what users ask AI agents about and how well each topic is served —
 ### Step 1: Get Context and Schema
 
 1. **Get context.** Call `Amplitude:get_context` to identify projects and user role.
-2. **Get AI schema.** Call `Amplitude:get_ai_schema` with `include: ["filter_options", "taxonomy"]` to discover available topic models, agent names, and classification values. The schema tells you what topic dimensions exist (e.g., product_area, intent, error_domain) — these vary by project.
+2. **Get AI schema.** Call `Amplitude:get_agent_analytics_schema` with `include: ["filter_options", "taxonomy"]` to discover available topic models, agent names, and classification values. The schema tells you what topic dimensions exist (e.g., product_area, intent, error_domain) — these vary by project.
 3. **Determine scope.** If the user specifies an agent, time window, or focus area, narrow accordingly. Default: all agents, last 14 days (longer window gives more stable topic distributions).
 
 ### Step 2: Map the Topic Landscape
 
 Run these in parallel:
 
-1. **Topic breakdown with quality.** Call `Amplitude:query_ai_analytics` with `metrics: ["topics"]`, `limit: 50`. This returns each topic with session count, average quality score, average sentiment, and failure rate. This is the core dataset.
+1. **Topic breakdown with quality.** Call `Amplitude:query_agent_analytics_metrics` with `metrics: ["topics"]`, `limit: 50`. This returns each topic with session count, average quality score, average sentiment, and failure rate. This is the core dataset.
 
-2. **Agent-by-topic matrix.** Call `Amplitude:query_ai_sessions` with `groupBy: ["agent_name", "primary_topic"]`, `limit: 100`. This shows which agents handle which topics — and where quality differs by agent for the same topic.
+2. **Agent-by-topic matrix.** Call `Amplitude:query_agent_analytics_sessions` with `groupBy: ["agent_name", "primary_topic"]`, `limit: 100`. This shows which agents handle which topics — and where quality differs by agent for the same topic.
 
-3. **Volume trend by topic.** Call `Amplitude:query_ai_analytics` with `metrics: ["volume_timeseries"]`, `interval: "DAY"`. While this is aggregate, combine it with the topic breakdown to understand whether total volume growth is driven by specific topics.
+3. **Volume trend by topic.** Call `Amplitude:query_agent_analytics_metrics` with `metrics: ["volume_timeseries"]`, `interval: "DAY"`. While this is aggregate, combine it with the topic breakdown to understand whether total volume growth is driven by specific topics.
 
-4. **Failure sessions by topic.** Call `Amplitude:query_ai_sessions` with `hasTaskFailure: true`, `groupBy: ["primary_topic"]`, `limit: 50`. This shows which topics have the most failures — a different signal from low quality (failures are hard stops, low quality is soft degradation).
+4. **Failure sessions by topic.** Call `Amplitude:query_agent_analytics_sessions` with `hasTaskFailure: true`, `groupBy: ["primary_topic"]`, `limit: 50`. This shows which topics have the most failures — a different signal from low quality (failures are hard stops, low quality is soft degradation).
 
 ### Step 3: Identify Underserved Topics
 
@@ -48,14 +48,14 @@ Also flag:
 
 For the 2-3 most impactful underserved topics:
 
-1. **Sample conversations.** Call `Amplitude:search_ai_conversations` with keywords from the topic to find representative conversations. Read 3-5 examples to understand:
+1. **Sample conversations.** Call `Amplitude:search_agent_analytics_conversations` with keywords from the topic to find representative conversations. Read 3-5 examples to understand:
    - What specifically are users asking?
    - Where does the agent struggle — wrong answer, no answer, wrong tool, slow response?
    - Are there sub-patterns within the topic?
 
-2. **Detailed failing sessions.** Call `Amplitude:query_ai_sessions` filtered to the topic with `hasTaskFailure: true` or `maxQualityScore: 0.5`, `responseFormat: "detailed"`, `limit: 5`. Read the enrichment data for failure reasons and rubric scores.
+2. **Detailed failing sessions.** Call `Amplitude:query_agent_analytics_sessions` filtered to the topic with `hasTaskFailure: true` or `maxQualityScore: 0.5`, `responseFormat: "detailed"`, `limit: 5`. Read the enrichment data for failure reasons and rubric scores.
 
-3. **Tool usage for the topic.** Call `Amplitude:query_ai_analytics` with `metrics: ["tool_stats"]` — if you can filter to sessions for this topic. Otherwise, pull span data for a few failing sessions with `Amplitude:query_ai_spans` to see which tools are involved.
+3. **Tool usage for the topic.** Call `Amplitude:query_agent_analytics_metrics` with `metrics: ["tool_stats"]` — if you can filter to sessions for this topic. Otherwise, pull span data for a few failing sessions with `Amplitude:query_agent_analytics_spans` to see which tools are involved.
 
 ### Step 5: Synthesize into Product Insights
 
@@ -134,7 +134,7 @@ Actions:
 ## Troubleshooting
 
 ### No topic enrichment data
-Topics require session enrichment to be enabled. If topics are empty, fall back to `search_ai_conversations` with broad keyword searches to manually categorize common themes. Note the limitation and suggest enabling enrichment.
+Topics require session enrichment to be enabled. If topics are empty, fall back to `search_agent_analytics_conversations` with broad keyword searches to manually categorize common themes. Note the limitation and suggest enabling enrichment.
 
 ### Too many topics (>50)
 Group similar topics and present the top 20 by volume. Offer to drill into specific clusters on request.
