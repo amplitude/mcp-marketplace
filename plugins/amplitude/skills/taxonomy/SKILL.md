@@ -230,7 +230,19 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 **One action = one event name.** No duplicates across the codebase.
 
-**Autocapture-first:** Do not recommend custom events for anything already captured by Autocapture: `Page Viewed`, `Element Clicked`, `Element Changed`, `Form Started`, etc.
+**Autocapture awareness:** Amplitude's SDK can automatically capture events like
+`[Amplitude] Page Viewed`, `[Amplitude] Element Clicked`, `[Amplitude] Element Changed`,
+`[Amplitude] Form Started`, `[Amplitude] Form Submitted`, etc. Before proposing
+new events, check whether autocapture is enabled for this project by looking for
+`[Amplitude]`-prefixed events in `existing-taxonomy.json` or the project's taxonomy.
+
+- **If autocapture events exist:** Do not propose custom events that duplicate
+  what autocapture already covers — unless you need custom properties that
+  autocapture does not provide. Autocapture events have generic properties
+  (element selector, page URL) but no business-specific properties. If you need
+  `product_id`, `price`, or `category` on a click, instrument a custom event.
+- **If no autocapture events exist:** Autocapture is not enabled. Propose custom
+  page view and interaction events as needed — the SDK is not tracking them.
 
 ### Property Naming Standards
 
