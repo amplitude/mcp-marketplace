@@ -10,14 +10,23 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 ### Claude Code
 
-From the terminal:
+Amplitude is listed in the [official Claude plugin marketplace](https://claude.com/plugins). Install directly from inside Claude Code:
 
-```bash
-claude plugin marketplace add amplitude/mcp-marketplace
-claude plugin install amplitude@amplitude
+```
+/plugin install amplitude@claude-plugins-official
+/reload-plugins
 ```
 
-Or from inside Claude Code:
+Or from the terminal:
+
+```bash
+claude plugin install amplitude@claude-plugins-official
+```
+
+Then authenticate when prompted.
+
+<details>
+<summary>Install from the GitHub marketplace instead</summary>
 
 ```
 /plugin marketplace add amplitude/mcp-marketplace
@@ -25,7 +34,7 @@ Or from inside Claude Code:
 /reload-plugins
 ```
 
-Then authenticate when prompted.
+</details>
 
 ### Cursor
 
