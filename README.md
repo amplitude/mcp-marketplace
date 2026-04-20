@@ -10,9 +10,19 @@ Works with **Claude Code**, **Cursor**, and **Claude**.
 
 ### Claude Code
 
+From the terminal:
+
 ```bash
 claude plugin marketplace add amplitude/mcp-marketplace
 claude plugin install amplitude@amplitude
+```
+
+Or from inside Claude Code:
+
+```
+/plugin marketplace add amplitude/mcp-marketplace
+/plugin install amplitude@amplitude
+/reload-plugins
 ```
 
 Then authenticate when prompted.
