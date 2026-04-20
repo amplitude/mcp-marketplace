@@ -109,13 +109,15 @@ A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-even
 
 ```text
 .claude-plugin/
-  marketplace.json            # Marketplace catalog
-.cursor-plugin/               # Symlink to .claude-plugin (Cursor marketplace support)
+  marketplace.json            # Marketplace catalog (Claude Code)
+.cursor-plugin/
+  marketplace.json            # Marketplace catalog (Cursor) — kept in sync with .claude-plugin
 plugins/
   amplitude/
     .claude-plugin/
-      plugin.json             # Plugin manifest
-    .cursor-plugin/           # Symlink to .claude-plugin (Cursor support)
+      plugin.json             # Plugin manifest (Claude Code)
+    .cursor-plugin/
+      plugin.json             # Plugin manifest (Cursor) — kept in sync with .claude-plugin
     skills/
       add-analytics-instrumentation/
       analyze-account-health/
