@@ -2,7 +2,7 @@
 
 Official Amplitude plugin for AI coding tools. Turn your AI assistant into a product analyst — instrument analytics, analyze charts, run experiments, and understand users directly from your editor.
 
-Works with **Claude Code**, **Cursor**, **Claude**, and **Codex**.
+Works with **Claude Code**, **Cursor**, and **Claude**.
 
 ---
 
@@ -20,21 +20,6 @@ Then authenticate when prompted.
 ### Cursor
 
 Install from the [Cursor Marketplace](https://cursor.com/marketplace) or add manually in Cursor Settings > Plugins.
-
-Then add the Amplitude MCP server in Settings > Agent > Tools & MCP > Add MCP Server:
-
-```json
-"amplitude-us": {
-    "command": "npx",
-    "args": [
-        "-y",
-        "mcp-remote",
-        "https://mcp-server.prod.us-west-2.amplitude.com/v1/mcp"
-    ]
-}
-```
-
-Complete the OAuth flow in the browser when prompted.
 
 ---
 
@@ -156,7 +141,7 @@ plugins/
 
 ## Requirements
 
-- **MCP-compatible client** – Claude Code, Cursor, Claude, or Codex
+- **MCP-compatible client** – Claude Code, Cursor, or Claude
 - **Amplitude account** with API access
 - **Node.js** – for the MCP server
 
