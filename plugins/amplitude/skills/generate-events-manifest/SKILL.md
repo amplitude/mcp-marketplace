@@ -108,7 +108,7 @@ Write `.amplitude/events.json` with this exact schema:
     {
       "event_type": "Exact Event Name As In Code",
       "description": "Rich taxonomy description following the 5-point structure above.",
-      "category": "Coding Agent",
+      "category": "Commerce",
       "file": "src/app/page.tsx",
       "properties": [
         {
@@ -138,9 +138,39 @@ Write `.amplitude/events.json` with this exact schema:
   never seen the code. Generic descriptions like "User clicks a button" are
   unacceptable.
 
-- **`category`** should be `"Coding Agent"` unless instructed otherwise. This is
-  the Amplitude taxonomy category, not the event design category
-  (business_outcome/user_journey/etc. which belongs in the tracking plan).
+- **`category`** must be a meaningful taxonomy grouping that the event belongs
+  to — inferred from the product-map area the event was surfaced in, from the
+  existing-taxonomy sample (when present), or from the tracking plan. The
+  taxonomy category is what analysts filter by in the Amplitude UI, so it has
+  to carry real meaning.
+
+  Pick from a small, consistent vocabulary. Good options (extend as needed):
+
+  | Category | When to use |
+  |---|---|
+  | `Commerce` | browse, cart, checkout, orders, payment, product views |
+  | `Account` | signup, login, logout, profile edits, password reset, verification |
+  | `Navigation` | page/screen views, tab switches, generic surface views |
+  | `Search` | search submissions, results views, filter/sort changes |
+  | `Content` | reading/watching/playing media, likes, shares, bookmarks |
+  | `Onboarding` | first-run tutorials, guided setup, feature tours |
+  | `Billing` | subscription changes, plan upgrades/downgrades, invoice views |
+  | `Messaging` | in-app chat, notifications, inbox interactions |
+  | `Settings` | preference toggles, integration setup, admin config |
+  | `Social` | follow, friend, group join/leave |
+  | `Error` | error encountered, validation failures, retry attempts |
+
+  Rules:
+  - **Never use `"Coding Agent"`, `"Auto"`, `"Instrumentation"` or any
+    self-referential label.** The category has to describe the user's world,
+    not the agent that generated it.
+  - If two events in the same functional area end up in different categories
+    (e.g., "Checkout Started" → Commerce but "Checkout Payment Submitted" →
+    Billing), pick one — the area that's most analytically useful for
+    downstream segmentation.
+  - If an event genuinely doesn't fit the common vocabulary, invent a new
+    category with Title Case (e.g., `Experiment Exposure`, `Referral`) rather
+    than falling back to a generic bucket.
 
 - **`properties`** are documentation only — they are not currently registered
   via the taxonomy API. Still include them for the tracking plan and PR body.
@@ -159,8 +189,18 @@ Also write or update `.amplitude/manifest.json`:
   "commit_hash": "current HEAD commit hash",
   "mode": "init or pr",
   "agent_version": "1.0",
-  "base_branch": "main or whatever the default branch is"
+  "base_branch": "main or whatever the default branch is",
+  "amplitude_project": {
+    "app_id": 12345,
+    "org_id": 67890
+  }
 }
+```
+
+The `amplitude_project` section links this repo to a specific Amplitude project.
+It is set during the init run (from the session's app_id/org_id) and read by the
+merge webhook handler to know where to register events. If not present, the merge
+handler cannot register events automatically.
 ```
 
 Get the commit hash with `git rev-parse HEAD`.

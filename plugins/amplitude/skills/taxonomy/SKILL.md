@@ -218,6 +218,33 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 **Consistency is the top priority.** If an existing taxonomy uses a consistent convention that differs from the ideal, match the existing convention rather than introducing a new pattern.
 
+**Preserve existing event names VERBATIM.** If the `discover-analytics-patterns`
+skill produced an `existing_event_names:` inventory — events already fired at
+call sites in the codebase (including non-Amplitude SDKs like Segment, Mixpanel,
+PostHog, or custom wrappers) — the names in that inventory MUST pass through
+unchanged. This is non-negotiable: renaming an existing event in Amplitude
+breaks every chart, funnel, cohort, and alert built on the original name, and
+for migration scenarios (e.g., Segment → Amplitude) it severs the continuity
+the migration was supposed to give the customer. Concretely:
+
+- `analytics.track("Product Added", …)` in the source → taxonomy entry is
+  `Product Added` (not `Cart Item Added`, not `Product Added to Cart`).
+- `analytics.track("Products Searched", …)` → `Products Searched` (not
+  `Search Executed`).
+- `analytics.track("Order Completed", …)` → `Order Completed` (not
+  `Purchase Completed`, even though the latter fits the "user perspective"
+  guidance above).
+
+The "one action = one event name" and "user perspective, not system
+perspective" rules apply only to **brand-new** events the agent is proposing
+for the first time. Never apply them as a reason to rewrite an already-firing
+event name.
+
+If the existing name violates a standard (e.g., `product_added` in snake_case
+on a project that otherwise uses Title Case), flag it as a **suggestion** in
+the analysis output, not a silent rewrite. The customer chooses whether to
+migrate the historical data or leave the name in place.
+
 **User perspective, not system perspective:**
 - `Message Sent` (user sent) not `Message Delivered` (system delivered)
 - `Purchase Completed` (user completed) not `Payment Processed` (system processed)

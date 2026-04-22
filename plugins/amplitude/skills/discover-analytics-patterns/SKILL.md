@@ -177,9 +177,71 @@ together in one example.
 
 ---
 
-## Step 5: Handle no results
+## Step 5: Inventory existing event names (for downstream name preservation)
+
+If any tracking calls were found in Step 1, capture the **exact event name
+strings** used at those call sites and emit them as a dedicated section of the
+output. Downstream skills (`taxonomy`, `instrument-events`,
+`generate-events-manifest`) are required to **preserve these names verbatim**
+when the new instrumentation extends an existing event — renaming is a
+breaking change that orphans historical data and breaks downstream charts,
+funnels, and cohorts built on the old name.
+
+This matters most for migration cases (e.g., an existing Segment or Mixpanel
+installation that the agent is asked to extend or port to Amplitude): the
+analytics-standard event names (`Product Added`, `Order Completed`, `Signed
+Up`, `Products Searched`, etc.) MUST be carried through unchanged.
+
+Emit the inventory in this shape:
+
+```yaml
+existing_event_names:
+  # One entry per unique event name found. Preserve capitalization and spacing exactly.
+  - name: "Order Completed"
+    sdk: "segment"                 # segment | amplitude | mixpanel | posthog | custom-wrapper | ...
+    call_sites:
+      - "src/app/checkout/review/page.tsx:42"
+      - "src/app/api/orders/route.ts:18"
+    property_names:                # flat list of property keys seen in the args
+      - order_id
+      - total
+      - currency
+  - name: "Product Added"
+    sdk: "segment"
+    call_sites:
+      - "src/components/product-card.tsx:31"
+    property_names:
+      - product_id
+      - product_category
+      - price
+```
+
+### Downstream contract (explicit)
+
+Any skill that consumes this output must obey these rules:
+
+1. **Never rename.** If the codebase fires `analytics.track("Product Added", …)`,
+   the Amplitude equivalent must also be `"Product Added"` — not "Cart Item
+   Added", "Product Added to Cart", or any other variant.
+2. **Additive only.** New instrumentation at a NEW call site may add brand-new
+   events (with new names), but may not shadow, split, or re-cast an existing
+   one.
+3. **Property name continuity.** Reuse existing property keys from the
+   inventory above when tracking the same semantic value — e.g., `product_id`
+   stays `product_id`, don't rename to `productId` or `item_id`.
+4. **Flag, don't fix, rename intents.** If the diff itself clearly renames an
+   existing event, surface it as a breaking-change warning in the analysis
+   output instead of silently applying the rename.
+
+---
+
+## Step 6: Handle no results
 
 If no tracking calls are found with any search strategy, say so clearly. Suggest
 that the user check whether Amplitude (or another analytics library) has been set
 up in the project, and offer to search for other analytics libraries (Segment,
 Mixpanel, PostHog, etc.) if relevant.
+
+Also emit an empty `existing_event_names: []` section so downstream skills can
+distinguish "no existing tracking" (greenfield — invent names freely per the
+taxonomy skill) from "skill wasn't run" (unknown state).
