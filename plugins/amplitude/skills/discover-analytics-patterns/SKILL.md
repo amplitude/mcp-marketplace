@@ -229,9 +229,20 @@ Any skill that consumes this output must obey these rules:
 3. **Property name continuity.** Reuse existing property keys from the
    inventory above when tracking the same semantic value — e.g., `product_id`
    stays `product_id`, don't rename to `productId` or `item_id`.
-4. **Flag, don't fix, rename intents.** If the diff itself clearly renames an
-   existing event, surface it as a breaking-change warning in the analysis
-   output instead of silently applying the rename.
+4. **Property type continuity.** Never change the `type` of an property that
+   already exists in the codebase or Amplitude taxonomy. The most common
+   breaking case: an existing `addon_products` property is registered as
+   `array`, and a newer analysis infers `string` from one specific call site
+   — writing that back to the taxonomy breaks every downstream `ampli pull`
+   consumer's build (the generated client code starts expecting a string
+   where a list was being passed). If the inferred type disagrees with what's
+   registered, treat it the same way you'd treat a rename: flag, don't fix.
+5. **Flag, don't fix, rename/retype intents.** If the diff itself clearly
+   renames an existing event or retypes an existing property, surface it as
+   a breaking-change warning in the analysis output instead of silently
+   applying the change. The taxonomy sync layer enforces the type invariant
+   at the RPC boundary regardless, but catching it earlier lets the PR
+   comment explain the situation to the reviewer before merge.
 
 ---
 
