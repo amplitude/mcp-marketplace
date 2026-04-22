@@ -5,57 +5,64 @@ on:
     paths:
       - '.claude-plugin/**'
       - '.cursor-plugin/**'
+      - '.github/plugin/**'
       - 'plugins/*/.claude-plugin/**'
       - 'plugins/*/.cursor-plugin/**'
+      - 'plugins/*/.github/**'
 
 jobs:
   check-manifests-in-sync:
-    name: Claude / Cursor manifests in sync
+    name: Claude / Cursor / Copilot manifests in sync
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Verify .claude-plugin and .cursor-plugin manifests match
+      - name: Verify Claude, Cursor, and Copilot manifests match
         run: |
           set -eo pipefail
 
           fail=0
 
           check_pair() {
-            local claude="$1"
-            local cursor="$2"
+            local a="$1"
+            local b="$2"
 
-            if [ ! -f "$claude" ] && [ ! -f "$cursor" ]; then
+            if [ ! -f "$a" ] && [ ! -f "$b" ]; then
               return 0
             fi
 
-            if [ ! -f "$claude" ]; then
-              echo "::error file=$cursor::$cursor exists but $claude does not — both must be present and in sync."
+            if [ ! -f "$a" ]; then
+              echo "::error file=$b::$b exists but $a does not — both must be present and in sync."
               fail=1
               return
             fi
 
-            if [ ! -f "$cursor" ]; then
-              echo "::error file=$claude::$claude exists but $cursor does not — both must be present and in sync."
+            if [ ! -f "$b" ]; then
+              echo "::error file=$a::$a exists but $b does not — both must be present and in sync."
               fail=1
               return
             fi
 
             # Normalize JSON (jq -S sorts keys) and compare.
-            if ! diff -u <(jq -S . "$claude") <(jq -S . "$cursor"); then
-              echo "::error file=$cursor::$claude and $cursor are out of sync. Update both manifests together."
+            if ! diff -u <(jq -S . "$a") <(jq -S . "$b"); then
+              echo "::error file=$b::$a and $b are out of sync. Update all platform manifests together."
               fail=1
             fi
           }
 
+          # Top-level marketplace manifests: Claude vs Cursor, Claude vs Copilot.
           check_pair ".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json"
+          check_pair ".claude-plugin/marketplace.json" ".github/plugin/marketplace.json"
 
+          # Per-plugin manifests: Claude vs Cursor, Claude vs Copilot.
           for plugin_dir in plugins/*/; do
-            plugin_name=$(basename "$plugin_dir")
             check_pair \
               "${plugin_dir}.claude-plugin/plugin.json" \
               "${plugin_dir}.cursor-plugin/plugin.json"
+            check_pair \
+              "${plugin_dir}.claude-plugin/plugin.json" \
+              "${plugin_dir}.github/plugin.json"
           done
 
           exit $fail
