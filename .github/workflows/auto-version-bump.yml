@@ -99,14 +99,15 @@ jobs:
             exit 0
           fi
 
-          # Bump each plugin's version in both marketplace manifests.
+          # Bump each plugin's version in every platform's marketplace manifest.
           # Per Claude Code docs, for relative-path plugins version should be set in
           # the marketplace entry, not plugin.json: https://code.claude.com/docs/en/plugin-marketplaces#version-resolution-and-release-channels
-          # Cursor reads .cursor-plugin/marketplace.json; Claude Code reads .claude-plugin/marketplace.json.
-          # Keep both in sync so the two marketplaces don't drift.
+          # Claude Code reads .claude-plugin/marketplace.json; Cursor reads
+          # .cursor-plugin/marketplace.json; GitHub Copilot reads .github/plugin/marketplace.json.
+          # Keep all three in sync so the marketplaces don't drift.
           declare -a bump_summaries=()
           declare -a bump_details=()
-          marketplaces=(".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json")
+          marketplaces=(".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json" ".github/plugin/marketplace.json")
           primary_marketplace="${marketplaces[0]}"
 
           for plugin_name in "${!plugins_to_bump[@]}"; do
@@ -169,7 +170,7 @@ jobs:
             exit 0
           fi
 
-          git add '.claude-plugin/marketplace.json' '.cursor-plugin/marketplace.json'
+          git add '.claude-plugin/marketplace.json' '.cursor-plugin/marketplace.json' '.github/plugin/marketplace.json'
           git commit -m "${{ steps.bump.outputs.commit_msg }}"
           git push
 
