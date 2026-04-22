@@ -19,9 +19,69 @@ description: >
 
 You are the orchestrator for the analytics instrumentation pipeline. Your job is
 to figure out what the user wants to instrument, gather the relevant code, and
-run the pipeline to produce a tracking plan.
+run the pipeline to produce a tracking plan — **or cleanly skip** if the change
+has no user-facing product surfaces worth instrumenting.
 
 ## Pipeline
+
+### Phase 0: Product-surface gate (stop-early)
+
+Before running the pipeline, decide whether this diff is even a product change.
+The agent should NOT propose events for pure backend, tooling, harness, or
+infrastructure work. Recommending instrumentation on every PR — regardless of
+whether it touches a user-facing surface — produces taxonomy pollution (events
+registered in Amplitude that will never fire) and noise in the PR review.
+
+**Non-product paths** (skip instrumentation entirely when ALL changed files
+match these):
+
+| Pattern                                  | Rationale                                       |
+| ---------------------------------------- | ----------------------------------------------- |
+| `tests/`, `__tests__/`, `*_test.py`, `*.test.ts`, `*.spec.ts` | Test harness — runs in CI, not prod |
+| `scripts/`, `bin/`, `cli/`, `tools/`     | Developer / CI utilities                         |
+| `_eval/`, `evals/`, `benchmarks/`        | Evaluation harness — internal tooling            |
+| `infra/`, `terraform/`, `k8s/`, `deploy/`, `.github/` | Infrastructure / CI config            |
+| `docs/`, `*.md`, `README*`, `CHANGELOG*` | Documentation                                    |
+| `package.json`, `*.lock`, `go.sum`, `Cargo.toml`, `Gemfile.lock` | Dependency manifests |
+| `*.config.js`, `*.config.ts`, `tsconfig*.json`, `.eslintrc*`, `.prettierrc*` | Build / lint config |
+| `migrations/`, `db/migrate/`             | Schema migrations — no runtime UI interaction    |
+
+**Product surfaces** (at least ONE of these must be present in Core Logic
+files for the pipeline to proceed):
+
+| Signal                                                      | Where to look |
+| ----------------------------------------------------------- | ------------- |
+| React / Vue / Svelte / Angular components                   | `.jsx`, `.tsx`, `.vue`, `.svelte` files with component exports or JSX returns |
+| Click / submit / change handlers                            | `onClick=`, `onSubmit=`, `onChange=`, `@click`, `v-on:`, `addEventListener` |
+| Route handlers / page components                            | Next.js `app/**/page.tsx`, Remix `routes/`, React Router `<Route>`, Vue Router |
+| Form element definitions                                    | `<form>`, `<input>`, `<select>`, `<button type="submit">` |
+| HTTP endpoint handlers that serve user requests             | Express/Fastify/Koa route handlers, FastAPI / Flask routes, Rails controllers |
+| Mobile UI views                                             | SwiftUI `View` protocols, UIKit `UIViewController`, Jetpack Compose `@Composable`, Android `Activity` / `Fragment` |
+| Analytics / tracking calls themselves                       | Existing `track(`, `identify(`, `logEvent(` — even modifications count |
+
+**Decision rule:**
+
+1. If the change_brief has ZERO Core Logic files → stop.
+2. If EVERY Core Logic file path matches a non-product pattern → stop.
+3. If NO Core Logic file contains any product surface signal → stop.
+4. Otherwise → proceed to Step 0 (Capture intent) and the rest of the pipeline.
+
+**When stopping**, write a single marker file:
+
+```
+# .amplitude/no-trackable-surfaces.md
+reason: "<one-sentence explanation of why no surfaces were found>"
+changed_paths:
+  - <path 1>
+  - <path 2>
+hint: "<what kind of diff WOULD produce trackable surfaces on this repo, optional>"
+```
+
+Then STOP. Do not proceed to diff-intake or any downstream skill. Do not write
+`.amplitude/events.json`. The orchestrator flow (pr_agent.yaml /
+init_agent.yaml) reads this marker file and posts a short comment on the
+original PR explaining that no instrumentation is proposed, instead of opening
+a prepare PR with taxonomy noise.
 
 ### Step 0: Capture intent
 
