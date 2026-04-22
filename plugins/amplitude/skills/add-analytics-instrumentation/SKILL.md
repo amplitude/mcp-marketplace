@@ -26,62 +26,114 @@ has no user-facing product surfaces worth instrumenting.
 
 ### Phase 0: Product-surface gate (stop-early)
 
-Before running the pipeline, decide whether this diff is even a product change.
-The agent should NOT propose events for pure backend, tooling, harness, or
-infrastructure work. Recommending instrumentation on every PR — regardless of
-whether it touches a user-facing surface — produces taxonomy pollution (events
-registered in Amplitude that will never fire) and noise in the PR review.
+Before running the pipeline, decide whether this diff is a product change.
+The agent should not propose events for work that never reaches a user —
+tooling, harness code, infrastructure, pure data transformations — because
+that produces taxonomy rows that will never fire and noise in PR review.
 
-**Non-product paths** (skip instrumentation entirely when ALL changed files
-match these):
+**The judgment to make**
 
-| Pattern                                  | Rationale                                       |
-| ---------------------------------------- | ----------------------------------------------- |
-| `tests/`, `__tests__/`, `*_test.py`, `*.test.ts`, `*.spec.ts` | Test harness — runs in CI, not prod |
-| `scripts/`, `bin/`, `cli/`, `tools/`     | Developer / CI utilities                         |
-| `_eval/`, `evals/`, `benchmarks/`        | Evaluation harness — internal tooling            |
-| `infra/`, `terraform/`, `k8s/`, `deploy/`, `.github/` | Infrastructure / CI config            |
-| `docs/`, `*.md`, `README*`, `CHANGELOG*` | Documentation                                    |
-| `package.json`, `*.lock`, `go.sum`, `Cargo.toml`, `Gemfile.lock` | Dependency manifests |
-| `*.config.js`, `*.config.ts`, `tsconfig*.json`, `.eslintrc*`, `.prettierrc*` | Build / lint config |
-| `migrations/`, `db/migrate/`             | Schema migrations — no runtime UI interaction    |
+For this specific diff, ask: *does a user directly cause any of the changed
+code to run, and does that code produce a surface, response, or feedback
+the user perceives?*
 
-**Product surfaces** (at least ONE of these must be present in Core Logic
-files for the pipeline to proceed):
+That's the entire question. Don't enumerate path patterns — conventions
+vary wildly across customer codebases. A Rails app's tests live in
+`spec/`. A Go service's user-facing handlers live in `cmd/`. A CLI tool's
+product IS the command-line interface. A Next.js `pages/api/` file is
+backend *and* product because users hit it with every click. Path names
+are a weak hint at best; the file's contents and how it's reached are
+what matter.
 
-| Signal                                                      | Where to look |
-| ----------------------------------------------------------- | ------------- |
-| React / Vue / Svelte / Angular components                   | `.jsx`, `.tsx`, `.vue`, `.svelte` files with component exports or JSX returns |
-| Click / submit / change handlers                            | `onClick=`, `onSubmit=`, `onChange=`, `@click`, `v-on:`, `addEventListener` |
-| Route handlers / page components                            | Next.js `app/**/page.tsx`, Remix `routes/`, React Router `<Route>`, Vue Router |
-| Form element definitions                                    | `<form>`, `<input>`, `<select>`, `<button type="submit">` |
-| HTTP endpoint handlers that serve user requests             | Express/Fastify/Koa route handlers, FastAPI / Flask routes, Rails controllers |
-| Mobile UI views                                             | SwiftUI `View` protocols, UIKit `UIViewController`, Jetpack Compose `@Composable`, Android `Activity` / `Fragment` |
-| Analytics / tracking calls themselves                       | Existing `track(`, `identify(`, `logEvent(` — even modifications count |
+**How to read a file**
 
-**Decision rule:**
+For each changed file (or the small set of files most representative of
+the change, when a diff touches many), read it and ask:
 
-1. If the change_brief has ZERO Core Logic files → stop.
-2. If EVERY Core Logic file path matches a non-product pattern → stop.
-3. If NO Core Logic file contains any product surface signal → stop.
-4. Otherwise → proceed to Step 0 (Capture intent) and the rest of the pipeline.
+1. **Is this code on a user-reachable path?** Follow the imports and call
+   chain as far as it takes to answer. If a utility function is only
+   called by a CI script that produces a JSON report, it's not
+   user-reachable. If the same utility is called by a route handler that
+   returns HTML, it is.
+
+2. **Does it produce a user-perceptible effect?** UI renders, HTTP
+   responses to browsers/mobile/API consumers, CLI output when the CLI
+   is the product, state changes that drive subsequent UI behavior, and
+   modifications to existing analytics call sites all count. Internal
+   data crunching with no user-visible outcome (a training pipeline, a
+   data migration, an eval harness that writes to a log) does not.
+
+3. **Would an analyst at this company reasonably want to know when this
+   code runs?** If the answer is "no, this is behind-the-scenes
+   machinery," it's probably not worth instrumenting even if it *does*
+   technically sit on a user-reachable path.
+
+**Strong positive signals** (any ONE is enough for the pipeline to proceed):
+
+- UI component definitions (JSX/TSX render trees, Vue `<template>`,
+  Svelte markup, SwiftUI `View` bodies, Jetpack Compose `@Composable`
+  functions, Android layouts / Activities, UIKit view controllers) — the
+  file renders pixels a user sees.
+- Event handlers attached to interactive elements — `onClick`,
+  `onSubmit`, `@click`, `addEventListener`, gesture recognizers,
+  keyboard/touch handlers. The file describes something a user can
+  directly invoke.
+- Route / endpoint definitions that serve user requests — any framework,
+  any language, including CLI command registrations when the CLI is
+  the product.
+- Existing analytics / tracking call sites being modified — if the diff
+  changes code that already fires events, instrumenting is by definition
+  in scope.
+- A clear, reader-level description that says "this is the product
+  surface" — e.g., a component module, a page file, an API controller.
+
+**Strong negative signals** (push toward stopping, but don't trigger by
+themselves — a single ambiguous file with positive signal still proceeds):
+
+- The file is a test, verified by its own imports (`pytest`, `unittest`,
+  `vitest`, `jest`, `rspec`, `go test` helpers, etc.) rather than by its
+  directory name.
+- The file is a developer utility whose only callers are other developer
+  utilities or CI pipelines.
+- The change is a pure configuration / manifest edit (lockfile bump,
+  `tsconfig` tweak, dependency pin).
+- The change is a schema migration with no accompanying code touching a
+  user surface.
+- The change is documentation / markdown only.
+
+**Decision rule**
+
+- If ANY changed file is user-reachable AND produces a user-perceptible
+  effect (positive signal and no overwhelming reason to think otherwise)
+  → **proceed** with the full pipeline.
+- If EVERY changed file you read lacks a user-reachable path and a
+  user-perceptible effect → **stop** and write the marker file below.
+- If you genuinely cannot tell — the diff is small, the context is
+  ambiguous, the imports are unfamiliar — **default to proceeding**. The
+  cost of a false positive (a prepare PR the reviewer closes with one
+  click) is much lower than the cost of a false negative (missing real
+  user surfaces the team relies on). The gate exists to filter *clear*
+  non-product work, not to second-guess every PR.
 
 **When stopping**, write a single marker file:
 
 ```
 # .amplitude/no-trackable-surfaces.md
-reason: "<one-sentence explanation of why no surfaces were found>"
-changed_paths:
-  - <path 1>
-  - <path 2>
-hint: "<what kind of diff WOULD produce trackable surfaces on this repo, optional>"
+reason: "<one-sentence explanation tied to what you actually read in the
+  diff — cite specific files / behaviors, not just path patterns>"
+files_reviewed:
+  - path: <path 1>
+    signal: <what you saw when you read it — "unit test", "CLI utility
+      called only from CI", "Dockerfile", etc.>
+  - path: <path 2>
+    signal: <...>
 ```
 
-Then STOP. Do not proceed to diff-intake or any downstream skill. Do not write
-`.amplitude/events.json`. The orchestrator flow (pr_agent.yaml /
+Then STOP. Do not proceed to diff-intake or any downstream skill. Do not
+write `.amplitude/events.json`. The orchestrator flow (pr_agent.yaml /
 init_agent.yaml) reads this marker file and posts a short comment on the
-original PR explaining that no instrumentation is proposed, instead of opening
-a prepare PR with taxonomy noise.
+original PR explaining that no instrumentation is proposed, instead of
+opening a prepare PR with events that would never fire.
 
 ### Step 0: Capture intent
 
