@@ -341,6 +341,62 @@ Property names are a signal but the real risk is the **value**. Before writing e
 - **B2B:** Instrument at least one group type (`org_id`, `account_id`)
 - **Property consistency for funnels:** Capture the same property (e.g., `product_id`) across all events in a funnel
 
+### Mobile Platform Patterns
+
+Mobile analytics has concrete conventions that differ from web. Use these
+explicitly on iOS / Android / React Native / Flutter codebases.
+
+**Cross-platform event-name parity.** The same user action emits the same
+event name on iOS AND Android — platform differences go in a `platform`
+property, never in the event name. `Product Added to Cart` is the right
+name on every platform; `iOS Product Added` / `Android Product Added` is
+wrong. This is how analysts build cross-platform funnels.
+
+**Canonical mobile events (when not covered by autocapture):**
+
+| Event | Fires when | Common properties |
+|---|---|---|
+| `App Opened` | Cold-start or foreground-return from background | `entry_method` (icon/notification/deep_link), `first_open_since_install: bool` |
+| `App Backgrounded` | User sends app to background | `session_duration_seconds` |
+| `Screen Viewed` | Top-level screen becomes active (only if autocapture isn't configured) | `screen_name` (bounded enum of routes), `previous_screen_name` |
+| `Permission Requested` / `Permission Granted` / `Permission Denied` | OS-level permission prompts (push, camera, location, photos) | `permission_type` (enum), `prompt_trigger` (the feature that asked) |
+| `Push Notification Tapped` | User taps an Amplitude / vendor push notification | `notification_id`, `notification_type`, `campaign_id` |
+| `Deep Link Opened` | App opened via universal link / app link / custom scheme | `deep_link_url`, `deep_link_source` (email/social/paid/etc.), `destination_screen` |
+| `In-App Purchase Started` / `In-App Purchase Completed` / `In-App Purchase Failed` | Apple App Store / Google Play billing flow | `product_sku`, `price_usd`, `currency`, `purchase_type` (consumable/non-consumable/subscription), `failure_reason` (enum, on failed) |
+
+Don't add events from this list gratuitously — add them when the
+corresponding surface exists in the code. But when the surface IS there,
+prefer these canonical names to something bespoke.
+
+**Mobile-first user properties (via `identify` at the triggering surface):**
+
+| Property | Semantics | Set via |
+|---|---|---|
+| `app_version` | Current app version (Semver preferred) | `identify` on every app open; SDK auto-captures this on most platforms — only set manually if it isn't |
+| `os_version` | iOS/Android version at capture time | SDK auto; manual backfill only if SDK is too old |
+| `platform` | `"ios" | "android" | "react_native" | "flutter"` | `identify` once with `setOnce` |
+| `device_model` | Hardware model string | SDK auto |
+| `install_source` | How the user got the app (organic / paid / referral) | `identify` with `setOnce` on first open — this is the attribution property analysts actually need |
+| `notification_permission_status` | Current push-permission state (`granted` / `denied` / `not_determined`) | `identify` on every app open + on permission prompt resolution |
+| `idfa_tracking_authorized` (iOS) | ATT framework state | `identify` on every app open |
+
+Never send raw tokens (APNs / FCM push tokens, `idfa`, `adid`) as
+properties — they're high-cardinality user identifiers that don't
+belong in event properties. If you need them, set as user properties
+(not event properties) so they don't multiply across every event.
+
+**Mobile interaction verbs.** Prefer `Tapped` over `Clicked` on touch
+surfaces, `Swiped` for gesture-based interactions, `Long Pressed` for
+secondary actions. These match the actual input modality; `Clicked` is
+web vocabulary. But keep the `[Object] [Past-Tense Verb]` shape:
+`Product Tapped`, not `Tap Product`.
+
+**Screen context in every event.** Every tracked interaction on mobile
+should carry a `screen_name` property (enum of your navigation routes) so
+analysts can segment any event by screen without reconstructing it from
+page-view sequences. This is the single highest-ROI property on mobile
+instrumentation and is frequently omitted.
+
 ### Category Assignment
 
 Use the Amplitude category metadata field — don't embed prefixes in event names. Common categories:
