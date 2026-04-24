@@ -303,7 +303,11 @@ Property names are a signal but the real risk is the **value**. Before writing e
 
 **Property name ≠ value shape.** A name like `query_length` is safe because the value is an integer regardless of name. A name like `search_filter` is unsafe if the value is free-form text — rename the property to reflect the bucketed shape. Name-based heuristics (forbidding `query`, `message`, `text` in names) are a safety net; the real contract is the value shape.
 
-**Error events in particular.** Always prefer `Error Encountered` with `error_type` (enum) + `error_code` (stable short identifier) + optional `error_message_length`. Never send raw `error_message` — stack traces leak PII, paths, user input, and explode cardinality.
+**Error events in particular.** Always prefer `Error Encountered` with `error_type` (enum) + `error_code` (stable short identifier) + optional `error_message_length`. Never send raw `error_message` — stack traces leak PII, paths, user input, and explode cardinality. **A property description that says "human-readable but bounded failure summary" is a hedge, not a declaration — if it's truly bounded, declare the `enum` or rename it to `error_type`. If you can't enumerate the allowed values, it's not bounded.**
+
+**Filter-style properties in particular.** When a property describes a user-chosen filter value (`filter_value`, `applied_filter`, `selected_option`), the value shape depends on WHICH filter dimension was picked. A color filter is an enum, a rating is a number, a price range is a bucket — but "the selected value" across dimensions is unbounded. Don't paper over this with a single `filter_value: string` property. Split by dimension (`filter_category`, `filter_rating`, `filter_price_bucket`) OR emit `filter_type` (enum of dimensions) + `filter_value_bucket` (enum of allowed values per dimension) OR hash the raw value. Same rule applies to `search_filter`, `sort_value`, `option_selected` — any property that carries a dimension-dependent value.
+
+**Rule of thumb: if you write "bounded" in a property description but haven't declared the `enum`, you're wrong.** The declaration IS the binding contract — not the description. Either commit to the enum or rename the property to reflect the actually-unbounded shape.
 
 ### Property Naming Standards
 
@@ -396,6 +400,65 @@ should carry a `screen_name` property (enum of your navigation routes) so
 analysts can segment any event by screen without reconstructing it from
 page-view sequences. This is the single highest-ROI property on mobile
 instrumentation and is frequently omitted.
+
+### GA4 Migration Patterns
+
+When the source codebase emits Google Analytics 4 events (via `gtag()`,
+`gtag('event', ...)`, `dataLayer.push(...)`, or the GA4 Firebase SDK),
+you're migrating TO Amplitude. The migration is not 1:1 — GA4 auto-emits
+events that Amplitude's browser autocapture covers differently, and
+GA4's event vocabulary doesn't match Amplitude's canonical names.
+
+**Canonical GA4 → Amplitude event name mapping:**
+
+| GA4 event | Amplitude canonical | Notes |
+|---|---|---|
+| `page_view` | (skip — autocapture emits `[Amplitude] Page Viewed`) | Don't propose a custom `Page Viewed` on GA4→Amplitude migrations |
+| `session_start` | (SDK emits `session_start` automatically — skip) | |
+| `first_visit` | `User First Seen` (identify() with `setOnce` on `first_seen_at`) | Better as a user property than an event |
+| `view_item` | `Product Viewed` | |
+| `view_item_list` | `Product List Viewed` | |
+| `select_item` | `Product Selected` | |
+| `add_to_cart` | `Product Added to Cart` | NOT `Product Added` — preserve "to Cart" |
+| `remove_from_cart` | `Product Removed from Cart` | |
+| `begin_checkout` | `Checkout Started` | |
+| `add_payment_info` | `Payment Info Entered` | |
+| `add_shipping_info` | `Shipping Info Entered` | |
+| `purchase` | `Order Completed` | NOT `Purchase Completed` (`Order Completed` is the Segment/Amplitude canonical) |
+| `refund` | `Order Refunded` | |
+| `sign_up` | `User Signed Up` | |
+| `login` | `User Logged In` | |
+| `search` | `Search Performed` | Keep `query_length` + `result_count`; drop raw `search_term` |
+| `select_content` | `Content Selected` | |
+| `share` | `Content Shared` | |
+
+**GA4 auto-events to DROP on migration:**
+
+These are Amplitude-SDK auto-captured OR noise not worth tracking explicitly:
+- `page_view`, `scroll`, `click` — Amplitude browser autocapture covers
+- `session_start`, `user_engagement`, `first_visit` — Amplitude SDK manages sessions + first-seen
+- `view_promotion`, `select_promotion` — instrument only if the site uses promos; map to `Promotion Viewed` / `Promotion Clicked`
+- `exception` — map to `Error Encountered` with bucketed `error_type`, not raw message
+- `form_start`, `form_submit` — Amplitude autocapture covers `[Amplitude] Form Started` / `[Amplitude] Form Submitted`
+
+**GA4 property mapping:**
+
+| GA4 param | Amplitude property | Notes |
+|---|---|---|
+| `items[]` (array) | `cart_contents` (array) on cart events, `product_engagement` on product events | Keep the array shape; drop GA4-specific fields like `item_list_id` if unused |
+| `item_id`, `item_name`, `item_category` | `product_id`, `product_name`, `product_category` | Use `product_` prefix consistently |
+| `value`, `currency` | `order_value`, `currency` | Rename `value` to the domain concept (order_value, cart_value) |
+| `transaction_id` | `order_id` | |
+| `search_term` | `query_length` + `has_results` + `result_count` | **Drop the raw string** — it's free-form user text |
+| `content_type`, `content_id` | `content_type` (enum), `content_id` | Keep |
+| `method` (for sign_up / login) | `signup_method` / `login_method` | Rename to be action-specific |
+
+**Don't drag GA4 anti-patterns forward.** GA4 tolerates free-form strings
+in many parameters (`search_term`, `page_path` with full URLs, custom
+dimensions with PII). Amplitude's cardinality discipline applies — bucket
+or enumerate everything per the Cardinality Discipline section above.
+Never emit raw URLs as properties; extract `page_type`, `page_category`,
+and optionally `page_path_template` (the route pattern, not the filled URL).
 
 ### Category Assignment
 
