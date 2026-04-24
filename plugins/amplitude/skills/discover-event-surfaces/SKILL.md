@@ -196,9 +196,25 @@ Now, with that context fresh, assign a **priority**:
 
 | Priority         | Meaning                                                                                                            | Guidance                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| **3** (critical) | You would block a release if this event were missing. It answers a question the team *will* ask in the first week. | Reserve for events that directly measure whether the feature succeeded or failed. Most changes produce only 1-2 critical events. |
+| **3** (critical) | You would block a release if this event were missing. It answers a question the team *will* ask in the first week. | Reserve for events that directly measure whether the feature succeeded or failed.                                                |
 | **2** (useful)   | Adds real analytical value but the feature can ship without it. Worth adding if instrumentation cost is low.       | Segmentation dimensions, secondary workflows, configuration choices.                                                             |
 | **1** (optional) | Nice-to-have. Only instrument if the team has bandwidth and a specific hypothesis to test.                         | Edge-case failures, exploratory engagement signals, discoverability metrics.                                                     |
+
+### Target candidate count
+
+Aim for a **starter-kit-sized** candidate list, aligned with the
+`amplitude-quickstart-taxonomy-agent` skill's guidance: **10–30 total events**
+across priorities 2 and 3 combined (priority 1 is unbounded — include freely if
+useful, since downstream skills won't instrument them by default).
+
+- ~10–15 candidates for a small change (1–2 user-facing flows)
+- ~15–25 for a medium change (3–4 flows, multiple components)
+- Up to ~25–30 for a large change (multiple features, full user journeys)
+
+If you find yourself producing fewer than ~10 priority-2-or-3 candidates on a
+non-trivial change, you've likely under-scoped — re-read the user flow and look
+for segmentation dimensions, alternate paths, configuration events, and
+friction points you skipped.
 
 **Funnel events deserve special attention.** When a change introduces or modifies a multi-step process (checkout flow, onboarding wizard, data import pipeline), the PM's first question will be "where are users dropping off?" A gap between funnel start and funnel end with no visibility in between is a blind spot that can hide serious product problems — if engagement craters at step 2 of 5, the team needs to know, not guess.
 
@@ -210,9 +226,9 @@ To decide how many *intermediate* funnel events to mark critical, gauge the leng
 - **Medium process (3-5 steps, possibly spanning pages):** Add one intermediate event at the most likely drop-off point — typically where the user commits effort (fills a form, makes a key selection, uploads a file).
 - **Long process (5+ steps, multi-page or wizard-style):** 2-3 intermediate events at natural phase boundaries. Think "started → configured → submitted → confirmed" rather than tracking every field interaction.
 
-Be selective with intermediate events. Every funnel event you mark critical is one more thing an engineer must implement and a PM must monitor. If you're unsure whether an intermediate step is worth tracking, it probably isn't — the start and end events will reveal whether there's a problem, and the team can always add granularity later once they see where drop-off is high.
+Be selective when marking intermediate funnel events as **critical (priority 3)** — every priority-3 event is one a PM monitors closely from day one. But intermediate steps that don't make priority 3 should still appear as priority 2 if they'd inform a useful analysis later. Don't drop them entirely.
 
-Less is more. A focused set of critical events that actually get dashboarded beats a sprawling list nobody looks at. When in doubt, downgrade — it's easier to add an event later than to remove one that's already in dashboards.
+Aim for a focused set of priority-3 events plus a complementary set of priority-2 events that together hit the 10–30 target above. Critical events anchor the dashboard; useful events fill out the segmentation and secondary-flow story so the team isn't blind to anything that matters.
 
 ## 9. Emit YAML output
 

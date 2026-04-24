@@ -2,7 +2,7 @@
 name: instrument-events
 description: >
   Given event_candidates YAML (output from discover-event-surfaces), generates a
-  concrete instrumentation plan for priority-3 (critical) events. Acts as a
+  concrete instrumentation plan for priority-3 (critical) and priority-2 (useful) events. Acts as a
   Software Architect: discovers existing analytics patterns in the codebase, reads
   the hinted files to determine what variables are in scope, designs minimal
   chart-useful properties, and identifies the exact insertion point for each
@@ -28,19 +28,27 @@ Read the `taxonomy` skill at `../taxonomy/SKILL.md` to understand the core philo
 
 ---
 
-## 1. Filter to critical events
+## 1. Filter to critical and useful events
 
-Parse the `event_candidates` YAML. Extract only candidates where `priority: 3`.
-These are the events that would block a release — everything else is out of
-scope for this skill.
+Parse the `event_candidates` YAML. Include candidates where `priority: 3`
+(critical) or `priority: 2` (useful) — both make it into the tracking plan by
+default. Drop `priority: 1` (optional) unless the user explicitly asks to
+include them.
 
-If there are zero priority-3 events, tell the user and stop.
+This default scope aligns with the `amplitude-quickstart-taxonomy-agent`
+skill's "10–30 events" starter-kit target: critical events anchor the
+dashboard and useful events fill out segmentation and secondary flows. A
+plan that covers only priority-3 events systematically under-instruments the
+feature.
 
-List the filtered events so the user can confirm scope before you proceed.
+If there are zero priority-3 *and* priority-2 events, tell the user and stop.
 
-## 2. For each critical event, build the instrumentation plan
+List the filtered events so the user can confirm scope before you proceed,
+grouped by priority so the user can see the split.
 
-Work through each priority-3 event one at a time:
+## 2. For each event, build the instrumentation plan
+
+Work through each event one at a time, starting with priority 3, then priority 2:
 
 ### 2a. Read the hinted file
 
@@ -166,4 +174,4 @@ Ask if they want to adjust anything before an engineer implements it.
 - **Match, don't invent.** The codebase already has a way of sending events. Find it and follow it exactly.
 - **Properties earn their place.** Every property must answer: "what chart axis or filter does this enable?" If the answer is vague, cut it.
 - **Scope is sacred.** Only use variables available at the insertion point. Don't propose refactors to thread data through — that's a separate PR.
-- **Critical means critical.** This skill only handles priority 3. If the user wants priority 2 events, they should say so explicitly and you can include them.
+- **Default scope is priority 2 + 3.** Both critical and useful events ship in the tracking plan by default — that's what hits the 10–30 starter-kit target the quickstart taxonomy skill calls for. Priority 1 (optional) stays opt-in.

@@ -122,7 +122,9 @@ Invoke the `instrument-events` skill, passing the `event_candidates` YAML from
 step 2.
 
 It produces a `trackingPlan` JSON with exact file locations, tracking code, and
-property definitions for every critical (priority 3) event.
+property definitions for every critical (priority 3) and useful (priority 2)
+event — together targeting the 10–30 events recommended by the
+`amplitude-quickstart-taxonomy-agent` skill's starter-kit guidance.
 
 ## Presenting the result
 
