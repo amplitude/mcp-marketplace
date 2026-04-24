@@ -82,6 +82,31 @@ property candidates. For each one, ask:
 should unlock a specific chart axis or filter. If you can't describe the chart
 it enables in one sentence, drop it.
 
+**Cardinality check — bucket VALUES, not just avoid bad names.** Before
+emitting each property, look at what the code would actually pass as the
+value at runtime:
+
+- **If the value is a user-typed string** (search query, comment body, error
+  message, filter input, chat text, review, feedback) — do NOT send it raw
+  even if the property name looks fine. Replace with a bucketed shape:
+  `*_length` (character count), `has_*` (boolean presence),
+  `*_type` / `*_code` (enumerated classification), `*_hash` (stable
+  fingerprint), `*_count` (quantity of matched items).
+- **If the value is an error exception** — never send `error_message: err.message`.
+  Produce `error_type` (enum of exception classes you care about) plus
+  `error_code` (short stable identifier). Stack-trace text explodes cardinality
+  and routinely carries PII, paths, and user input. See the `taxonomy` skill's
+  "Cardinality Discipline" section for the full rule.
+- **If the value is a filter selection** — ensure the VALUE comes from a
+  bounded set. `filter_value: "red"` from a color picker is OK only if you
+  declare the enum. If the user can type arbitrary values, bucket it.
+- **Unsure?** If you can't enumerate the possible values in advance, it's
+  high-cardinality — bucket it.
+
+A property whose *name* contains `query`, `search`, `message`, or `text` is
+not automatically bad — a name like `query_length` is fine because the value
+is an integer. The real contract is the value shape, not the name.
+
 Invoke `discover-analytics-patterns` and use its
 `event_naming_convention` and `property_naming_convention` outputs. That skill
 owns the naming-resolution procedure and precedence order. Do not redefine it

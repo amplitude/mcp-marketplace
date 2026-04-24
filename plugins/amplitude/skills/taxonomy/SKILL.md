@@ -257,19 +257,53 @@ migrate the historical data or leave the name in place.
 
 **One action = one event name.** No duplicates across the codebase.
 
-**Autocapture awareness:** Amplitude's SDK can automatically capture events like
-`[Amplitude] Page Viewed`, `[Amplitude] Element Clicked`, `[Amplitude] Element Changed`,
-`[Amplitude] Form Started`, `[Amplitude] Form Submitted`, etc. Before proposing
-new events, check whether autocapture is enabled for this project by looking for
-`[Amplitude]`-prefixed events in `existing-taxonomy.json` or the project's taxonomy.
+**Naming self-check before finalizing events.json.** For each net-new event name, run this four-question check. Drift on any of these silently breaks analyst continuity.
 
-- **If autocapture events exist:** Do not propose custom events that duplicate
-  what autocapture already covers — unless you need custom properties that
-  autocapture does not provide. Autocapture events have generic properties
-  (element selector, page URL) but no business-specific properties. If you need
-  `product_id`, `price`, or `category` on a click, instrument a custom event.
-- **If no autocapture events exist:** Autocapture is not enabled. Propose custom
-  page view and interaction events as needed — the SDK is not tracking them.
+1. **Am I using the canonical name for this action?** Common defaults analysts expect:
+   - `Product Added to Cart` (not `Product Added`, `Cart Item Added`, `Product Added to Basket`)
+   - `Search Performed` (not `Search Submitted`, `Search Executed`, `Products Searched`)
+   - `User Signed Up` (not `Account Signed Up`, `Registration Completed`)
+   - `Checkout Started` / `Order Placed` / `Order Completed` (not `Purchase Initiated`, `Payment Completed`)
+2. **Did I drop a canonical qualifier?** If the product has both `Product Added to Cart` and `Product Added to Wishlist`, keep them as distinct events — never merge semantically different actions under one name. Shortening `Product Added to Cart` → `Product Added` collapses that distinction and is always wrong on a site with a wishlist.
+3. **Did I swap the domain object without reason?** `Account` and `User` can mean the same or different things; pick the one your business uses consistently and never silently swap. A baseline signup event is `User Signed Up` unless the codebase uses `Account` for a distinct org/tenant concept.
+4. **Am I reinventing a name for an action the SDK auto-captures?** If `[Amplitude] Page Viewed` exists, don't add `Screen Viewed` unless it's mobile-native AND autocapture isn't configured (see the Autocapture Awareness section below).
+
+**Autocapture awareness:** Amplitude's SDKs can automatically capture a growing set of events. Before proposing new events, check whether autocapture is enabled for this project by looking for `[Amplitude]`-prefixed events in `existing-taxonomy.json` and by grepping the codebase's SDK init for `.autocapture(`.
+
+**Web (`@amplitude/analytics-browser`):** `[Amplitude] Page Viewed`, `[Amplitude] Element Clicked`, `[Amplitude] Element Changed`, `[Amplitude] Form Started`, `[Amplitude] Form Submitted`.
+
+**iOS (`amplitude-swift` 1.8+):** `.autocapture([.screenViews])` emits `[Amplitude] Screen Viewed` for every `UIViewController.viewDidAppear` and `NavigationStack` push. Other options cover element taps and sessions. If the init calls `.autocapture(` with `.screenViews`, do NOT propose manual `Screen Viewed` track calls on views — it's duplicate instrumentation.
+
+**Android (`amplitude-kotlin` 1.10+):** `autocapture = setOf(AutocaptureOption.ELEMENT_INTERACTIONS, AutocaptureOption.SCREEN_VIEWS)` covers AppCompat activities and Jetpack Compose. Same rule.
+
+**React Native:** the browser autocapture plugin does NOT cover native navigation. Manual screen tracking via a `@react-navigation` listener or route-wrap helper is required unless you wire a native autocapture plugin. Assume manual is needed here.
+
+**Flutter:** no first-party screen autocapture today. Manual screen tracking per `NavigatorObserver` is required.
+
+Decision matrix:
+- **Autocapture events present AND cover your action** → do NOT add a custom event that duplicates. Only add if you need business-specific properties (`product_id`, `price`) that autocapture can't provide.
+- **Autocapture off OR doesn't cover your runtime (mobile clean sites, RN, Flutter)** → propose the custom event. Screen-level tracking counts as a legitimate gap.
+- **Partial autocapture (init wires some options but not `.screenViews`)** → propose the autocapture config change as the first fix; the manual track calls are the fallback, not the default.
+
+### Cardinality Discipline: Bucket Values, Not Just Names
+
+Property names are a signal but the real risk is the **value**. Before writing events.json, scan every property for value shape. Raw free-form user text explodes cardinality, breaks funnel/segmentation charts, and frequently carries PII or PCI that shouldn't leave the device.
+
+**Never send raw; always replace with a bounded shape:**
+
+| Instead of raw value | Use bucketed shape |
+|---|---|
+| `search_query: "red summer dress"` | `query_length: 17`, `has_results: true`, `result_count: 12` |
+| `error_message: "TypeError: Cannot read..."` | `error_type: "type_error"`, `error_code: "E_NULL_REF"` |
+| `filter_value: "red"` (free-form) | `filter_type: "color"`, `filter_value_bucket: "color"` (enum) |
+| `comment_body: "..."` | `comment_length: 142`, `has_mentions: true`, `comment_hash: "ab12..."` |
+| `review_text: "..."` | `review_length: 92`, `rating: 4` |
+
+**Bounded by enum is OK.** If the value space is genuinely enumerable (e.g., `filter_type: "color" | "size" | "price"`), declare the `enum` in events.json and the raw value is safe. If you can't enumerate it, bucket it.
+
+**Property name ≠ value shape.** A name like `query_length` is safe because the value is an integer regardless of name. A name like `search_filter` is unsafe if the value is free-form text — rename the property to reflect the bucketed shape. Name-based heuristics (forbidding `query`, `message`, `text` in names) are a safety net; the real contract is the value shape.
+
+**Error events in particular.** Always prefer `Error Encountered` with `error_type` (enum) + `error_code` (stable short identifier) + optional `error_message_length`. Never send raw `error_message` — stack traces leak PII, paths, user input, and explode cardinality.
 
 ### Property Naming Standards
 

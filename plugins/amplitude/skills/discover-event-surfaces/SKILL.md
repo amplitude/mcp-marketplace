@@ -148,6 +148,41 @@ you built in step 3. For each candidate:
 If you drop a candidate because it already exists, note it in a
 `already_tracked` list in the output so the user can see what's covered.
 
+### Screen / lifecycle coverage — autocapture-first
+
+Screen-level tracking (`Screen Viewed` on mobile, `Page Viewed` on web) is
+ubiquitous and worth surfacing, but the right fix depends on what the SDK
+already does. Before proposing manual screen track calls, check the SDK init:
+
+**iOS (Amplitude-Swift 1.8+):** look for `.autocapture(` in `AppDelegate.swift`,
+`App.swift`, or wherever `Amplitude.instance.configure(...)` is called. If the
+options include `.screenViews`, the SDK emits `[Amplitude] Screen Viewed` on
+every `UIViewController.viewDidAppear` and SwiftUI navigation push — do NOT
+propose manual `Screen Viewed` track calls. Propose the autocapture config
+change instead if it's missing.
+
+**Android (Amplitude-Kotlin 1.10+):** look for
+`autocapture = setOf(AutocaptureOption.SCREEN_VIEWS, ...)` in the Amplitude
+builder (typically in `Application.onCreate` or a DI module). Same rule: if
+screen-views is wired, the SDK handles it for AppCompat activities and
+Jetpack Compose NavHost destinations.
+
+**React Native:** browser autocapture does NOT cover native navigation.
+Look for `@react-navigation/amplitude-plugin` or a manual `NavigationContainer`
+`onStateChange` handler. If neither is wired, per-screen manual tracking is
+the right candidate.
+
+**Flutter:** no first-party screen autocapture today. A `NavigatorObserver`
+or route-wrap helper is required; propose manual screen tracking.
+
+**Web:** `[Amplitude] Page Viewed` is autocaptured by default on
+`@amplitude/analytics-browser`. Do not propose a custom `Page Viewed` unless
+you need business-specific properties that autocapture can't provide.
+
+For mobile-clean sites with no autocapture config and no manual tracking,
+`Screen Viewed` per top-level screen is a high-value candidate — these are
+the funnel anchors analysts need to segment everything else by.
+
 ## 5. Quality filter
 
 Every candidate must pass all three:
