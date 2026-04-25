@@ -2,7 +2,7 @@
 
 Official Amplitude plugin for AI coding tools. Turn your AI assistant into a product analyst — instrument analytics, analyze charts, run experiments, and understand users directly from your editor.
 
-Works with **Claude Code**, **Cursor**, and **Claude**.
+Works with **Claude Code**, **Cursor**, **GitHub Copilot**, and **Claude**.
 
 ---
 
@@ -26,6 +26,22 @@ Then authenticate when prompted.
 ### Cursor
 
 Install from the [Cursor Marketplace](https://cursor.com/marketplace) or add manually in Cursor Settings > Plugins.
+
+### GitHub Copilot
+
+Copilot CLI:
+
+```
+copilot plugin install amplitude/mcp-marketplace
+```
+
+Or install just the stable plugin:
+
+```
+copilot plugin install amplitude/mcp-marketplace:plugins/amplitude
+```
+
+VS Code users: enable `chat.plugins.enabled: true` in settings while Copilot agent plugins are in preview.
 
 ---
 
@@ -112,12 +128,16 @@ A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-even
   marketplace.json            # Marketplace catalog (Claude Code)
 .cursor-plugin/
   marketplace.json            # Marketplace catalog (Cursor) — kept in sync with .claude-plugin
+.github/plugin/
+  marketplace.json            # Marketplace catalog (GitHub Copilot) — kept in sync with .claude-plugin
 plugins/
   amplitude/
     .claude-plugin/
       plugin.json             # Plugin manifest (Claude Code)
     .cursor-plugin/
       plugin.json             # Plugin manifest (Cursor) — kept in sync with .claude-plugin
+    .github/
+      plugin.json             # Plugin manifest (GitHub Copilot) — kept in sync with .claude-plugin
     skills/
       add-analytics-instrumentation/
       analyze-account-health/
@@ -150,7 +170,7 @@ plugins/
 
 ## Requirements
 
-- **MCP-compatible client** – Claude Code, Cursor, or Claude
+- **MCP-compatible client** – Claude Code, Cursor, GitHub Copilot, or Claude
 - **Amplitude account** with API access
 - **Node.js** – for the MCP server
 
