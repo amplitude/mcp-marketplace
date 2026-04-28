@@ -99,11 +99,13 @@ jobs:
             exit 0
           fi
 
-          # Bump each plugin's version in both marketplace manifests.
+          # Bump each plugin's version in both marketplace manifests and the
+          # Codex plugin manifest when present.
           # Per Claude Code docs, for relative-path plugins version should be set in
           # the marketplace entry, not plugin.json: https://code.claude.com/docs/en/plugin-marketplaces#version-resolution-and-release-channels
           # Cursor reads .cursor-plugin/marketplace.json; Claude Code reads .claude-plugin/marketplace.json.
-          # Keep both in sync so the two marketplaces don't drift.
+          # Codex stores version in .codex-plugin/plugin.json, so keep that in
+          # sync with the marketplace versions for the same plugin.
           declare -a bump_summaries=()
           declare -a bump_details=()
           marketplaces=(".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json")
@@ -126,6 +128,13 @@ jobs:
                 '(.plugins[] | select(.name == $name) | .version) = $v' \
                 "$marketplace" > tmp.json && mv tmp.json "$marketplace"
             done
+
+            codex_manifest="plugins/$plugin_name/.codex-plugin/plugin.json"
+            if [ -f "$codex_manifest" ]; then
+              jq --arg v "$new_version" \
+                '.version = $v' \
+                "$codex_manifest" > tmp.json && mv tmp.json "$codex_manifest"
+            fi
 
             echo "Bumped $plugin_name: $current_version -> $new_version ($bump_type bump)"
             bump_summaries+=("$plugin_name to $new_version")
@@ -170,6 +179,7 @@ jobs:
           fi
 
           git add '.claude-plugin/marketplace.json' '.cursor-plugin/marketplace.json'
+          find plugins -path '*/.codex-plugin/plugin.json' -print0 | xargs -0 -r git add
           git commit -m "${{ steps.bump.outputs.commit_msg }}"
           git push
 
