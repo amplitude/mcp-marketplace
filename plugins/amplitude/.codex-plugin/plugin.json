@@ -1,0 +1,50 @@
+{
+  "name": "amplitude",
+  "version": "1.2.1",
+  "description": "Use Amplitude as an expert analyst and instrumentation partner inside Codex.",
+  "author": {
+    "name": "Amplitude",
+    "email": "support@amplitude.com",
+    "url": "https://amplitude.com"
+  },
+  "homepage": "https://github.com/amplitude/mcp-marketplace",
+  "repository": "https://github.com/amplitude/mcp-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "analytics",
+    "amplitude",
+    "charts",
+    "dashboards",
+    "feedback",
+    "analysis",
+    "instrumentation",
+    "tracking",
+    "account-health",
+    "customer-success",
+    "daily-brief",
+    "weekly-brief",
+    "monitor-experiments",
+    "discover-opportunities"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Amplitude",
+    "shortDescription": "Analytics, experimentation, and instrumentation workflows for Codex.",
+    "longDescription": "Bundle Amplitude analysis, experimentation, session replay, and instrumentation skills with the Amplitude MCP server configuration for use in Codex.",
+    "developerName": "Amplitude",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://amplitude.com",
+    "privacyPolicyURL": "https://amplitude.com/privacy",
+    "termsOfServiceURL": "https://amplitude.com/terms",
+    "defaultPrompt": [
+      "Use Amplitude to analyze this chart and explain the drivers behind the change.",
+      "Use Amplitude to plan analytics instrumentation for this feature."
+    ],
+    "brandColor": "#005AF0"
+  }
+}
