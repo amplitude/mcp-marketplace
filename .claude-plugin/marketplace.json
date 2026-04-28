@@ -13,7 +13,7 @@
       "name": "amplitude",
       "source": "./plugins/amplitude",
       "description": "Use Amplitude as an expert analyst - instrument Amplitude, discover product opportunities, analyze charts, create dashboards, manage experiments, and understand users and accounts",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "author": {
         "name": "Amplitude",
         "email": "support@amplitude.com",
