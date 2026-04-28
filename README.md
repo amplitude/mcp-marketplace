@@ -2,11 +2,21 @@
 
 Official Amplitude plugin for AI coding tools. Turn your AI assistant into a product analyst — instrument analytics, analyze charts, run experiments, and understand users directly from your editor.
 
-Works with **Claude Code**, **Cursor**, and **Claude**.
+Works with **Codex**, **Claude Code**, **Cursor**, and **Claude**.
 
 ---
 
 ## Installation
+
+### Codex
+
+Use the repo-scoped marketplace file in this repository:
+
+```bash
+codex plugin marketplace add .
+```
+
+Then install the plugin from the `Amplitude` marketplace in Codex's plugin directory.
 
 ### Claude Code
 
@@ -108,16 +118,21 @@ A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-even
 ## Repository Structure
 
 ```text
+.agents/plugins/
+  marketplace.json            # Marketplace catalog (Codex)
 .claude-plugin/
   marketplace.json            # Marketplace catalog (Claude Code)
 .cursor-plugin/
   marketplace.json            # Marketplace catalog (Cursor) — kept in sync with .claude-plugin
 plugins/
   amplitude/
+    .codex-plugin/
+      plugin.json             # Plugin manifest (Codex)
     .claude-plugin/
       plugin.json             # Plugin manifest (Claude Code)
     .cursor-plugin/
       plugin.json             # Plugin manifest (Cursor) — kept in sync with .claude-plugin
+    .mcp.json                 # MCP server config shared by Codex and other clients
     skills/
       add-analytics-instrumentation/
       analyze-account-health/
