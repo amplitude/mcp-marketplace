@@ -2,21 +2,11 @@
 
 Official Amplitude plugin for AI coding tools. Turn your AI assistant into a product analyst — instrument analytics, analyze charts, run experiments, and understand users directly from your editor.
 
-Works with **Codex**, **Claude Code**, **Cursor**, and **Claude**.
+Works with **Claude Code**, **Cursor**, **Codex**, and **Claude**.
 
 ---
 
 ## Installation
-
-### Codex
-
-Use the repo-scoped marketplace file in this repository:
-
-```bash
-codex plugin marketplace add .
-```
-
-Then install the plugin from the `Amplitude` marketplace in Codex's plugin directory.
 
 ### Claude Code
 
@@ -36,6 +26,16 @@ Then authenticate when prompted.
 ### Cursor
 
 Install from the [Cursor Marketplace](https://cursor.com/marketplace) or add manually in Cursor Settings > Plugins.
+
+### Codex
+
+Add this repository as a Codex marketplace:
+
+```bash
+codex plugin marketplace add amplitude/mcp-marketplace
+```
+
+Then install the `amplitude` plugin from the `Amplitude` marketplace in Codex's plugin directory.
 
 ---
 
@@ -87,6 +87,7 @@ The amplitude plugin turns your AI assistant into an expert product analyst and 
 | `analyze-ai-topics` | Analyzes what users ask AI agents about and how well each topic is served |
 | `investigate-ai-session` | Deep-dives specific AI agent sessions or failure patterns for root-cause analysis |
 | `monitor-ai-quality` | Delivers a proactive health report on AI agents covering quality, cost, performance, and errors |
+| `review-agent-insights` | Synthesizes recent results from Amplitude's AI agents into a unified, impact-ranked narrative |
 
 ### Analytics Instrumentation
 
@@ -97,6 +98,7 @@ The amplitude plugin turns your AI assistant into an expert product analyst and 
 | `discover-analytics-patterns` | Maps how analytics is already implemented in the repo (SDK calls, naming, imports) |
 | `instrument-events` | From prioritized event candidates, builds a concrete instrumentation plan and JSON tracking plan |
 | `add-analytics-instrumentation` | End-to-end workflow — reads code, decides what to track, and produces a full instrumentation plan in one pass |
+| `taxonomy` | Source of truth for event taxonomy generation, data auditing, and governance best practices |
 
 A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-events`, with `discover-analytics-patterns` ensuring new tracking matches existing conventions.
 
@@ -157,6 +159,8 @@ plugins/
       monitor-experiments/
       monitor-reliability/
       replay-ux-audit/
+      review-agent-insights/
+      taxonomy/
       weekly-brief/
       what-would-lenny-do/
 ```
@@ -165,9 +169,8 @@ plugins/
 
 ## Requirements
 
-- **MCP-compatible client** – Claude Code, Cursor, or Claude
+- **MCP-compatible client** – Claude Code, Cursor, Codex, or Claude
 - **Amplitude account** with API access
-- **Node.js** – for the MCP server
 
 ---
 
