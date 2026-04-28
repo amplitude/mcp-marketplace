@@ -2,7 +2,7 @@
 
 Official Amplitude plugin for AI coding tools. Turn your AI assistant into a product analyst — instrument analytics, analyze charts, run experiments, and understand users directly from your editor.
 
-Works with **Claude Code**, **Cursor**, **Codex**, and **Claude**.
+Works with **Claude Code**, **Cursor**, **Codex**, **Gemini CLI**, and **Claude**.
 
 ---
 
@@ -29,13 +29,36 @@ Install from the [Cursor Marketplace](https://cursor.com/marketplace) or add man
 
 ### Codex
 
-Add this repository as a Codex marketplace:
+1. Add the marketplace:
+    ```bash
+    codex plugin marketplace add amplitude/mcp-marketplace
+    ```
+
+2. Install the plugin from inside Codex:
+    ```
+    codex
+    # Then run /plugins, select Amplitude, and install
+    /plugins
+    ```
+
+### Gemini CLI
 
 ```bash
-codex plugin marketplace add amplitude/mcp-marketplace
+gemini extensions install https://github.com/amplitude/mcp-marketplace
 ```
 
-Then install the `amplitude` plugin from the `Amplitude` marketplace in Codex's plugin directory.
+---
+
+## Local development
+
+To work on the plugin from a local checkout in Claude Code:
+
+```bash
+git clone https://github.com/amplitude/mcp-marketplace
+claude --plugin-dir ./mcp-marketplace/plugins/amplitude
+```
+
+Then run `/mcp` from inside Claude Code, select `plugin:amplitude:amplitude`, and follow the browser prompts to authenticate.
 
 ---
 
