@@ -121,6 +121,45 @@ Then apply the `discover-event-surfaces` methodology:
 - Deduplicate against existing events found in Phase 3 coverage assessment
 - Quality filter: decision-useful, outcome-focused, stable across redesigns
 
+### Funnel-start exemption (gate)
+
+The "no raw clicks without outcomes" rule from `discover-event-surfaces`
+must NOT remove funnel-entry clicks. A click that is the *entry point of a
+funnel* (user picks a checkout flow from a landing page, user starts a
+signup, user opens a paywall modal) is the top-of-funnel intent signal —
+keep it, name it around the business concept (`Donation Flow Selected`,
+`Checkout Started`, `Signup Started`), and mark its `funnel_role` as
+`start`. The "no raw clicks" rule applies to leaf interactions where no
+funnel exists, not to funnel-start events.
+
+### Candidate-count gate (RUN BEFORE EMITTING THE PLAN)
+
+Before writing the tracking plan to disk, count the proposed
+`critical`+`high`+`medium` events. If the count is below the band for the
+repo size, do NOT emit the plan yet.
+
+| Repo size              | Minimum critical+high+medium | Hard floor |
+|------------------------|------------------------------|------------|
+| Small (1–2 areas)      | 10                           | 10         |
+| Medium (3–4 areas)     | 15                           | 12         |
+| Large (5+ areas)       | 20                           | 15         |
+
+If you are below the minimum, for each product area in `product-map.json`
+list explicitly:
+
+- The funnel(s) you identified (or "no funnel — single-action surface")
+- The funnel start event (must be `critical`)
+- The funnel end event (must be `critical`)
+- Async success branches that fire a track call
+- Async failure branches that fire a track call
+- Segmentation dimensions (mode, variant, source) worth capturing as their
+  own event or as event properties
+
+Add the missing events. If the repo is genuinely below the hard floor (a
+true one-page demo or two-command CLI), state that explicitly in the
+tracking plan executive summary with a one-line justification. Otherwise,
+keep iterating until the count clears the minimum.
+
 ### Priority rules
 
 - **critical**: Revenue or core-journey events, funnel start/end
@@ -147,12 +186,32 @@ Include ONE `Error Encountered` event with properties:
 - `error_context` (string) — where it occurred
 - `error_message` (string) — human-readable detail
 
-### User properties
+### User properties and identify wiring
 
-Following `../user-property-best-practices/SKILL.md` if available, or these
-rules:
+**Identify wiring is mandatory** for any flow with authenticated users or
+a post-conversion identifier (email at checkout, customer ID after
+payment, session-bound user ID after sign-in). The tracking plan MUST
+include an identify call placed at the earliest point the identifier
+becomes available:
+
+- After successful authentication / sign-in
+- After a post-conversion event surfaces an email or customer ID (e.g.
+  `paymentIntent.receipt_email`, `checkoutSession.customer_details.email`)
+- On any explicit `setUserId` opportunity in existing wrapper modules
+
+Use the SDK's canonical identify call (`amplitude.setUserId(id)` +
+`amplitude.identify(new Identify().set(...))` for browser/node SDKs;
+`client.identify(Identify(user_id=..., user_properties={...}))` for
+Python). One identify call per session-establishing event is enough — do
+not call identify on every track. If the codebase has zero auth and no
+post-conversion identifier, note that explicitly in the tracking plan and
+skip identify wiring.
+
+**User properties** (set on `Identify()` rather than per event), following
+`../user-property-best-practices/SKILL.md` if available, or these rules:
+
 - 5-15 properties, intrinsic to the user
-- Lower case with spaces
+- Lower case with spaces (match the codebase convention)
 - Not duplicating SDK defaults (platform, country, device, language, etc.)
 - Each with: name, description, example values, where to set
 
@@ -180,6 +239,49 @@ Follow the methodology in `../instrument-events/SKILL.md` for placement:
 - Match Phase 1 patterns exactly (same imports, same function, same style)
 - Properties use real variable names from scope
 - If no tracking SDK exists: use appropriate Amplitude SDK import
+
+### Async-branch coverage gate
+
+Whenever you place a track call on an async boundary (server action, API
+handler, webhook handler, payment confirmation, etc.), enumerate ALL of
+its terminal branches and decide for each one whether it fires a track
+call:
+
+- **success branch** — did you place a success event (or is one already
+  covered downstream, e.g. a result-page event)?
+- **failure branch** — did you place a failure event (or is one already
+  covered, e.g. a parent error boundary)?
+- **early-return / validation-failure branches** — same question.
+
+For webhook-style switches (`switch (event.type) { ... }`) and
+`if/else` async result handling, walk every case explicitly. If a branch
+has no track call AND no downstream coverage, either add one or note in
+the tracking plan's reasoning why it was deliberately skipped (e.g.
+"`payment_intent.succeeded` webhook is covered client-side by
+`Donation Completed` on the result page"). Never leave an async terminal
+branch silently uninstrumented.
+
+### Property symmetry across multi-callsite events
+
+When the same `event_type` fires from more than one callsite (e.g.
+`Donation Completed` emitted from three different result pages, or
+`Checkout Started` emitted from both a hosted and an embedded flow),
+align the property keys across all callsites:
+
+1. Compute the **union** of useful in-scope variables across callsites
+   (e.g. `donation_amount`, `currency`, `payment_flow`).
+2. For each callsite, emit every key from the union — even if the value
+   has to come from a constant at that callsite (`payment_flow:
+   "embedded_checkout"` vs `payment_flow: "hosted_checkout"`). This is
+   what enables side-by-side comparison in Amplitude charts.
+3. If a key is genuinely unavailable at one callsite (the variable
+   doesn't exist there and can't be reconstructed), note it in the
+   tracking plan reasoning so an analyst knows to expect nulls for that
+   segment.
+
+Asymmetric properties on the same event are a silent analytics bug — the
+chart will silently drop or misclassify rows. Catch this before edits
+ship, not after the dashboard goes live.
 
 Process one file at a time. After all changes:
 
