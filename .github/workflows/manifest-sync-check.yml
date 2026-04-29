@@ -1,0 +1,61 @@
+name: Manifest Sync Check
+
+on:
+  pull_request:
+    paths:
+      - '.claude-plugin/**'
+      - '.cursor-plugin/**'
+      - 'plugins/*/.claude-plugin/**'
+      - 'plugins/*/.cursor-plugin/**'
+
+jobs:
+  check-manifests-in-sync:
+    name: Claude / Cursor manifests in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Verify .claude-plugin and .cursor-plugin manifests match
+        run: |
+          set -eo pipefail
+
+          fail=0
+
+          check_pair() {
+            local claude="$1"
+            local cursor="$2"
+
+            if [ ! -f "$claude" ] && [ ! -f "$cursor" ]; then
+              return 0
+            fi
+
+            if [ ! -f "$claude" ]; then
+              echo "::error file=$cursor::$cursor exists but $claude does not — both must be present and in sync."
+              fail=1
+              return
+            fi
+
+            if [ ! -f "$cursor" ]; then
+              echo "::error file=$claude::$claude exists but $cursor does not — both must be present and in sync."
+              fail=1
+              return
+            fi
+
+            # Normalize JSON (jq -S sorts keys) and compare.
+            if ! diff -u <(jq -S . "$claude") <(jq -S . "$cursor"); then
+              echo "::error file=$cursor::$claude and $cursor are out of sync. Update both manifests together."
+              fail=1
+            fi
+          }
+
+          check_pair ".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json"
+
+          for plugin_dir in plugins/*/; do
+            plugin_name=$(basename "$plugin_dir")
+            check_pair \
+              "${plugin_dir}.claude-plugin/plugin.json" \
+              "${plugin_dir}.cursor-plugin/plugin.json"
+          done
+
+          exit $fail

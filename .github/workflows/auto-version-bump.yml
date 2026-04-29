@@ -1,0 +1,214 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-versions:
+    name: Bump Plugin Versions
+    runs-on: ubuntu-latest
+
+    # Skip if the push was an auto-bump commit
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed plugins and bump versions
+        id: bump
+        run: |
+          set -eo pipefail
+
+          # Files that should not trigger version bumps
+          IGNORE_PATTERNS="^\.github/|^CLAUDE\.md$|^README\.md$|^AGENTS\.md$|^SECURITY.*|^\.cache/|marketplace\.json$|^docs/|^attestation-status\.json$"
+
+          # Get files changed in the merge commit
+          changed_files=$(git diff --name-only HEAD~1 HEAD)
+          added_files=$(git diff --name-only --diff-filter=A HEAD~1 HEAD)
+
+          if [ -z "$changed_files" ]; then
+            echo "No files changed, skipping."
+            exit 0
+          fi
+
+          echo "Changed files:"
+          echo "$changed_files"
+          echo ""
+          if [ -n "$added_files" ]; then
+            echo "Newly added files:"
+            echo "$added_files"
+            echo ""
+          fi
+
+          # Build a map of source_path -> plugin_name from marketplace.json
+          # Per Claude Code docs, for relative-path plugins version lives in marketplace.json
+          declare -A source_to_name
+          while IFS=$'\t' read -r name source; do
+            source=$(echo "$source" | sed 's|^\./||')
+            source_to_name["$source"]="$name"
+          done < <(jq -r '.plugins[] | [.name, .source] | @tsv' .claude-plugin/marketplace.json)
+
+          # Track which plugins need bumping: plugin_name -> bump_type
+          declare -A plugins_to_bump
+
+          for file in $changed_files; do
+            # Skip files matching ignore patterns
+            if echo "$file" | grep -qE "$IGNORE_PATTERNS"; then
+              echo "Ignoring: $file"
+              continue
+            fi
+
+            # Determine bump type: minor if file is newly added, otherwise patch
+            bump_type="patch"
+            if echo "$added_files" | grep -qxF "$file"; then
+              bump_type="minor"
+            fi
+
+            matched=false
+
+            for source in "${!source_to_name[@]}"; do
+              # Check if the file is under this plugin's directory
+              if [[ "$file" == "$source"/* ]]; then
+                plugin_name="${source_to_name[$source]}"
+
+                # Only upgrade bump type, never downgrade (minor > patch)
+                current="${plugins_to_bump[$plugin_name]:-}"
+                if [ "$current" != "minor" ]; then
+                  plugins_to_bump["$plugin_name"]="$bump_type"
+                fi
+                matched=true
+                break
+              fi
+            done
+
+            if [ "$matched" = false ]; then
+              echo "Skipping (repo-level file): $file"
+            fi
+          done
+
+          if [ ${#plugins_to_bump[@]} -eq 0 ]; then
+            echo "No plugins need version bumps."
+            exit 0
+          fi
+
+          # Bump each plugin's version in both marketplace manifests and the
+          # Codex plugin manifest when present.
+          # Per Claude Code docs, for relative-path plugins version should be set in
+          # the marketplace entry, not plugin.json: https://code.claude.com/docs/en/plugin-marketplaces#version-resolution-and-release-channels
+          # Cursor reads .cursor-plugin/marketplace.json; Claude Code reads .claude-plugin/marketplace.json.
+          # Codex stores version in .codex-plugin/plugin.json, so keep that in
+          # sync with the marketplace versions for the same plugin.
+          declare -a bump_summaries=()
+          declare -a bump_details=()
+          marketplaces=(".claude-plugin/marketplace.json" ".cursor-plugin/marketplace.json")
+          primary_marketplace="${marketplaces[0]}"
+
+          for plugin_name in "${!plugins_to_bump[@]}"; do
+            bump_type="${plugins_to_bump[$plugin_name]}"
+            current_version=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .version // "0.0.0"' "$primary_marketplace")
+            IFS='.' read -r major minor patch <<< "$current_version"
+
+            if [ "$bump_type" = "minor" ]; then
+              new_version="$major.$((minor + 1)).0"
+            else
+              new_version="$major.$minor.$((patch + 1))"
+            fi
+
+            for marketplace in "${marketplaces[@]}"; do
+              [ -f "$marketplace" ] || continue
+              jq --arg name "$plugin_name" --arg v "$new_version" \
+                '(.plugins[] | select(.name == $name) | .version) = $v' \
+                "$marketplace" > tmp.json && mv tmp.json "$marketplace"
+            done
+
+            codex_manifest="plugins/$plugin_name/.codex-plugin/plugin.json"
+            if [ -f "$codex_manifest" ]; then
+              jq --arg v "$new_version" \
+                '.version = $v' \
+                "$codex_manifest" > tmp.json && mv tmp.json "$codex_manifest"
+            fi
+
+            echo "Bumped $plugin_name: $current_version -> $new_version ($bump_type bump)"
+            bump_summaries+=("$plugin_name to $new_version")
+            bump_details+=("$plugin_name: $current_version → $new_version ($bump_type)")
+          done
+
+          # Build commit message and PR comment details
+          if [ ${#bump_summaries[@]} -eq 0 ]; then
+            echo "No version changes made."
+            exit 0
+          elif [ ${#bump_summaries[@]} -eq 1 ]; then
+            echo "commit_msg=chore: auto-bump ${bump_summaries[0]} [skip ci]" >> "$GITHUB_OUTPUT"
+          else
+            msg="chore: auto-bump plugin versions [skip ci]"$'\n'$'\n'
+            for summary in "${bump_summaries[@]}"; do
+              msg+="- $summary"$'\n'
+            done
+            {
+              echo "commit_msg<<EOF"
+              echo "$msg"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+          {
+            echo "bump_details<<EOF"
+            for detail in "${bump_details[@]}"; do
+              echo "$detail"
+            done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version bumps
+        if: steps.bump.outputs.commit_msg
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+
+          git add '.claude-plugin/marketplace.json' '.cursor-plugin/marketplace.json'
+          find plugins -path '*/.codex-plugin/plugin.json' -print0 | xargs -0 -r git add
+          git commit -m "${{ steps.bump.outputs.commit_msg }}"
+          git push
+
+      - name: Comment on PR
+        if: steps.bump.outputs.commit_msg
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+          BUMP_DETAILS: ${{ steps.bump.outputs.bump_details }}
+        run: |
+          PR_NUMBER=$(gh api "repos/$REPO/commits/$COMMIT_SHA/pulls" \
+            --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No associated PR found — skipping comment."
+            exit 0
+          fi
+
+          TABLE="| Plugin | Old Version | New Version | Bump Type |\n|---|---|---|---|"
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            # Format: "plugin-name: 1.2.1 → 1.2.2 (patch)"
+            PLUGIN=$(echo "$line" | sed 's/: .*//')
+            OLD=$(echo "$line" | sed 's/.*: //' | sed 's/ → .*//')
+            NEW=$(echo "$line" | sed 's/.* → //' | sed 's/ (.*//')
+            TYPE=$(echo "$line" | sed 's/.*(\(.*\))/\1/')
+            TABLE="$TABLE\n| \`$PLUGIN\` | \`$OLD\` | \`$NEW\` | $TYPE |"
+          done <<< "$BUMP_DETAILS"
+
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(printf "## Version Bump\n\nPlugin versions were auto-bumped after this PR was merged:\n\n$TABLE")"
+          echo "Commented on PR #$PR_NUMBER"
