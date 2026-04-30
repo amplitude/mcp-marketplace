@@ -91,14 +91,41 @@ Only suggest properties whose value is **straightforward to set** — pulling da
 source and setting it directly. If a property requires aggregating events, running queries,
 or deriving a value from multiple data points, it is NOT a good user property.
 
-- Good: `email` (read directly from user record)
+- Good: `email domain` (extracted from email at the call site, e.g., `email.split("@")[1]`)
 - Good: `authentication source` (known at login time)
 - Bad: `Most Viewed Product` (requires aggregating event history)
 - Bad: `Preferred Category` (requires ranking logic over event data)
 - Bad: `Purchase Frequency Bracket` (requires counting purchases over a time window)
 - Bad: `Preferred Department` (requires analyzing which department the user buys from most)
 
-## 7. Named Clearly Using Lower Case
+## 7. PII Guardrails (always)
+
+**Never propose raw PII as a user property.** That includes raw email, phone number, full
+name, street address, SSN, credit card, or any free-form identifier the user typed. Even
+when the property is trivially available in the codebase (`user.email`, `signup_form.phone`,
+etc.), wrap it before storing:
+
+- **`email`** → propose `email domain` (`email.split("@")[1]`) — enough for cohort
+  segmentation by domain. Do NOT also set raw `email` alongside `email domain`. If per-user
+  identification is needed, that goes through `setUserId(<id>)` (Amplitude hashes server-side),
+  not as a property.
+- **`phone` / `ssn` / `credit_card`** → prefer a boolean flag (`has phone: true`) or a coarse
+  derived value (`card brand: visa`) over the raw value.
+- **`full_name`** → prefer `display name initials` or omit entirely. A full name as a user
+  property leaks PII into every event the user triggers.
+- **Free-form text** the user typed (search query, support message body, etc.) → never a
+  user property. If you need to segment by intent, propose a derived classification
+  (`search category`, `support topic`) instead.
+
+If the existing codebase passes raw PII to a tracking call, do **not** extend the call by
+adding the raw value as a new user property. Propose deriving the safe form at the call site
+instead, even if that requires touching the tracking surface code.
+
+This rule overrides §6's "Does Not Require Excessive Computation" — a 1-line
+`email.split("@")[1]` at the call site is a worthwhile cost to keep PII out of the
+user-properties store.
+
+## 8. Named Clearly Using Lower Case
 
 Use concise, descriptive names in lower case with spaces. Avoid abbreviations that aren't universally understood.
 
