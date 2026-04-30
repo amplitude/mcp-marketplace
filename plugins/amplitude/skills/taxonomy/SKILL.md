@@ -474,8 +474,7 @@ Get user/org/project context. Discover all projects the user has access to.
 | `add_event_tags` | Add tags to an event |
 | `set_event_deprecated` | Mark event as deprecated |
 | `hide_event` | Hide from taxonomy (does not delete) |
-| `set_property_description` | Add/update property description |
-| `set_property_display_name` | Update property display name |
+| `set_property_metadata` | Add/update property description and display name |
 
 ---
 
