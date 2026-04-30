@@ -27,6 +27,43 @@ description quality requirements that apply throughout.
 
 ---
 
+## Scope contract (READ FIRST)
+
+If the runner's instructions named a subdirectory (e.g., *"Analyze the
+`sites/marketplace` subdirectory"*), treat that subdirectory as **your
+repository** for this run. You may ONLY read, write, or stage files
+under that subdirectory. Other subdirectories of the same git repo are
+**out of scope** — they will be instrumented by their own separate
+agent runs.
+
+Do not extend the workspace beyond the named subdirectory. Do not
+import scope from a `git ls-files` walk of the repo root. Do not write
+`.amplitude/events.json`, `.amplitude/tracking-plan.md`, source code,
+or any other file outside the named subdirectory under any
+circumstance. The PR commit captures every changed file in the working
+tree, so out-of-scope writes ship to other sites' source code AND
+register events from those sites into the Amplitude project — a known
+monorepo failure mode that registers customer events the reviewer
+never approved.
+
+Where this skill (or any sub-skill it calls) says **"scan the full
+repository"** or **"the full repo"**, read it as **"the full
+subdirectory"** when a subdirectory was named. Phase 1's instruction
+to *"scan the full repository"* applies to the named subdirectory's
+tree only, not the monorepo root.
+
+If no subdirectory was named — i.e., the runner says *"Analyze the
+{owner}/{repo} repository"* with no subdirectory clause — the working
+directory IS the whole repo and you may walk it freely. The scope
+contract is only meaningful when a subdirectory is in play.
+
+Verification step before any artifact write: every path you are about
+to create or modify must start with the named subdirectory's prefix.
+If a path doesn't, the write is out of scope — drop it, don't expand
+the workspace to "fix" the path.
+
+---
+
 ## Phase 0: Check for prior state
 
 Check if `.amplitude/manifest.json` exists:
