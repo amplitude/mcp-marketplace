@@ -402,80 +402,87 @@ Default lookback: **180 days**.
 
 # Available Tools
 
-## Event Discovery & Metadata
+These are the actual Amplitude MCP server tools available for taxonomy work. Tool names must match exactly.
 
-### list_events
-Lightweight listing of all events ordered by importance descending. Supports pagination with `offset` and `limit`. Best for broad taxonomy scans and governance audits.
+## Context
 
-**Tool reference**: `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.list_events`
+### `get_context`
+Get information about the current user, organization, and accessible projects. Call this first to discover project IDs.
 
-### get_relevant_events
-Semantic + text hybrid search for events matching a description. Use multiple phrasings in parallel to disambiguate.
+### `get_project_context`
+Get project-specific settings: time zone, currency, session definition, AI context. Use to understand project configuration before making changes.
 
-**Parameters:**
-- `query`: Natural language description
-- `categories`: Metadata categories (e.g., `['basic', 'ai_descriptions', 'metrics']` — up to 100 events)
+### `search`
+Search for charts, dashboards, notebooks, experiments, events, properties, cohorts, and other Amplitude content. Use this before `get_events` to find the event you're looking for.
 
-**Tool reference**: `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_relevant_events`
+### `get_workspace_settings`
+Get workspace settings including approval workflow status. Check before writing to the default branch — when `approvalWF` is "Required", the user must create a non-default branch first.
 
-### get_event_metadata
-Deep metadata for specific events: properties, usage, relationships, importance, content associations.
+## Event Discovery
 
-**Parameters:**
-- `event_names`: List of events to analyze
-- `categories`: e.g., `['basic', 'ai_descriptions', 'metrics', 'importance', 'content_usage', 'properties', 'relationships']` — up to 25 events with heavy categories
+### `get_events`
+Retrieve events from a project with filtering by event types, limit, and cursor pagination. Returns full event objects including category and active status.
 
-**Tool reference**: `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_event_metadata`
+- Use `search` first to find the event you're looking for.
+- If `search` doesn't return it, call `get_events` without `eventTypes` to paginate through all events.
+- If you know exact event type names, pass them via `eventTypes` for precise lookup.
 
-## Property Discovery & Metadata
+### `get_custom_or_labeled_events`
+Retrieve custom events, labeled (autotrack) events, or both from a project.
 
-### list_properties / get_relevant_properties / get_property_metadata
-Discover and analyze properties with the same semantic search pattern as events.
+- `eventKind: "_all"` — both custom and labeled events (default).
+- `eventKind: "custom"` — non-autotrack custom events only.
+- `eventKind: "labeled"` — labeled/autotrack events only.
+- Returns `isAutotrack` flag, definition, and `flattenedDefinition` (source event lists).
 
-**Tool references**:
-- `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.list_properties`
-- `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_relevant_properties`
-- `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_property_metadata`
+### `get_transformations`
+Retrieve data transformations (merge events, merge properties, map property values) from a project. Use to audit data cleaning rules.
 
-### get_property_stats
-Live property statistics from the metrics API. Verify volume and recent usage before recommending.
+## Property Discovery
 
-**Tool reference**: `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_property_stats`
+### `get_properties`
+Retrieve properties from a project's taxonomy. Use `propertyType` to select which kind:
 
-### get_property_values
-Retrieve enumerable values for a property. Validate cardinality and value consistency.
+| `propertyType` | What it returns | Key params |
+|---|---|---|
+| `event` | Properties for a specific event type | `eventType` (required) |
+| `user` | User-level properties | `sources`, `name` |
+| `derived` | Computed/formula properties | `derivedPropertyType`, `names` |
+| `group` | Group properties (e.g., company_name, plan_tier) | `groupTypes` |
+| `lookup` | CSV lookup table properties | `configurationFilter`, `lookupTableName` |
+| `channel` | Traffic source channel properties | `names` |
+| `persisted` | Event-to-user persisted properties | `names` |
 
-**Tool reference**: `langley.tools.taxonomy.combined_metadata.CombinedMetadataTool.get_property_values`
+All property types except `event` support limit/cursor pagination.
 
-## Context & Validation
+## Metadata Updates
 
-### search_knowledge_base
-Search organization-specific knowledge base for business context, tracking plans, data dictionaries, and naming conventions.
+### `update_event`
+Update event metadata: descriptions, display names, categories, official status, and event names. Operates on the tracking plan.
 
-**Tool reference**: `langley.tools.knowledge.bedrock_kb_tool.BedrockKnowledgeBaseTool.search_knowledge_base`
+- Event type keys must match the event `name` exactly (case-sensitive) — not the `displayName`. Resolve via `get_events` first if needed.
+- Supports `branchId` or `branchName` to target non-default branches.
+- Do not overwrite existing descriptions — append additional context instead.
+- Never update bracket-prefixed or vendor-prefixed events (`[Amplitude]`, `[Experiment]`, etc.) unless explicitly requested.
+- Requires "Update Tracking Plan" permission.
 
-### documentation_question
-Answer Amplitude product questions. Use before telling a user something is not feasible.
+### `update_properties`
+Update property metadata (description, official status, category, and/or name). Use `propertyType` to select which kind:
 
-**Tool reference**: Amplitude MCP tool `documentation_question`
+| `propertyType` | What it updates | Key params |
+|---|---|---|
+| `event` | Event property metadata (global or event-scoped) | `metadataScope`, `eventType` (when scope is `"event"`) |
+| `user` | User property metadata | `descriptions`, `isOfficial`, `categories`, `newNames` |
 
-### get_context
-Get user/org/project context. Discover all projects the user has access to.
+- Use `get_properties` first to verify property names and status before updating.
+- Requires "Update Tracking Plan" permission.
 
-**Tool reference**: Amplitude MCP tool `get_context`
+### `update_custom_or_labeled_events`
+Update descriptions, categories, names, official status, and/or definitions on custom or labeled events.
 
-## Safe Metadata Write Operations
-
-| Tool | Purpose |
-|------|---------|
-| `set_event_description` | Add/update event description |
-| `set_event_display_name` | Update event display name |
-| `set_event_category` | Assign event to a category |
-| `add_event_tags` | Add tags to an event |
-| `set_event_deprecated` | Mark event as deprecated |
-| `hide_event` | Hide from taxonomy (does not delete) |
-| `set_property_description` | Add/update property description |
-| `set_property_display_name` | Update property display name |
+- Only use when the user explicitly asks to update a "custom event" or "labeled event." For regular events, use `update_event`.
+- Definitions are **replaced in full**, not merged — pass the complete new source-event list.
+- Renaming will break chart references — always warn the user.
 
 ---
 
