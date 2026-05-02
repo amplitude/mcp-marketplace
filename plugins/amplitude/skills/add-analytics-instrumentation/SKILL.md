@@ -100,20 +100,68 @@ themselves — a single ambiguous file with positive signal still proceeds):
 - The change is a schema migration with no accompanying code touching a
   user surface.
 - The change is documentation / markdown only.
+- **The diff is a pure refactor of code that already runs**, with no new
+  user-reachable execution path introduced. Concretely, all of these
+  patterns are "no new surface" and route to the marker file:
+  - **Constant or symbol moved to module-level scope** (or out of it)
+    without changing how / when it is read. Hoisting a literal out of a
+    function body so it can be reused is internal plumbing — a user did
+    not gain a new surface, the code that runs in response to a user is
+    unchanged. (See amplitude/amplitude#37008 — the canonical false
+    positive that motivated this rule.)
+  - **Pure rename** of a function, class, variable, file, or directory
+    when call sites are mechanically updated and behavior is unchanged.
+  - **File move / split / consolidation** that re-homes existing code
+    without touching its semantics — including extracting a helper into
+    its own module, or merging two helpers into one.
+  - **Type-only changes**: adding type annotations, narrowing a generic,
+    converting `any` to a concrete type, reshuffling a function
+    signature when no callers behave differently at runtime.
+  - **Formatting-only churn**: whitespace, import ordering, lint
+    autofix, prettier / black / gofmt runs, comment edits, doc-string
+    rewrites.
+  - **Dead-code removal**: deleting an unreachable branch, an unused
+    helper, a deprecated symbol with no remaining callers.
+
+  A refactor of already-instrumented product code is still "no new
+  surface": the existing `track(` call sites are untouched, there is no
+  new event to fire, and a tracking-plan diff would be empty.
 
 **Decision rule**
 
-- If ANY changed file is user-reachable AND produces a user-perceptible
-  effect (positive signal and no overwhelming reason to think otherwise)
-  → **proceed** with the full pipeline.
-- If EVERY changed file you read lacks a user-reachable path and a
-  user-perceptible effect → **stop** and write the marker file below.
-- If you genuinely cannot tell — the diff is small, the context is
-  ambiguous, the imports are unfamiliar — **default to proceeding**. The
-  cost of a false positive (a prepare PR the reviewer closes with one
-  click) is much lower than the cost of a false negative (missing real
-  user surfaces the team relies on). The gate exists to filter *clear*
-  non-product work, not to second-guess every PR.
+The question is not "is this code on a user-reachable path" — most files
+in a product app are. The sharper question is **"does THIS DIFF
+introduce a new user-reachable execution path that is not already
+instrumented?"** Refactors of already-running product code do not, even
+though the surrounding file is a product surface.
+
+- If the diff **introduces a new user-reachable execution path** —
+  concretely, ANY of: a new event handler attached to a user-interactive
+  element, a new route / endpoint / IPC handler / CLI subcommand, a new
+  page / view / screen / component entry point, a new async/await call
+  from a product surface into product code that was not there before, a
+  newly exported function reached from product UI, or a newly added
+  `track(` call site (or modification to an existing one) → **proceed**
+  with the full pipeline.
+- If EVERY changed file is non-product (test, CI utility, harness code,
+  infrastructure, schema-only, docs) → **stop** and write the marker
+  file below.
+- If the diff is **a pure refactor** of already-running product code —
+  any of the patterns from the "Strong negative signals" refactor list
+  above (constant relocation, rename, file move, type-only change,
+  formatting churn, dead-code removal) — there is **no new
+  user-reachable execution path**, so → **stop** and write the marker
+  file below. A refactor of a product surface still counts as no new
+  surface; the existing instrumentation is untouched and there is no
+  new behavior to track.
+- If you genuinely cannot decide between proceed and stop — the diff is
+  small, ambiguous, the imports are unfamiliar — **stop**. A reviewer
+  can always re-run the agent against the PR if they actually want
+  events; a prepare PR opened on internal plumbing wastes review time
+  and erodes trust in the gate. The earlier "default to proceeding when
+  ambiguous" rule produced exactly this failure mode in
+  amplitude/amplitude#37008 — a module-level constant relocation the
+  agent treated as instrumentable product work.
 
 **When stopping**, write a single marker file:
 
