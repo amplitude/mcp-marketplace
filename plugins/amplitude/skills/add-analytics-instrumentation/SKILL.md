@@ -19,121 +19,182 @@ description: >
 
 You are the orchestrator for the analytics instrumentation pipeline. Your job is
 to figure out what the user wants to instrument, gather the relevant code, and
-run the pipeline to produce a tracking plan — **or cleanly skip** if the change
-has no user-facing product surfaces worth instrumenting.
+run the pipeline to produce a tracking plan.
 
 ## Pipeline
 
-### Phase 0: Product-surface gate (stop-early)
+### Phase 0: Product-surface gate (PR / Branch mode only)
 
-Before running the pipeline, decide whether this diff is a product change.
-The agent should not propose events for work that never reaches a user —
-tooling, harness code, infrastructure, pure data transformations — because
-that produces taxonomy rows that will never fire and noise in PR review.
+Before doing any other work in PR or branch mode, decide a single question:
 
-**The judgment to make**
+> Does this diff add a **new user-reachable execution path** that produces a
+> surface, response, or feedback a user perceives?
 
-For this specific diff, ask: *does a user directly cause any of the changed
-code to run, and does that code produce a surface, response, or feedback
-the user perceives?*
+If the answer is **no** for every changed file, write the marker file
+`.amplitude/no-trackable-surfaces.md` and **STOP**. Do not proceed to Step 0.
+The orchestrator reads the marker and posts a "no trackable surfaces" comment
+on the original PR instead of opening a prepare PR with events that would
+never fire.
 
-That's the entire question. Don't enumerate path patterns — conventions
-vary wildly across customer codebases. A Rails app's tests live in
-`spec/`. A Go service's user-facing handlers live in `cmd/`. A CLI tool's
-product IS the command-line interface. A Next.js `pages/api/` file is
-backend *and* product because users hit it with every click. Path names
-are a weak hint at best; the file's contents and how it's reached are
-what matter.
+This gate exists because publishing a prepare PR for a refactor-only diff
+wastes reviewer time, pollutes the project's PR list, and erodes trust in the
+agent. A prepare PR the reviewer closes is **not** cheaper than a quiet skip —
+it is more expensive, because every false positive trains reviewers to ignore
+the agent's output.
 
-**How to read a file**
+**Apply the gate to PR / Branch input only.** File / Directory and Feature
+inputs (Step 1a / Step 1b) are explicit user requests to instrument specific
+code; Phase 0 does not apply there.
 
-For each changed file (or the small set of files most representative of
-the change, when a diff touches many), read it and ask:
+#### Decision rule
 
-1. **Is this code on a user-reachable path?** Follow the imports and call
-   chain as far as it takes to answer. If a utility function is only
-   called by a CI script that produces a JSON report, it's not
-   user-reachable. If the same utility is called by a route handler that
-   returns HTML, it is.
+Read the **contents** of every changed file (not just paths). For each file,
+ask: does the change introduce or expose a new user-reachable execution path?
+A user-reachable execution path is code a user **directly causes to run** by
+interacting with the product (clicking, typing, navigating, submitting,
+viewing, calling an exposed API), and which produces something the user
+perceives.
 
-2. **Does it produce a user-perceptible effect?** UI renders, HTTP
-   responses to browsers/mobile/API consumers, CLI output when the CLI
-   is the product, state changes that drive subsequent UI behavior, and
-   modifications to existing analytics call sites all count. Internal
-   data crunching with no user-visible outcome (a training pipeline, a
-   data migration, an eval harness that writes to a log) does not.
+- If **every** changed file is refactor-only (see patterns below) → write
+  `.amplitude/no-trackable-surfaces.md` and STOP.
+- If **any** changed file introduces a new user-reachable execution path →
+  proceed to Step 0.
+- If you cannot tell from the diff whether a change is user-reachable, read
+  the surrounding code (callers, route definitions, exported symbols). Do not
+  guess. **Do not default to proceeding** — the right tiebreaker is "is there
+  evidence of a new user-reachable path?" If there is no such evidence, the
+  answer is no.
 
-3. **Would an analyst at this company reasonably want to know when this
-   code runs?** If the answer is "no, this is behind-the-scenes
-   machinery," it's probably not worth instrumenting even if it *does*
-   technically sit on a user-reachable path.
+#### Refactor patterns that route to no-trackable-surfaces
 
-**Strong positive signals** (any ONE is enough for the pipeline to proceed):
+These changes do **not** add new user-reachable execution paths and MUST route
+to the marker file when they are the only kind of change in the diff:
 
-- UI component definitions (JSX/TSX render trees, Vue `<template>`,
-  Svelte markup, SwiftUI `View` bodies, Jetpack Compose `@Composable`
-  functions, Android layouts / Activities, UIKit view controllers) — the
-  file renders pixels a user sees.
-- Event handlers attached to interactive elements — `onClick`,
-  `onSubmit`, `@click`, `addEventListener`, gesture recognizers,
-  keyboard/touch handlers. The file describes something a user can
-  directly invoke.
-- Route / endpoint definitions that serve user requests — any framework,
-  any language, including CLI command registrations when the CLI is
-  the product.
-- Existing analytics / tracking call sites being modified — if the diff
-  changes code that already fires events, instrumenting is by definition
-  in scope.
-- A clear, reader-level description that says "this is the product
-  surface" — e.g., a component module, a page file, an API controller.
+1. **Constant or literal relocations** — moving a string/number/object
+   literal from one scope to another (e.g. function-local → module-level,
+   inline → named export). Behaviour is unchanged; only the binding site
+   moves.
 
-**Strong negative signals** (push toward stopping, but don't trigger by
-themselves — a single ambiguous file with positive signal still proceeds):
+   *Example (the #37008 shape):*
+   ```diff
+   -function format(x) {
+   -  const PREFIX = "user_";
+   -  return PREFIX + x;
+   -}
+   +const PREFIX = "user_";
+   +function format(x) {
+   +  return PREFIX + x;
+   +}
+   ```
+   No new surface. Skip.
 
-- The file is a test, verified by its own imports (`pytest`, `unittest`,
-  `vitest`, `jest`, `rspec`, `go test` helpers, etc.) rather than by its
-  directory name.
-- The file is a developer utility whose only callers are other developer
-  utilities or CI pipelines.
-- The change is a pure configuration / manifest edit (lockfile bump,
-  `tsconfig` tweak, dependency pin).
-- The change is a schema migration with no accompanying code touching a
-  user surface.
-- The change is documentation / markdown only.
+2. **Renames** — variable, function, parameter, type, or file renames where
+   call sites are updated mechanically and behaviour is preserved.
 
-**Decision rule**
+   *Example:*
+   ```diff
+   -export function getUserId(req) { return req.session.user.id; }
+   +export function resolveUserId(req) { return req.session.user.id; }
+   ```
+   No new surface. Skip. (If the rename touches a tracking call name, that's
+   a separate concern handled downstream — never rename event names in
+   `events.json`.)
 
-- If ANY changed file is user-reachable AND produces a user-perceptible
-  effect (positive signal and no overwhelming reason to think otherwise)
-  → **proceed** with the full pipeline.
-- If EVERY changed file you read lacks a user-reachable path and a
-  user-perceptible effect → **stop** and write the marker file below.
-- If you genuinely cannot tell — the diff is small, the context is
-  ambiguous, the imports are unfamiliar — **default to proceeding**. The
-  cost of a false positive (a prepare PR the reviewer closes with one
-  click) is much lower than the cost of a false negative (missing real
-  user surfaces the team relies on). The gate exists to filter *clear*
-  non-product work, not to second-guess every PR.
+3. **Type-only changes** — adding/refining TypeScript types, Python type
+   hints, generic parameters, or interface declarations without altering
+   runtime behaviour.
 
-**When stopping**, write a single marker file:
+   *Example:*
+   ```diff
+   -function load(id) { ... }
+   +function load(id: UserId): Promise<User> { ... }
+   ```
+   No new surface. Skip.
 
+4. **Formatting and whitespace** — prettier/black/gofmt reflows, import
+   reordering, trailing-comma changes, line-length wraps.
+
+5. **Code reorganization** — splitting a file into modules, extracting a
+   helper, inlining a one-off function, reordering exports — when call sites
+   resolve to the same behaviour. The execution graph is unchanged; only the
+   file layout differs.
+
+6. **Comment / docstring / JSDoc edits** — including TODO removals and
+   typo fixes inside comments.
+
+7. **Dead-code deletion** — removing unused exports, unreachable branches,
+   or commented-out blocks.
+
+8. **Dependency / lockfile bumps** — `package-lock.json`, `yarn.lock`,
+   `uv.lock`, `Pipfile.lock`, `go.sum`, `Gemfile.lock`. Same applies to
+   version-only `package.json` / `pyproject.toml` bumps with no new
+   imported call sites in source files.
+
+9. **Build / config / tooling** — CI YAML, `.eslintrc`, `tsconfig.json`,
+   `Makefile`, dockerfiles, `.gitignore`. These don't reach users at
+   runtime.
+
+10. **Test-only diffs** — changes confined to test files (`*.test.*`,
+    `*_test.py`, `spec/`, `__tests__/`). Tests don't run in production and
+    don't fire tracking calls a user perceives. (Caveat: if the test file is
+    actually the product — e.g. an exported test fixture imported by user
+    code — read the contents to verify before applying this rule.)
+
+11. **Generated code** — files marked auto-generated, vendored bundles,
+    minified output. The source generator is what a reviewer would
+    instrument; the artifact is not.
+
+If the diff mixes refactor-only files with files that DO introduce new
+user-reachable paths, the gate **opens** — proceed to Step 0. The
+downstream pipeline will scope its analysis to the user-reachable files.
+
+#### Heuristics that strongly suggest a new user-reachable path (gate opens)
+
+Any of these in a changed file is sufficient evidence to proceed:
+
+- A new exported handler, route, controller, or page component
+- A new `onClick`, `onSubmit`, `onChange`, or other event-handler binding in
+  a user-visible component
+- A new `fetch` / `axios` / RPC call from client code, or a new endpoint
+  registration on the server
+- A new branch in user-reachable control flow that produces user-visible
+  output (toast, modal, redirect, response body, render output)
+- A new feature-flag check that gates user-visible behaviour
+- A new form field, button, link, or navigation entry
+- A new SDK call site (`.track(`, `.identify(`, `.setUserId(`,
+  `.setGroup(`, `.groupIdentify(`) — if the diff is already adding these,
+  the gate is moot, but their presence confirms the path is user-reachable
+
+#### Marker file template
+
+When the gate closes, write `.amplitude/no-trackable-surfaces.md` with this
+shape:
+
+```markdown
+---
+reason: <one-line summary of why no surfaces were found>
+changed_paths:
+  - <path/to/file.ts>
+  - <path/to/other.py>
+classification: refactor-only | tooling-only | tests-only | docs-only | mixed-non-product
+---
+
+# No trackable surfaces
+
+This diff was reviewed against the Phase 0 product-surface gate. No changed
+file introduces a new user-reachable execution path that would warrant
+instrumentation.
+
+## What we looked at
+
+<bulleted summary, one line per file, naming the refactor pattern that
+applied — e.g. "src/utils/format.ts: constant relocation (PREFIX moved to
+module scope, no behaviour change)">
 ```
-# .amplitude/no-trackable-surfaces.md
-reason: "<one-sentence explanation tied to what you actually read in the
-  diff — cite specific files / behaviors, not just path patterns>"
-files_reviewed:
-  - path: <path 1>
-    signal: <what you saw when you read it — "unit test", "CLI utility
-      called only from CI", "Dockerfile", etc.>
-  - path: <path 2>
-    signal: <...>
-```
 
-Then STOP. Do not proceed to diff-intake or any downstream skill. Do not
-write `.amplitude/events.json`. The orchestrator flow (pr_agent.yaml /
-init_agent.yaml) reads this marker file and posts a short comment on the
-original PR explaining that no instrumentation is proposed, instead of
-opening a prepare PR with events that would never fire.
+Then STOP. Do not write `.amplitude/events.json`. Do not run Step 0 onward.
+The orchestrator inspects the marker and posts the "no trackable surfaces"
+comment on the original PR.
 
 ### Step 0: Capture intent
 
