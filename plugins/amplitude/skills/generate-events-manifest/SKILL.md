@@ -215,15 +215,32 @@ Write `.amplitude/events.json` with this exact schema:
 
 ## Step 5: Write manifest metadata
 
-Also write or update `.amplitude/manifest.json`:
+Also write or update `.amplitude/manifest.json`. The minimal schema (always
+required):
 
 ```json
 {
   "generated_at": "ISO 8601 timestamp",
   "commit_hash": "current HEAD commit hash",
+  "base_branch": "main or whatever the default branch is"
+}
+```
+
+Get the commit hash with `git rev-parse HEAD`.
+
+### *(agent-runtime only)* Additional fields
+
+When this skill is running under the Amplitude Coding Agent, the merge
+webhook handler reads extra fields to know how this manifest was produced
+and where to register events. Include them as well:
+
+```json
+{
+  "generated_at": "...",
+  "commit_hash": "...",
+  "base_branch": "...",
   "mode": "init or pr",
   "agent_version": "1.0",
-  "base_branch": "main or whatever the default branch is",
   "amplitude_project": {
     "app_id": 12345,
     "org_id": 67890
@@ -231,13 +248,14 @@ Also write or update `.amplitude/manifest.json`:
 }
 ```
 
-The `amplitude_project` section links this repo to a specific Amplitude project.
-It is set during the init run (from the session's app_id/org_id) and read by the
-merge webhook handler to know where to register events. If not present, the merge
-handler cannot register events automatically.
-```
+The `amplitude_project` section links this repo to a specific Amplitude
+project. It is set during the init run (from the session's app_id/org_id)
+and read by the merge webhook handler to know where to register events. If
+not present, the merge handler cannot register events automatically.
 
-Get the commit hash with `git rev-parse HEAD`.
+In standalone mode none of these extra fields apply — omit them. The minimal
+schema above is enough for a human to use the manifest as a tracking-plan
+artifact.
 
 ## Handling prior state
 

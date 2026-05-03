@@ -1,5 +1,5 @@
 ---
-name: user-property
+name: user-property-best-practices
 description: >
   Source of truth for Amplitude user property best practices, naming conventions,
   and selection standards. Use when an agent needs to suggest, validate, or review

@@ -25,42 +25,59 @@ skip phases or parallelize — later phases depend on earlier outputs.
 Read the `taxonomy` skill at `../taxonomy/SKILL.md` for naming standards and
 description quality requirements that apply throughout.
 
+## Operating modes
+
+This skill runs in two contexts:
+
+- **Standalone** (Claude Code, manual invocation): you produce artifacts in
+  `.amplitude/` and code edits that the human reviews and decides whether to
+  commit. No downstream automation reads your output.
+- **Agent-runtime** (Amplitude Coding Agent): a webhook handler downstream
+  may consume `.amplitude/events.json` + `.amplitude/manifest.json` to
+  register events into Amplitude's taxonomy automatically when the resulting
+  PR merges.
+
+Sections tagged *(agent-runtime only)* describe behavior that exists to hand
+off cleanly to that downstream automation. In standalone mode they are
+informational.
+
 ---
 
 ## Scope contract (READ FIRST)
 
-If the runner's instructions named a subdirectory (e.g., *"Analyze the
-`sites/marketplace` subdirectory"*), treat that subdirectory as **your
-repository** for this run. You may ONLY read, write, or stage files
-under that subdirectory. Other subdirectories of the same git repo are
-**out of scope** — they will be instrumented by their own separate
-agent runs.
+If the user (or the invoking process) named a specific subdirectory as the
+target — e.g., *"Analyze the `sites/marketplace` subdirectory"* — treat
+that subdirectory as **your working tree** for this run. You may ONLY read,
+write, or stage files under that subdirectory. Other parts of the same
+repository are out of scope.
 
-Do not extend the workspace beyond the named subdirectory. Do not
-import scope from a `git ls-files` walk of the repo root. Do not write
-`.amplitude/events.json`, `.amplitude/tracking-plan.md`, source code,
-or any other file outside the named subdirectory under any
-circumstance. The PR commit captures every changed file in the working
-tree, so out-of-scope writes ship to other sites' source code AND
-register events from those sites into the Amplitude project — a known
-monorepo failure mode that registers customer events the reviewer
-never approved.
+Do not extend the workspace beyond the named subdirectory. Do not import
+scope from a `git ls-files` walk of the repo root. Do not write
+`.amplitude/events.json`, `.amplitude/tracking-plan.md`, source code, or
+any other file outside the named subdirectory under any circumstance.
+
+Why this matters: in a monorepo, out-of-scope writes ship source code
+changes to siblings the user never asked you to instrument, and — in
+agent-runtime mode — register events from those siblings into the Amplitude
+project they don't belong to. Both are silent footguns that surface as
+unwanted instrumentation in unrelated parts of the repo or unwanted events
+in the analytics destination.
 
 Where this skill (or any sub-skill it calls) says **"scan the full
-repository"** or **"the full repo"**, read it as **"the full
-subdirectory"** when a subdirectory was named. Phase 1's instruction
-to *"scan the full repository"* applies to the named subdirectory's
-tree only, not the monorepo root.
+repository"** or **"the full repo"**, read it as **"the full subdirectory"**
+when a subdirectory was named. Phase 1's instruction to *"scan the full
+repository"* applies to the named subdirectory's tree only, not the
+monorepo root.
 
-If no subdirectory was named — i.e., the runner says *"Analyze the
-{owner}/{repo} repository"* with no subdirectory clause — the working
-directory IS the whole repo and you may walk it freely. The scope
-contract is only meaningful when a subdirectory is in play.
+If no subdirectory was named — i.e., the request is to analyze the whole
+repository — the working directory IS the whole repo and you may walk it
+freely. The scope contract is only meaningful when a subdirectory is in
+play.
 
-Verification step before any artifact write: every path you are about
-to create or modify must start with the named subdirectory's prefix.
-If a path doesn't, the write is out of scope — drop it, don't expand
-the workspace to "fix" the path.
+Verification step before any artifact write: every path you are about to
+create or modify must start with the named subdirectory's prefix. If a path
+doesn't, the write is out of scope — drop it, don't expand the workspace
+to "fix" the path.
 
 ---
 

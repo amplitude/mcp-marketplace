@@ -21,6 +21,23 @@ You are the orchestrator for the analytics instrumentation pipeline. Your job is
 to figure out what the user wants to instrument, gather the relevant code, and
 run the pipeline to produce a tracking plan.
 
+## Operating modes
+
+This skill runs in two contexts:
+
+- **Standalone** (Claude Code, manual invocation): you produce artifacts and a
+  tracking plan that the human reviews and decides whether to commit. No
+  downstream automation reads your output.
+- **Agent-runtime** (Amplitude Coding Agent, automated PR workflow): a webhook
+  handler downstream may consume the artifacts you produce — for example, to
+  open a "prepare PR" with the proposed instrumentation, or to register events
+  into Amplitude's taxonomy when that PR merges.
+
+Sections below tagged *(agent-runtime only)* describe behavior that exists to
+hand off cleanly to that downstream automation. In standalone mode they are
+informational — you can skip the handoff plumbing and just present the result
+to the user.
+
 ## Pipeline
 
 ### Phase 0: Product-surface gate (PR / Branch mode only)
@@ -30,17 +47,18 @@ Before doing any other work in PR or branch mode, decide a single question:
 > Does this diff add a **new user-reachable execution path** that produces a
 > surface, response, or feedback a user perceives?
 
-If the answer is **no** for every changed file, write the marker file
-`.amplitude/no-trackable-surfaces.md` and **STOP**. Do not proceed to Step 0.
-The orchestrator reads the marker and posts a "no trackable surfaces" comment
-on the original PR instead of opening a prepare PR with events that would
-never fire.
+If the answer is **no** for every changed file, **STOP** and tell the user the
+diff has no user-reachable surfaces worth instrumenting. Do not proceed to
+Step 0. Proposing events for a refactor-only diff wastes the reviewer's time
+and produces tracking calls that never fire.
 
-This gate exists because publishing a prepare PR for a refactor-only diff
-wastes reviewer time, pollutes the project's PR list, and erodes trust in the
-agent. A prepare PR the reviewer closes is **not** cheaper than a quiet skip —
-it is more expensive, because every false positive trains reviewers to ignore
-the agent's output.
+*(agent-runtime only)* When stopping, also write the marker file
+`.amplitude/no-trackable-surfaces.md` (template below) so the downstream
+webhook handler can post a "no trackable surfaces" comment on the original
+PR instead of opening a prepare PR with events that would never fire. Every
+false positive trains reviewers to ignore the agent's output, so the marker
+matters — a prepare PR the reviewer closes is more expensive than a quiet
+skip, not less.
 
 **Apply the gate to PR / Branch input only.** File / Directory and Feature
 inputs (Step 1a / Step 1b) are explicit user requests to instrument specific
@@ -75,7 +93,7 @@ to the marker file when they are the only kind of change in the diff:
    inline → named export). Behaviour is unchanged; only the binding site
    moves.
 
-   *Example (the #37008 shape):*
+   *Example: a constant relocated from function scope to module scope:*
    ```diff
    -function format(x) {
    -  const PREFIX = "user_";
@@ -165,10 +183,11 @@ Any of these in a changed file is sufficient evidence to proceed:
   `.setGroup(`, `.groupIdentify(`) — if the diff is already adding these,
   the gate is moot, but their presence confirms the path is user-reachable
 
-#### Marker file template
+#### Marker file template *(agent-runtime only)*
 
-When the gate closes, write `.amplitude/no-trackable-surfaces.md` with this
-shape:
+When the gate closes in agent-runtime mode, write
+`.amplitude/no-trackable-surfaces.md` with this shape so the webhook handler
+can identify and surface the skip reason:
 
 ```markdown
 ---
@@ -193,8 +212,8 @@ module scope, no behaviour change)">
 ```
 
 Then STOP. Do not write `.amplitude/events.json`. Do not run Step 0 onward.
-The orchestrator inspects the marker and posts the "no trackable surfaces"
-comment on the original PR.
+*(agent-runtime only)* The webhook handler inspects the marker and posts the
+"no trackable surfaces" comment on the original PR.
 
 ### Step 0: Capture intent
 

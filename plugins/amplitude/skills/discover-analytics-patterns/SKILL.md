@@ -240,9 +240,10 @@ Any skill that consumes this output must obey these rules:
 5. **Flag, don't fix, rename/retype intents.** If the diff itself clearly
    renames an existing event or retypes an existing property, surface it as
    a breaking-change warning in the analysis output instead of silently
-   applying the change. The taxonomy sync layer enforces the type invariant
-   at the RPC boundary regardless, but catching it earlier lets the PR
-   comment explain the situation to the reviewer before merge.
+   applying the change. A downstream taxonomy registrar may reject type
+   changes at the RPC boundary anyway — flagging early is what lets the
+   reviewer see the situation in context (PR comment, plan output, or
+   wherever the analysis surfaces) before the change ships.
 
 ---
 
