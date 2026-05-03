@@ -109,7 +109,13 @@ Write `.amplitude/events.json` with this exact schema:
       "event_type": "Exact Event Name As In Code",
       "description": "Rich taxonomy description following the 5-point structure above.",
       "category": "Commerce",
-      "file": "src/app/page.tsx",
+      "call_sites": [
+        {
+          "file": "src/app/page.tsx",
+          "line": 142,
+          "purpose": "Fired inside the onSuccess callback of useExtract() when the form submission resolves."
+        }
+      ],
       "properties": [
         {
           "name": "property_name",
@@ -172,8 +178,36 @@ Write `.amplitude/events.json` with this exact schema:
     category with Title Case (e.g., `Experiment Exposure`, `Referral`) rather
     than falling back to a generic bucket.
 
-- **`properties`** are documentation only — they are not currently registered
-  via the taxonomy API. Still include them for the tracking plan and PR body.
+- **`call_sites`** records every line where this event fires, so a downstream
+  reviewer surface (e.g. a CI check that posts inline comments on the prepare
+  PR) can pin per-line annotations to the actual SDK call. Each entry MUST
+  carry:
+  - `file`: repo-relative path (e.g. `src/components/Foo.tsx`)
+  - `line`: 1-indexed line number where the SDK call sits AFTER your edits
+  - `purpose` (optional): one short sentence on why THIS site fires the event
+    — useful when the same event fires from several places (e.g. a `Page
+    Viewed` event instrumented in multiple route components).
+
+  When you instrumented from the `instrument-events` step, copy each entry's
+  `filePath` → `file` and `originalLineNumberPreChanges` → `line` (adjusted
+  for any insertions you made above this line in the same file). When the
+  same event has multiple call sites, include every one — they each get
+  their own inline annotation.
+
+  Use an array even for a single call site (the schema is uniform). Omit the
+  whole `call_sites` field only if you genuinely cannot locate the call —
+  downstream surfaces will skip annotation for that event rather than
+  pinning to a placeholder line.
+
+- **`properties`** are registered into the Amplitude taxonomy alongside the
+  event itself — each entry creates or updates an event-property row keyed on
+  `(event_type, name)`. That means `name`, `type`, and `description` are
+  load-bearing taxonomy state, not just PR-body decoration. Property
+  descriptions are shown to analysts in the Amplitude UI and to AI features —
+  hold them to the same quality bar as event descriptions: explain what the
+  value represents and what segmentation/filter it enables, not just the
+  variable name. Include `is_required`, `is_array_type`, `enum_values`, or
+  `regex` when you know them; the registrar will pick them up.
 
 - **`analysis_recipe`** and **`stakeholder_narrative`** are required for every
   event. If you can't write a compelling analysis recipe, question whether the
