@@ -104,6 +104,7 @@ Write `.amplitude/events.json` with this exact schema:
     "importPath": "@/lib/analytics",
     "exampleCall": "trackEvent('Product Viewed', { product_id: product.id })"
   },
+  "low_confidence_note": "(optional) Free-form text describing why Phase 0 was uncertain about whether to instrument this diff. Written by add-analytics-instrumentation when the trigger was manual AND the diff was ambiguous — see that skill's Phase 0 decision rule. Omit this field entirely when Phase 0 was confident either way.",
   "events": [
     {
       "event_type": "Exact Event Name As In Code",
@@ -212,6 +213,28 @@ Write `.amplitude/events.json` with this exact schema:
 - **`analysis_recipe`** and **`stakeholder_narrative`** are required for every
   event. If you can't write a compelling analysis recipe, question whether the
   event is worth instrumenting.
+
+- **`low_confidence_note`** (optional, top-level) records that Phase 0 in
+  ``add-analytics-instrumentation`` was uncertain about whether this diff
+  should be instrumented and proceeded anyway because the trigger was manual.
+  Write this field ONLY when Phase 0 explicitly invoked the manual-uncertain
+  path — leave it out otherwise. The text should describe what specifically
+  made you uncertain, in plain language a reviewer can act on. Examples:
+
+  > "no clear user-facing handler in this diff — the changes are inside an
+  > internal service module that's only called from a webhook handler. I
+  > instrumented the webhook entry on the assumption that's the user-perceived
+  > surface, but you may want to close this if the webhook isn't user-triggered."
+
+  > "the diff renames an existing component but adds no new interactions; I
+  > don't think there's net-new instrumentation needed, but since you ran
+  > @amplitude track explicitly I attempted to enrich the existing tracking
+  > on the renamed component."
+
+  The orchestrator (in agent-runtime mode) renders this field as a
+  ``> **⚠️ Low confidence:**`` callout in the PR comment so the reviewer is
+  primed to check the proposed events. In standalone mode the field shows
+  up in the events.json output the human reviews directly.
 
 ## Step 5: Write manifest metadata
 

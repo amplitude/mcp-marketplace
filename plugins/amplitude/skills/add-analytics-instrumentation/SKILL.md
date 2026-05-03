@@ -79,9 +79,31 @@ perceives.
   proceed to Step 0.
 - If you cannot tell from the diff whether a change is user-reachable, read
   the surrounding code (callers, route definitions, exported symbols). Do not
-  guess. **Do not default to proceeding** — the right tiebreaker is "is there
-  evidence of a new user-reachable path?" If there is no such evidence, the
-  answer is no.
+  guess. The tiebreaker depends on the **trigger source**, which the
+  agent-runtime caller passes in the prompt as ``Trigger: manual`` or
+  ``Trigger: autorun``:
+
+  - **Trigger: manual** (the user explicitly invoked the agent — e.g. by
+    commenting ``@amplitude track`` on a PR, or by running this skill via
+    Claude Code). Default to **proceeding** with a best attempt — the user
+    asked for instrumentation, so produce something for them to review. But
+    record your uncertainty: write a top-level ``low_confidence_note`` field
+    in ``events.json`` (see the ``generate-events-manifest`` skill) describing
+    what specifically made you uncertain (e.g. "no clear user-facing handler
+    in this diff; the changes are inside an internal service module that's
+    only called from a webhook handler — instrumented the webhook entry on
+    the assumption that's the user-perceived surface"). The orchestrator
+    surfaces this note as a ``> **⚠️ Low confidence:**`` callout in the PR
+    comment so the reviewer is primed to check the proposed events.
+  - **Trigger: autorun** (the agent fired itself on PR open with no explicit
+    user ask). Default to **stopping** — write the marker and skip
+    instrumentation. The user didn't ask for events; speculating produces
+    a prepare PR they didn't request and erodes trust faster than missing
+    a real surface they could've explicitly requested via ``@amplitude
+    track``.
+  - **No trigger label given** (standalone Claude Code invocation, file/
+    directory/feature mode, or older agent-runtime versions): treat as
+    manual — the user is in front of the screen and chose to run this.
 
 #### Refactor patterns that route to no-trackable-surfaces
 
