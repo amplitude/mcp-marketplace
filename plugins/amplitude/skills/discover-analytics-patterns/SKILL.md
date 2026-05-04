@@ -237,13 +237,51 @@ Any skill that consumes this output must obey these rules:
    consumer's build (the generated client code starts expecting a string
    where a list was being passed). If the inferred type disagrees with what's
    registered, treat it the same way you'd treat a rename: flag, don't fix.
-5. **Flag, don't fix, rename/retype intents.** If the diff itself clearly
-   renames an existing event or retypes an existing property, surface it as
-   a breaking-change warning in the analysis output instead of silently
-   applying the change. A downstream taxonomy registrar may reject type
-   changes at the RPC boundary anyway — flagging early is what lets the
-   reviewer see the situation in context (PR comment, plan output, or
-   wherever the analysis surfaces) before the change ships.
+5. **Flag, don't fix, rename/retype intents — by default.** If the diff
+   itself clearly renames an existing event or retypes an existing property,
+   surface it as a breaking-change warning in the analysis output instead
+   of silently applying the change. A downstream taxonomy registrar may
+   reject type changes at the RPC boundary anyway — flagging early is
+   what lets the reviewer see the situation in context (PR comment, plan
+   output, or wherever the analysis surfaces) before the change ships.
+
+   The flag should always include a recommendation — typically the
+   **parallel-property pattern**: keep the existing property unchanged
+   and add a sibling that captures the new shape (e.g.
+   `query_length: number` stays + add `query_length_bucket: string`),
+   so both register cleanly and analysts pick whichever they need. Don't
+   pre-apply this; surface it as a recommendation so the reviewer can
+   decide.
+
+   Customer-clean phrasing for the flag: "I held off on changing this in
+   case the existing schema is intentional. If you want me to apply the
+   recommended change anyway, re-run with `@amplitude track please apply
+   the schema change recommendations`." That gives the customer a
+   one-liner to invite the change after they've reviewed the conflict.
+
+6. **Apply rename/retype intents WHEN the user explicitly consents on a
+   re-run.** If the agent-runtime caller passes a ``<reviewer_guidance>``
+   block whose text explicitly directs the agent to apply the previously-
+   flagged rename or schema change (phrasings like "apply the schema
+   change recommendations," "yes rename the event," "go ahead and change
+   the type"), treat that as informed consent and DO apply the change in
+   this run. The reviewer has already seen the callout from the prior
+   run, understood the breaking-change implications, and asked for it.
+
+   Concretely, on consent:
+   - Write the divergent shape into events.json (the registered taxonomy
+     is now what's wrong; the customer's code is the source of truth).
+   - Apply the parallel-property edit (if that's what the prior callout
+     recommended) or accept the source-code rename/retype as-is.
+   - Note the consent path in the analysis output ("Applied schema
+     change for `<Event>.<property>` per reviewer guidance: '<short
+     quote from the guidance>'") so the next comment renders an
+     acknowledgment instead of a flag.
+
+   Without explicit consent in reviewer guidance, default to rule 5
+   (flag, don't fix). Phrases like "looks good," generic 👍/👎, or
+   "merge this" do NOT count as consent for a schema change — the
+   customer has to direct it specifically.
 
 ---
 
