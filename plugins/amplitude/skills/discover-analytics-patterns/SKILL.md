@@ -244,54 +244,6 @@ Any skill that consumes this output must obey these rules:
    changes at the RPC boundary anyway — flagging early is what lets the
    reviewer see the situation in context (PR comment, plan output, or
    wherever the analysis surfaces) before the change ships.
-6. **Don't ship the breaking source-code change either.** "Flag, don't fix"
-   applies to the prepare PR's source-code edits too — not just to
-   events.json. When the diff being analyzed *contains* a rename or
-   property-type-change on an existing tracking call, the prepare PR
-   should NOT carry that breaking line as-is. Pick the lightest non-breaking
-   path:
-
-   - **For a property type change**, prefer one of these over committing
-     the breaking line:
-
-     a. **Revert the line** so the SDK keeps sending the registered type
-        (e.g. keep `query_length: trimmedSearchQuery.length` numeric
-        instead of bucketing to a string).
-
-     b. **Parallel-property pattern.** Leave the existing property
-        unchanged and ADD a new property that captures the new shape:
-
-        ```diff
-          amplitude.track("Team Filters Reset", {
-            previous_filter: filter,
-            has_search_query: trimmedSearchQuery.length > 0,
-        -   query_length: trimmedSearchQuery.length,
-        +   query_length: trimmedSearchQuery.length,           // unchanged: number
-        +   query_length_bucket: bucketLength(trimmedSearchQuery.length),  // new: string
-            source: "team_filters",
-          });
-        ```
-
-        Both register cleanly; analysts pick whichever dimension they want.
-
-   - **For an event rename** in the diff (e.g. `track("User Signed Up",
-     …)` → `track("Account Created", …)` on what was already a tracked
-     event), leave the original event name in the source. Renaming creates
-     a new event in Amplitude and orphans every chart, funnel, and cohort
-     built on the old name; `ampli pull` / `ampli build` will also break
-     for every consumer regenerating from the registered taxonomy.
-
-   - **The narrow exception** is when the diff is fixing a real conflict
-     between source and taxonomy — e.g. the property is registered as
-     `string` in the Amplitude UI but every existing call site sends it as
-     a number, and the diff is bringing the source into agreement with the
-     registered type. That isn't breaking — it's repair. Surface the
-     reasoning in the analysis output but don't refuse the change.
-
-   When in doubt, default to "don't ship the breaking source change."
-   Surfacing the conflict as a callout is cheap; silently merging a
-   schema-incompatible source diff is what causes the `ampli build`
-   failures and silent runtime data loss this rule exists to prevent.
 
 ---
 
