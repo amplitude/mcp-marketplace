@@ -298,6 +298,10 @@ Property names are a signal but the real risk is the **value**. Before writing e
 | `filter_value: "red"` (free-form) | `filter_type: "color"`, `filter_value_bucket: "color"` (enum) |
 | `comment_body: "..."` | `comment_length: 142`, `has_mentions: true`, `comment_hash: "ab12..."` |
 | `review_text: "..."` | `review_length: 92`, `rating: 4` |
+| `employer_name: "Acme Corp Inc."` | `employer_provided: true` (boolean) — a raw company name is high-cardinality, frequently doubles as PII for B2C, and the analytic question is almost always "did they fill it in" or "what industry," not the literal string. If industry is needed, derive `employer_industry: "tech"` (enum) at the call site. |
+| `job_title: "Senior Software Engineer"` | `job_title_provided: true` or `job_seniority: "senior"` (enum). Free-form titles fragment the same role across hundreds of variants and are useless for segmentation. |
+| `company_name: "..."` | Same rule as `employer_name` — boolean or enumerated industry. |
+| `address_street: "123 Main St"` | Never send. If geographic segmentation is needed, send only `address_country` / `address_state` / `postal_code_prefix` (first 3 of US ZIP) — no street-level data. |
 
 **Bounded by enum is OK.** If the value space is genuinely enumerable (e.g., `filter_type: "color" | "size" | "price"`), declare the `enum` in events.json and the raw value is safe. If you can't enumerate it, bucket it.
 
