@@ -120,6 +120,14 @@ important property exists elsewhere (e.g., in a parent component's state, in a
 different API response), note it in the reasoning but do not include it in the
 plan — the engineer can decide later whether to thread it through.
 
+This is *variable* scope at the insertion point — not file-read scope. Reading
+sibling files, route definitions, the SDK initializer, or an upstream API
+contract is in-lane and encouraged when it would sharpen the plan. The
+constraint here is: don't synthesize a property out of variables the
+instrumented function can't actually see at runtime. The engineer reading
+your plan must be able to reproduce the call without threading new arguments
+through.
+
 ### 2d. Validate against existing tracking calls
 
 Compare your planned call against the examples you found in step 2:

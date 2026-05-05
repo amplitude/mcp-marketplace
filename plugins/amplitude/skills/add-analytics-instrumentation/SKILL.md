@@ -38,6 +38,30 @@ hand off cleanly to that downstream automation. In standalone mode they are
 informational — you can skip the handoff plumbing and just present the result
 to the user.
 
+## Scope: read vs write
+
+Read scope is wider than write scope, and they are not the same thing.
+
+- **Write scope** is bounded by the diff (in PR/Branch mode) or the user's
+  named target (in File/Directory/Feature mode). You only modify code inside
+  that boundary. Renaming a sibling file's helper, reformatting an unrelated
+  module, fixing typos in a file the diff doesn't touch — all out of bounds.
+- **Read scope** is the whole repository. Reading code outside the write
+  boundary is always in-lane, and it's expected when it would let you
+  instrument the target with higher confidence. Concretely: verifying the SDK
+  is initialized somewhere upstream so a freshly-added `track()` call actually
+  fires; reading the contract of an API endpoint the touched frontend calls so
+  failure-event branches reflect what the backend can actually return; finding
+  existing tracking patterns in sibling modules so naming and call style match
+  the codebase; confirming a helper signature your insertion depends on.
+
+When you catch yourself reaching for a "low confidence: not in this diff"
+caveat in the analysis, treat that as a signal to read the file in question
+first. A confirmed read produces a sharper proposal than a hedged guess; a
+caveat is appropriate only when the read genuinely doesn't resolve the
+uncertainty (the contract is documented elsewhere, the upstream initializer
+is in a sibling repo, etc.).
+
 ## Pipeline
 
 ### Phase 0: Product-surface gate (PR / Branch mode only)
