@@ -288,31 +288,13 @@ Then STOP. Do not write `.amplitude/events.json`. Do not run Step 0 onward.
 *(agent-runtime only)* The webhook handler inspects the marker and posts the
 "no trackable surfaces" comment on the original PR.
 
-## Runtime discipline (PR / Branch / File / Feature modes ONLY)
-
-> **STRICT SCOPE.** This entire section applies *only* when the agent is
-> running this skill (`add-analytics-instrumentation`) on a small, scoped
-> input — a PR, a branch diff, a single file/directory, or a named feature.
->
-> **It does NOT apply to init mode / full-repo instrumentation.** If you're
-> running `full-repo-instrumentation/SKILL.md`, follow that skill's
-> discovery rules verbatim — the candidate-count gate, the per-area
-> coverage gate, the per-area iteration in Phase 4, and the explicit
-> enumeration of `product-map.json[productAreas]` are *the point* of init
-> mode. The "read budget" and "stop rule" below would actively damage init
-> coverage if applied there. When in doubt: full-repo wants exhaustive
-> discovery; PR-mode wants a tight loop on the diff. Do not blend.
->
-> If the orchestrator's user message tells you to invoke
-> `full-repo-instrumentation`, treat the rest of this section as
-> informational. Don't tighten init discovery to satisfy a budget meant
-> for diff-scoped runs.
+## Runtime discipline (PR / Branch / File / Feature modes)
 
 Discovery cost compounds — every wide grep, full-file read, and unbounded
 artifact dump pulls more text into context, slows reasoning, and crowds out
 the actual instrumentation decision. These rules cap the worst patterns that
-have shown up in real PR-mode traces. They apply to all four input modes of
-this skill (PR, Branch, File / Directory, Feature) and to no other skill.
+have shown up in real traces. They apply to all four input modes (PR, Branch,
+File / Directory, Feature).
 
 ### Read budget
 
