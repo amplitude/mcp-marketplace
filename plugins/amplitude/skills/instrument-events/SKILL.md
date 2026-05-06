@@ -138,39 +138,15 @@ agent's runtime working directory `.amplitude/` is a different beast: you
 write artifacts there for the orchestrator to persist via `save_artifacts`,
 but it is never an instrumentation target.
 
-### 2d. Mirror the nearest existing call site exactly
+### 2d. Validate against existing tracking calls
 
-Before writing the planned tracking code, identify the **nearest existing
-tracking call site** in the codebase — first the same file, then the
-nearest sibling file in the same feature/module, then the closest match
-returned by `discover-analytics-patterns`. Mirror it exactly. Specifically:
+Compare your planned call against the examples you found in step 2:
 
-- **Async vs. sync shape.** If the nearest call is `await
-  asyncio.to_thread(ampli.client.track, ...)` (or `await track(...)` in JS,
-  or fire-and-forget in a sync handler), match the same shape. Do NOT
-  invent a new wrapper — `asyncio.get_event_loop().run_until_complete()`
-  inside an async path is a real bug pattern, not an acceptable variant.
-- **Import path.** Use the import the existing call uses, byte-for-byte
-  (`from langley.codingagent.events import ampli`, not your own
-  `import amplitude`).
-- **Helper / wrapper.** If the codebase wraps tracking in a helper
-  (`logEvent(eventName, props)`, `trackInteraction(...)`, an `Ampli` client
-  method), call the helper. Don't bypass it to call the SDK directly.
-- **Property shape.** Same flat-vs-nested object structure, same key
-  casing, same property naming convention.
-- **Placement.** Same point in the handler — inline at the success
-  callback, or extracted to a helper, whichever the existing pattern uses.
+- Same import/function?
+- Same property shape (flat object? nested? typed interface?)?
+- Same placement pattern (inline in handler? extracted to a helper?)?
 
-Cite the file:line of the call site you mirrored in the plan's
-`existingPattern.exampleCall` field. If you can't find a nearby call to
-mirror (truly net-new instrumentation in a previously-untracked area),
-say so explicitly and use the closest-domain pattern from
-`discover-analytics-patterns`. Synthesizing a new pattern from scratch is
-out of scope for this skill — it's a separate decision that belongs in
-the codebase's analytics architecture, not in a per-event PR.
-
-If anything diverges from the nearest call site, adjust to match.
-Consistency > cleverness.
+If anything diverges, adjust to match. Consistency > cleverness.
 
 ## 3. Assemble the tracking plan
 
