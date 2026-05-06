@@ -28,6 +28,51 @@ analytics philosophy and naming standards.
 
 ---
 
+## Operating mode (READ FIRST — affects how aggressively to prune)
+
+`discover-event-surfaces` runs in two modes. The shape of the input
+`change_brief` tells you which one:
+
+- **PR / Branch / File / Feature mode** — the `change_brief` came from
+  `diff-intake` and lists the files the user changed in a single PR or
+  pointed you at a specific file/feature. Scope is the diff or the named
+  target. **Less is more here.** Every event you propose adds reviewer
+  load on a small PR; cut hard. The "less is more" / "be selective" /
+  "downgrade if unsure" guidance throughout this skill is calibrated to
+  this mode.
+
+- **Full-repo / per-area mode** — the `change_brief` was synthesized by
+  `full-repo-instrumentation` (init mode) per product area in
+  `product-map.json[productAreas]`. The user is asking for a comprehensive
+  audit of the codebase's analytics maturity, not a minimal patch. **Be
+  thorough here.** Every product area on the map deserves a real coverage
+  decision: either propose new events that bring this area to a good
+  analytics standard (funnel start/end, async failure branches,
+  segmentation discriminator properties on existing events) OR provide an
+  explicit `coverage_decision` block listing the existing events that
+  cover those needs. **Do not** treat "this area already has some
+  tracking" as a reason to skip evaluation — generic existing coverage
+  often misses failure paths and discriminators that the per-area review
+  is supposed to surface.
+
+How to tell the modes apart:
+- Look at `classification.analytics_scope` and the source of `surfaces`
+  / `file_summary_map`. A diff-shaped change_brief lists a handful of
+  modified files; a per-area change_brief lists routes and components
+  scoped to one product area in the map.
+- The orchestrator's prompt may also state the trigger source (`manual`,
+  `autorun`, or `full-repo` / `init`) — honor it when given.
+
+The four event categories (`business_outcome`, `user_journey`,
+`feature_success`, `friction_failure`) and the cardinality discipline
+below apply to both modes equally. The asymmetry is in **how aggressively
+to prune**: aggressive in PR mode, generous in full-repo mode. A 5-event
+candidate list is reasonable for a small PR; a 5-event candidate list for
+a critical product area in full-repo mode is almost certainly under-
+covering and should pull failure-path / discriminator candidates back in.
+
+---
+
 ## 1. Parse the change_brief
 
 - `classification.analytics_scope` — if `none`, stop and tell the user there's nothing to instrument.
@@ -245,9 +290,11 @@ To decide how many *intermediate* funnel events to mark critical, gauge the leng
 - **Medium process (3-5 steps, possibly spanning pages):** Add one intermediate event at the most likely drop-off point — typically where the user commits effort (fills a form, makes a key selection, uploads a file).
 - **Long process (5+ steps, multi-page or wizard-style):** 2-3 intermediate events at natural phase boundaries. Think "started → configured → submitted → confirmed" rather than tracking every field interaction.
 
-Be selective with intermediate events. Every funnel event you mark critical is one more thing an engineer must implement and a PM must monitor. If you're unsure whether an intermediate step is worth tracking, it probably isn't — the start and end events will reveal whether there's a problem, and the team can always add granularity later once they see where drop-off is high.
+**Be selective with intermediate events** *(PR / Branch / File / Feature mode)*. Every funnel event you mark critical is one more thing an engineer must implement and a PM must monitor on a small PR. If you're unsure whether an intermediate step is worth tracking, it probably isn't — the start and end events will reveal whether there's a problem, and the team can always add granularity later once they see where drop-off is high.
 
-Less is more. A focused set of critical events that actually get dashboarded beats a sprawling list nobody looks at. When in doubt, downgrade — it's easier to add an event later than to remove one that's already in dashboards.
+**Less is more** *(PR / Branch / File / Feature mode)*. A focused set of critical events that actually get dashboarded beats a sprawling list nobody looks at. When in doubt, downgrade — it's easier to add an event later than to remove one that's already in dashboards.
+
+**In full-repo / per-area mode, invert this**. The customer is asking for a comprehensive audit of an area. "When in doubt, downgrade" becomes "when in doubt, keep the candidate at `2 (useful)` and let the per-area coverage gate decide." A single area that looks well-covered on the happy path almost always has missing failure-path candidates and missing segmentation discriminators (signup_method, plan_tier, error_reason); a too-tight per-area candidate list silently leaves those gaps unfilled. Brevity is the right reflex on a 50-line PR; it is the wrong reflex on a customer's first-touch full-repo audit.
 
 ## 9. Emit YAML output
 
