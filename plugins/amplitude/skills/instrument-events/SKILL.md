@@ -128,6 +128,16 @@ instrumented function can't actually see at runtime. The engineer reading
 your plan must be able to reproduce the call without threading new arguments
 through.
 
+**No insertions into dotfile-rooted paths.** The instrumentation plan must
+target source code, not configuration. Insertion locations under `.github/**`,
+`.cursor/**`, `.agents/**`, `.gitignore`, `.eslintrc*`, `.env*`, IDE state, or
+any other top-level dot-segment are out of scope. The orchestrator's
+`commit_and_push` enforces this structurally — a plan that targets a dotfile
+path will produce a hard error at commit time, not a silent commit. The
+agent's runtime working directory `.amplitude/` is a different beast: you
+write artifacts there for the orchestrator to persist via `save_artifacts`,
+but it is never an instrumentation target.
+
 ### 2d. Validate against existing tracking calls
 
 Compare your planned call against the examples you found in step 2:

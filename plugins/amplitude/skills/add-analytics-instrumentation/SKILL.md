@@ -62,6 +62,33 @@ caveat is appropriate only when the read genuinely doesn't resolve the
 uncertainty (the contract is documented elsewhere, the upstream initializer
 is in a sibling repo, etc.).
 
+### Dotfile-rooted paths are off-limits for writes
+
+Inside the write scope, a hard rule: **never modify any path whose top-level
+segment starts with `.`**. That includes:
+
+- `.github/**` — workflows, CODEOWNERS, issue templates, PR templates. Owned
+  by the customer's CI/CD config, not the agent's surface.
+- `.cursor/**`, `.agents/**` — IDE / skill config staged at clone time.
+- `.gitignore`, `.gitattributes`, `.eslintrc*`, `.prettierrc*`, `.npmrc`,
+  `.editorconfig`, `.env*` — repo-level dotfile config.
+- `.vscode/**`, `.idea/**`, `.husky/**` — editor / hook state.
+
+The runtime working directory `.amplitude/` is a special case. You write
+artifacts there during the run (events.json, tracking-plan.md,
+business-context.md, product-map.json, manifest.json,
+no-trackable-surfaces.md) — that is correct and expected. The orchestrator
+reads them via `save_artifacts` and persists them to the handoff DB. They
+are **not** committed to the prepare branch. If your tracking plan would
+require touching any other dotfile-rooted path, the answer is no — surface
+the requirement in your analysis instead and let the reviewer decide.
+
+The langley `commit_and_push` tool enforces this structurally: after
+`git add -A` it unstages every dotfile-rooted path, and refuses the commit
+outright if anything dotfile-rooted survives staging. A prompt that asks
+the agent to commit `.github/workflows/*` or `.amplitude/*` will produce a
+hard error, not a silent commit.
+
 ## Pipeline
 
 ### Phase 0: Product-surface gate (PR / Branch mode only)
