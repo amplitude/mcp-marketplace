@@ -146,16 +146,63 @@ For each discovered route, READ the source file. Describe:
 
 ## Step 3: Group into product areas
 
-### By URL prefix
+### Enumerate first, prune second
+
+Before grouping, **list every candidate area exhaustively**. The discovery
+goal is to capture what actually exists in the product so downstream
+instrumentation has a complete surface inventory; a too-tight grouping
+silently drops real features and the next phase can't propose tracking
+for what isn't on the map.
+
+Run an enumeration pass over the codebase's feature/module organization
+before you decide which areas to merge or downgrade:
+
+```bash
+# Frontend feature/module directories (one entry per immediate child)
+find src/features src/modules src/pages app/features apps -mindepth 1 -maxdepth 1 -type d 2>/dev/null
+find lib/features lib/modules lib/screens -mindepth 1 -maxdepth 1 -type d 2>/dev/null  # Flutter / Dart
+find src/views src/screens -mindepth 1 -maxdepth 1 -type d 2>/dev/null
+```
+
+Every immediate child directory is a **candidate area** unless it is empty,
+test-only fixtures, build output, or experimental UI not wired into any
+route. Treat a directory as "real product" if any of its files are
+imported from a route handler or referenced by another feature directory.
+
+For each enumerated candidate, **decide explicitly** whether to keep it as
+its own area, merge it into a parent area, or drop it — and write the
+reason in the area's `description` (kept) or in a comment-style note in
+the map's `productAreas` block (merged/dropped). Silent drop is not
+allowed: if `lib/features/templates/` has 30 files and the final map omits
+"Templates", a reviewer can't tell whether you saw it and judged it minor
+or simply missed it.
+
+Acceptable disposition for a candidate:
+
+- **Keep as own area** — substantive feature with its own user-facing flows.
+- **Merge into parent area** — explicitly fold into another area whose flows
+  cover this directory's interactions; record `merged_from: [<directory>]`
+  on the parent area (e.g. Recording & Upload merged into Case Workflow
+  because users always invoke it from the case page).
+- **Downgrade to `low` priority** — substantive but rarely used (admin
+  tools, settings, edge surfaces). Keep on the map at low priority rather
+  than dropping; the per-area coverage gate downstream will accept a
+  `coverage_decision` block for low-priority areas.
+- **Drop** — only for: empty / scaffolding / test fixtures / experimental
+  code not exposed in the running product.
+
+### Grouping heuristics
+
+By URL prefix:
 `/auth/*`, `/login`, `/signup` → Authentication
 `/dashboard/*` → Dashboard
 `/settings/*` → Settings
 
-### By directory structure
+By directory structure:
 `src/features/billing/` → Billing
 `app/(marketing)/` → Marketing
 
-### By domain concept
+By domain concept (only when the directories actually share a flow):
 Signup + Login + Password Reset + OAuth → Authentication
 Cart + Checkout + Order Confirmation → Purchase Flow
 
@@ -163,7 +210,7 @@ Cart + Checkout + Order Confirmation → Purchase Flow
 - **critical**: Core journey or revenue-impacting (signup, checkout, main feature)
 - **high**: Daily active paths (dashboard, search, primary CRUD)
 - **medium**: Secondary features, settings, admin
-- **low**: Edge cases, rarely used, admin-only
+- **low**: Edge cases, rarely used, admin-only — but *still on the map*
 
 ## Step 4: Trace user flows
 
@@ -392,9 +439,20 @@ Write two files. Both layers in both files; same section order.
 }
 ```
 
-`primaryQuestion` is required on each product area. If you can't write one,
-the area is dead weight in the map — drop it. Most products have 3-5
-meaningful surfaces, not 12.
+`primaryQuestion` is required on each product area. The question can be
+generic when the area's user-facing function is real but its analytical
+framing is unclear from code alone (e.g. *"Where do users hit dead ends in
+&lt;area&gt; flows?"* is a fine fallback). The right move when an area is
+substantive but its primaryQuestion is weak is to **downgrade priority**,
+not to drop the area off the map. Areas only get dropped under the rules
+in Step 3 (empty / scaffolding / test fixtures / experimental / not
+wired into any route).
+
+Map size depends on the product. A small SaaS dashboard might have 3-5
+areas; a multi-feature mobile app or a clinical/financial workflow tool
+routinely has 8-15+ substantive areas, and that's correct — the
+downstream instrumentation phase relies on the map being complete.
+Don't enforce an artificial "3-5" ceiling.
 
 ### `.amplitude/product-map.md`
 
@@ -416,4 +474,4 @@ see subtotal/tax/shipping, and initiate checkout."
 - Do NOT count generated or build output (`node_modules/`, `dist/`, `.next/`)
 - Do NOT double-count events (trace to actual fire point)
 - Do NOT treat internal tooling as product (unless the product IS an internal tool)
-- Do NOT pad `productAreas` with weak entries to inflate count — drop areas without a clear `primaryQuestion`
+- Do NOT pad `productAreas` with weak entries to inflate count — but a substantive feature directory is *not* a weak entry just because the primaryQuestion is generic. Downgrade priority before considering a drop, and follow the Step 3 disposition rules (keep / merge / downgrade / drop) for every enumerated candidate.
