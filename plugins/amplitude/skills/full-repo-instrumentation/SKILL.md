@@ -214,6 +214,51 @@ true one-page demo or two-command CLI), state that explicitly in the
 tracking plan executive summary with a one-line justification. Otherwise,
 keep iterating until the count clears the minimum.
 
+### Per-area coverage gate (RUN ALONGSIDE THE COUNT GATE)
+
+The volume gate above prevents a sparse tracking plan, but it does NOT
+prevent a tracking plan that's volumetrically full yet covers only one
+product area. Walk `product-map.json[productAreas]` separately and apply
+this rule per area:
+
+- For every area with `priority` of `critical` or `high`, the tracking
+  plan must contain *one* of:
+  1. **At least one new event** proposed for that area, OR
+  2. **An explicit `coverage_decision:` block** in the per-area section
+     of `tracking-plan.md` listing the existing events from
+     `analytics-patterns.md` that cover the area's funnel start/end
+     and async failure branches, plus a one-line justification for why
+     they suffice without augmentation.
+
+Silent skip is not an option. If an area has user-perceptible failure
+outcomes that aren't covered by an existing event (e.g. the area has a
+`GENERATE_CONTENT` happy-path event but no corresponding
+`Generation Failed`), the area fails this gate — propose the missing
+event rather than writing a `coverage_decision:` justifying the absence.
+
+The friction-failure category from `discover-event-surfaces` exists for
+exactly this reason: a happy-path event without a paired failure event is
+usually a coverage gap, not adequate coverage. Apply this lens
+**per-area**, not just on the highest-traffic area you noticed first.
+
+Format for the per-area justification (when it applies):
+
+```yaml
+coverage_decision:
+  area: "<product area name>"
+  existing_events:
+    - "<EVENT_NAME>"  # from analytics-patterns.md
+    - "<EVENT_NAME>"
+  funnel_start_covered_by: "<event>"
+  funnel_end_covered_by: "<event>"
+  failure_paths_covered_by: "<event or 'none — see proposed event below'>"
+  rationale: "<one line — why no new events are needed here>"
+```
+
+A tracking plan that has 20 events all in one area passes the count gate
+but fails this gate. A tracking plan that has 8 events spread across
+4 areas (one critical area covered by `coverage_decision`) passes both.
+
 ### Priority rules
 
 - **critical**: Revenue or core-journey events, funnel start/end
