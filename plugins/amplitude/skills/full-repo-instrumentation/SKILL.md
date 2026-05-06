@@ -241,23 +241,55 @@ exactly this reason: a happy-path event without a paired failure event is
 usually a coverage gap, not adequate coverage. Apply this lens
 **per-area**, not just on the highest-traffic area you noticed first.
 
+#### What counts as valid coverage in a `coverage_decision` block
+
+A `coverage_decision` block is only valid when every event it cites is a
+**specific, named event** for the area's flows — examples like
+`IDEXX_CONNECT_CREDENTIALS_ERROR`, `OFFLINE_CONTENT_ASSIGN_NEW_CASE`,
+`PLAN_CHANGED`. Generic catch-all events do not count, regardless of how
+the property values are sliced:
+
+- `APP_CLICK` (with any `action` / `surface` / `result` property) — **invalid**
+- `APP_PAGE_VIEW` (with any `path` / `screen_name` property) — **invalid**
+- `track('Click', { component: '...', ... })` and similar generic
+  click/pageview taxonomies — **invalid**
+- Generic `ERROR_ENCOUNTERED` / `ERROR_OCCURRED` standing alone, when
+  the area has no specific failure event — **invalid** as
+  `failure_paths_covered_by` (it can be additive *alongside* a specific
+  failure event, never as the sole coverage)
+
+Why: generic catch-alls don't answer "*why* did this fail?" or "*what
+specifically* did the user do here?" — and that's the analyst question
+the per-area review is supposed to keep on the map. A funnel built on
+`APP_CLICK[action=submit_feedback,result=failure]` looks fine in a
+tracking plan and produces unusable analytics in production.
+
+If the only events you can cite for an area are generic catch-alls, the
+area fails this gate — propose specific new events for the area's
+funnel start/end and async failure branches instead of writing a
+`coverage_decision` block.
+
 Format for the per-area justification (when it applies):
 
 ```yaml
 coverage_decision:
   area: "<product area name>"
   existing_events:
-    - "<EVENT_NAME>"  # from analytics-patterns.md
+    - "<EVENT_NAME>"  # specific, named — from analytics-patterns.md
     - "<EVENT_NAME>"
-  funnel_start_covered_by: "<event>"
-  funnel_end_covered_by: "<event>"
-  failure_paths_covered_by: "<event or 'none — see proposed event below'>"
+  funnel_start_covered_by: "<specific event name>"
+  funnel_end_covered_by: "<specific event name>"
+  failure_paths_covered_by: "<specific failure event name or 'none — see proposed event below'>"
   rationale: "<one line — why no new events are needed here>"
 ```
 
 A tracking plan that has 20 events all in one area passes the count gate
 but fails this gate. A tracking plan that has 8 events spread across
-4 areas (one critical area covered by `coverage_decision`) passes both.
+4 areas (one critical area covered by a `coverage_decision` whose cited
+events are specific and named) passes both. A tracking plan that has 3
+new events plus 9 areas covered by `coverage_decision` blocks citing
+`APP_CLICK` / `APP_PAGE_VIEW` **fails this gate** — re-do the per-area
+review and propose real specific events.
 
 ### Priority rules
 

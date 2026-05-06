@@ -146,12 +146,47 @@ For each discovered route, READ the source file. Describe:
 
 ## Step 3: Group into product areas
 
-### By URL prefix
+### Enumerate the feature/module layout first (do this before grouping)
+
+If the codebase organizes its product surfaces under feature/module
+directories — `lib/features/`, `src/features/`, `src/modules/`,
+`app/features/`, `apps/`, `lib/screens/`, etc. — **list every immediate
+child of those directories first**, before deciding how to group them
+into areas. Each immediate child is a candidate area unless one of the
+explicit drop reasons below applies.
+
+```bash
+# Run whichever matches the codebase
+find src/features src/modules app/features apps -mindepth 1 -maxdepth 1 -type d 2>/dev/null
+find lib/features lib/modules lib/screens -mindepth 1 -maxdepth 1 -type d 2>/dev/null  # Flutter / Dart
+find src/views src/screens -mindepth 1 -maxdepth 1 -type d 2>/dev/null
+```
+
+For each enumerated child, decide explicitly: **keep / merge / drop** —
+and record the reason on the area's entry (or in a brief comment block
+in the map) so a reviewer can tell that the agent saw it and made a
+decision rather than missed it.
+
+- **Keep as own area** — substantive feature with its own user-facing
+  flows. Default disposition.
+- **Merge into a parent area** — fold into another area whose flows
+  cover this directory's interactions. Requires `merged_from:
+  [<directory>]` on the parent area (e.g. `audio_recorder` merged into
+  `Case Capture` because users invoke it from the case page).
+- **Drop** — only for: empty / scaffolding / test fixtures /
+  experimental code not exposed in the running product / dev tooling.
+
+Silent drop is not allowed: a real `lib/features/templates/` with
+substantive code that disappears off the map invisibly is the failure
+mode this rule guards against.
+
+### By URL prefix (additive to the directory enumeration)
 `/auth/*`, `/login`, `/signup` → Authentication
 `/dashboard/*` → Dashboard
 `/settings/*` → Settings
 
-### By directory structure
+### By directory structure (the feature/module enumeration above is the
+authoritative version; URL-prefix and domain-concept passes only refine it)
 `src/features/billing/` → Billing
 `app/(marketing)/` → Marketing
 
