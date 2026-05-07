@@ -186,110 +186,103 @@ keep it, name it around the business concept (`Donation Flow Selected`,
 `start`. The "no raw clicks" rule applies to leaf interactions where no
 funnel exists, not to funnel-start events.
 
-### Candidate-count gate (RUN BEFORE EMITTING THE PLAN)
+### Quality bar (replaces the prior count + per-area gates)
 
-Before writing the tracking plan to disk, count the proposed
-`critical`+`high`+`medium` events. If the count is below the band for the
-repo size, do NOT emit the plan yet.
+Earlier versions of this skill imposed a numeric candidate-count floor
+banded by area count, plus a per-area structural requirement to ship
+either a new event or a `coverage_decision` block per area. Both became
+gameable: agents under-merged areas to satisfy the floor with trash, or
+over-merged areas to drop the floor under the bar. Hardcoded numerics
+are the wrong shape for an inherently context-dependent question — a
+mature, well-instrumented codebase honestly needs few new events; an
+under-instrumented one of the same size needs many.
 
-| Repo size              | Minimum critical+high+medium | Hard floor |
-|------------------------|------------------------------|------------|
-| Small (1–2 areas)      | 10                           | 10         |
-| Medium (3–4 areas)     | 15                           | 12         |
-| Large (5+ areas)       | 20                           | 15         |
+Replace those gates with **a reasoning standard the tracking plan must
+demonstrate** before it's emitted:
 
-If you are below the minimum, for each product area in `product-map.json`
-list explicitly:
+1. **Articulate the analyst questions per area.** For each entry in
+   `product-map.json[productAreas]`, write the 1-3 product/business
+   questions a PM or operator would ask of that surface — phrased as
+   chart-able questions ("where in signup do users drop off?", "which
+   recording entry-points convert best to a saved case?"). The
+   questions are the lens for everything else.
 
-- The funnel(s) you identified (or "no funnel — single-action surface")
-- The funnel start event (must be `critical`)
-- The funnel end event (must be `critical`)
-- Async success branches that fire a track call
-- Async failure branches that fire a track call
-- Segmentation dimensions (mode, variant, source) worth capturing as their
-  own event or as event properties
+2. **Cite specific evidence for each conclusion.** Every claim in the
+   tracking plan — "this area is already covered," "this funnel needs
+   a failure event," "this property is high-cardinality, bucket it" —
+   must reference specific evidence: existing event names from
+   `analytics-patterns.md`, file paths and line numbers from the source,
+   property values from `existing-taxonomy.json`. "Generic existing
+   tracking suffices" without naming the events that actually cover the
+   analyst questions is not specific evidence; it's a hand-wave.
 
-Add the missing events. If the repo is genuinely below the hard floor (a
-true one-page demo or two-command CLI), state that explicitly in the
-tracking plan executive summary with a one-line justification. Otherwise,
-keep iterating until the count clears the minimum.
+3. **Reach a defensible coverage decision per area, not a uniform
+   structural one.** Possible decisions:
+   - *new events proposed* — list them with their analysis_recipe.
+   - *existing coverage adequate* — `coverage_decision` block citing
+     specific named events that answer the analyst questions, with a
+     one-sentence explanation of why each cited event answers which
+     question.
+   - *area is genuinely low-leverage and out of scope this run* —
+     allowed when the area's analyst questions are weak or its traffic
+     is so low that instrumenting it isn't worth review cost. Say so
+     explicitly with a reason; don't write a fake `coverage_decision`.
 
-### Per-area coverage gate (RUN ALONGSIDE THE COUNT GATE)
+4. **Produce a tracking plan a reviewer can follow end-to-end.** A
+   reviewer reading the final `tracking-plan.md` should be able to
+   trace each area's analyst questions → cited evidence → decision
+   without backfilling. If the reasoning is buried, the bar isn't met
+   regardless of event count.
 
-The volume gate above prevents a sparse tracking plan, but it does NOT
-prevent a tracking plan that's volumetrically full yet covers only one
-product area. Walk `product-map.json[productAreas]` separately and apply
-this rule per area:
+Coverage is measured by reasoning quality, not volume. A 3-event plan
+with airtight per-area reasoning is shippable. A 20-event plan with
+hand-wavy reasoning isn't. The agent's judgment is the lever; this
+section gives it the frame to exercise it well.
 
-- For every area with `priority` of `critical` or `high`, the tracking
-  plan must contain *one* of:
-  1. **At least one new event** proposed for that area, OR
-  2. **An explicit `coverage_decision:` block** in the per-area section
-     of `tracking-plan.md` listing the existing events from
-     `analytics-patterns.md` that cover the area's funnel start/end
-     and async failure branches, plus a one-line justification for why
-     they suffice without augmentation.
+#### What does NOT count as "specific evidence"
 
-Silent skip is not an option. If an area has user-perceptible failure
-outcomes that aren't covered by an existing event (e.g. the area has a
-`GENERATE_CONTENT` happy-path event but no corresponding
-`Generation Failed`), the area fails this gate — propose the missing
-event rather than writing a `coverage_decision:` justifying the absence.
+The reasoning standard above is meaningless if the agent can pad it with
+generic catch-alls. Specific evidence means a **named event with a clear
+mapping to a named analyst question** — `IDEXX_CONNECT_CREDENTIALS_ERROR`
+answers "where do users fail to connect their lab integration?";
+`OFFLINE_CONTENT_ASSIGN_NEW_CASE` answers "do users actually use offline
+recordings to start cases?". The following do **not** answer per-area
+analyst questions and don't count as evidence that an area is covered:
 
-The friction-failure category from `discover-event-surfaces` exists for
-exactly this reason: a happy-path event without a paired failure event is
-usually a coverage gap, not adequate coverage. Apply this lens
-**per-area**, not just on the highest-traffic area you noticed first.
+- `APP_CLICK` with any `action` / `surface` / `result` property
+- `APP_PAGE_VIEW` with any `path` / `screen_name` property
+- Generic `Click`, `Page Viewed`, or similar pan-product taxonomies that
+  fire on every interaction
+- A standalone unified `ERROR_ENCOUNTERED` / `ERROR_OCCURRED` event,
+  when the area has no area-specific failure event — it's fine *additive*
+  to specific failure events, never as the sole evidence that failure
+  paths are covered
 
-#### What counts as valid coverage in a `coverage_decision` block
+Why: a funnel built on `APP_CLICK[action=submit_feedback,result=failure]`
+looks fine in a tracking plan and produces unusable analytics — the
+analyst can't tell which submit failed for which reason without
+back-mapping property combinations onto code paths. The per-area
+analyst questions are exactly what the catch-all hides.
 
-A `coverage_decision` block is only valid when every event it cites is a
-**specific, named event** for the area's flows — examples like
-`IDEXX_CONNECT_CREDENTIALS_ERROR`, `OFFLINE_CONTENT_ASSIGN_NEW_CASE`,
-`PLAN_CHANGED`. Generic catch-all events do not count, regardless of how
-the property values are sliced:
+When an area's existing evidence is generic catch-alls, the agent should
+propose a specific failure event for the area's flows rather than write
+a hand-wavy "existing tracking suffices" — the latter makes the
+reasoning standard above unmet.
 
-- `APP_CLICK` (with any `action` / `surface` / `result` property) — **invalid**
-- `APP_PAGE_VIEW` (with any `path` / `screen_name` property) — **invalid**
-- `track('Click', { component: '...', ... })` and similar generic
-  click/pageview taxonomies — **invalid**
-- Generic `ERROR_ENCOUNTERED` / `ERROR_OCCURRED` standing alone, when
-  the area has no specific failure event — **invalid** as
-  `failure_paths_covered_by` (it can be additive *alongside* a specific
-  failure event, never as the sole coverage)
-
-Why: generic catch-alls don't answer "*why* did this fail?" or "*what
-specifically* did the user do here?" — and that's the analyst question
-the per-area review is supposed to keep on the map. A funnel built on
-`APP_CLICK[action=submit_feedback,result=failure]` looks fine in a
-tracking plan and produces unusable analytics in production.
-
-If the only events you can cite for an area are generic catch-alls, the
-area fails this gate — propose specific new events for the area's
-funnel start/end and async failure branches instead of writing a
-`coverage_decision` block.
-
-Format for the per-area justification (when it applies):
+Optional `coverage_decision` format (when the agent reaches an
+"existing coverage adequate" decision and wants to make the cited
+evidence machine-readable for the reviewer):
 
 ```yaml
 coverage_decision:
   area: "<product area name>"
-  existing_events:
-    - "<EVENT_NAME>"  # specific, named — from analytics-patterns.md
-    - "<EVENT_NAME>"
-  funnel_start_covered_by: "<specific event name>"
-  funnel_end_covered_by: "<specific event name>"
-  failure_paths_covered_by: "<specific failure event name or 'none — see proposed event below'>"
-  rationale: "<one line — why no new events are needed here>"
+  analyst_questions:
+    - "<question 1 the area's tracking should answer>"
+  cited_events:
+    - event: "<SPECIFIC_NAMED_EVENT>"
+      answers: "<which analyst question above>"
+  rationale: "<one sentence — why these events answer the questions>"
 ```
-
-A tracking plan that has 20 events all in one area passes the count gate
-but fails this gate. A tracking plan that has 8 events spread across
-4 areas (one critical area covered by a `coverage_decision` whose cited
-events are specific and named) passes both. A tracking plan that has 3
-new events plus 9 areas covered by `coverage_decision` blocks citing
-`APP_CLICK` / `APP_PAGE_VIEW` **fails this gate** — re-do the per-area
-review and propose real specific events.
 
 ### Priority rules
 

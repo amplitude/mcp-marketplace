@@ -173,6 +173,16 @@ decision rather than missed it.
   cover this directory's interactions. Requires `merged_from:
   [<directory>]` on the parent area (e.g. `audio_recorder` merged into
   `Case Capture` because users invoke it from the case page).
+
+  A merge is valid only when the merged-in directory is a **step in
+  the same named user flow** as the parent. The parent area's
+  rationale must name the flow (e.g. *"create case → fill content →
+  attach recording → save"*). Thematic grouping — folding directories
+  together because they're "all settings-related" or "all clinical
+  workflow features" — is **not** a valid merge basis. When in doubt,
+  keep the directories separate; the downstream coverage decision can
+  still conclude "existing coverage adequate" per area without forcing
+  a merge.
 - **Drop** — only for: empty / scaffolding / test fixtures /
   experimental code not exposed in the running product / dev tooling.
 
