@@ -132,16 +132,76 @@ Output: `.amplitude/product-map.md` and `.amplitude/product-map.json`
 
 ## Phase 4: Event design (tracking plan)
 
-For each product area from Phase 3, design events following the methodology
-in `../discover-event-surfaces/SKILL.md`.
+The unit Phase 4 iterates over is **the journey**, not the area or the
+file. `product-map.json[productAreas][].flows[]` is the authoritative
+list of journeys: each entry has structured `steps[]` with `role`
+(start / intermediate / success_end / failure_end), `file`, `handler`,
+and `existing_event`. Phase 4 walks every flow in every area and grades
+per-leg coverage.
 
-### Adapting discover-event-surfaces for full-repo context
+If `product-map.json` flows are missing the structured-step shape (older
+maps emitted prose strings), backfill them in-memory before continuing —
+read the route handler files cited in the area, identify start/success/
+failure terminals, and grep for `existing_event` at each step. Do not
+skip to event design with unstructured flows; the per-leg coverage gate
+below depends on step structure.
 
-The `discover-event-surfaces` skill expects a `change_brief` YAML from
-`diff-intake`. For full-repo analysis, synthesize a compatible input per
-product area:
+### Per-leg coverage gate (the bar)
 
-For each area in `product-map.json`, construct:
+For each `flow` in each `productArea`:
+
+1. **Enumerate the legs the flow needs covered**:
+   - Exactly one `start` leg
+   - Zero or more `intermediate` legs (instrumented selectively per the
+     funnel-length guidance below — short flows skip these)
+   - Exactly one `success_end` leg
+   - One or more named `failure_end` legs — every distinct user-visible
+     failure mode (provider rejection, timeout, validation error, etc.)
+     gets its own leg. A single generic "something failed" leg is not
+     acceptable; the analyst can't act on it.
+
+2. **For each required leg, check coverage**:
+   - If the step's `existing_event` is non-null AND the existing event
+     answers the leg's analyst question, the leg is **covered by
+     existing**. Cite the event in the tracking plan.
+   - Otherwise, the leg is **uncovered**. Propose a new candidate event
+     for the leg. The candidate must be specific to the flow + leg —
+     `SIGNIN_FAILED` for sign-in's failure_end, not a shared
+     `ERROR_ENCOUNTERED`.
+
+3. **A leg covered by an existing event of the wrong shape is NOT
+   covered.** Common traps:
+   - A success/completion event does not cover a failure_end. e.g.
+     `PMS_CONNECTION_REQUEST_SUBMITTED` (success) does NOT cover the
+     PMS connection's failure_end. Failure_ends require failure events.
+   - A click/intent event does not cover a success_end. `SIGNIN_CTA`
+     (the user tapped sign-in) does NOT cover sign-in's success_end —
+     the CTA fires whether auth succeeds or fails. Success_end requires
+     a confirmed-outcome event.
+   - A pan-product catch-all (`APP_CLICK`, `APP_PAGE_VIEW`,
+     `ERROR_ENCOUNTERED` standalone) does not cover any leg. The
+     analyst can't isolate the flow without back-mapping property
+     combinations onto code paths — that's exactly the analytics
+     anti-pattern this audit exists to fix.
+
+4. **Coverage decision per leg, written into the tracking plan**:
+   - `covered_by_existing: <EVENT_NAME>` — leg is covered, cite event,
+     done.
+   - `proposed_new: <EVENT_NAME>` — leg is uncovered, propose this.
+   - `intentionally_skipped: <one-sentence reason>` — leg is genuinely
+     low-leverage (e.g. a 2-step flow's intermediate leg). Allowed
+     sparingly; never for `failure_end` legs.
+
+The output of this phase is a journey-by-journey tracking plan where
+every leg has one of the three decisions above. A flow with three
+`failure_end` legs and only one `proposed_new` event covering one of
+them is not done — the other two need decisions.
+
+### Synthesizing the change_brief per journey
+
+The `discover-event-surfaces` skill expects a `change_brief` YAML.
+Synthesize one **per journey** (not per area), carrying the journey's
+structured step list through:
 
 ```yaml
 change_brief:
@@ -150,20 +210,31 @@ change_brief:
     types: [feat]
     analytics_scope: high
     stack: <from product-map techStack>
-  summary: "<area name>: <area description>"
+  summary: "<area name> / <journey name>: <flow description>"
   user_facing_changes:
-    - "<interaction 1 from the route descriptions>"
-    - "<interaction 2>"
+    - "<step.label for each step in journey.steps>"
   surfaces:
     components:
-      - name: "<component name>"
-        file: "<file path>"
+      - name: "<step.handler>"
+        file: "<step.file>"
         change: modified
   file_summary_map:
-    - file: "<route file>"
-      summary: "<route description from product map>"
+    - file: "<step.file>"
+      summary: "<step.label>"
       layer: frontend
+  funnel:
+    name: "<journey.name>"
+    steps:
+      - label: "<step.label>"
+        role: "<step.role>"          # start | intermediate | success_end | failure_end
+        file: "<step.file>"
+        handler: "<step.handler>"
+        existing_event: "<step.existing_event or null>"
 ```
+
+The `funnel` block is the new contract. `discover-event-surfaces` reads
+it and is graded against per-leg completeness (see that skill's
+"Funnel-completeness rule").
 
 Then apply the `discover-event-surfaces` methodology:
 - Generate from four categories: business_outcome, user_journey,
@@ -186,103 +257,75 @@ keep it, name it around the business concept (`Donation Flow Selected`,
 `start`. The "no raw clicks" rule applies to leaf interactions where no
 funnel exists, not to funnel-start events.
 
-### Quality bar (replaces the prior count + per-area gates)
+### Quality bar (per-leg, not per-area)
 
-Earlier versions of this skill imposed a numeric candidate-count floor
-banded by area count, plus a per-area structural requirement to ship
-either a new event or a `coverage_decision` block per area. Both became
-gameable: agents under-merged areas to satisfy the floor with trash, or
-over-merged areas to drop the floor under the bar. Hardcoded numerics
-are the wrong shape for an inherently context-dependent question — a
-mature, well-instrumented codebase honestly needs few new events; an
-under-instrumented one of the same size needs many.
+Earlier versions of this skill graded coverage at the area level — a
+single `coverage_decision` block per area was enough to satisfy the
+gate. Areas with 5 distinct user flows could be marked "covered" by
+citing 3 events from one corner of one flow. The bar is now per-leg
+(see "Per-leg coverage gate" above), which closes that loophole.
 
-Replace those gates with **a reasoning standard the tracking plan must
-demonstrate** before it's emitted:
+The reasoning standard the tracking plan must still demonstrate:
 
-1. **Articulate the analyst questions per area.** For each entry in
-   `product-map.json[productAreas]`, write the 1-3 product/business
-   questions a PM or operator would ask of that surface — phrased as
-   chart-able questions ("where in signup do users drop off?", "which
-   recording entry-points convert best to a saved case?"). The
-   questions are the lens for everything else.
+1. **Articulate analyst questions per journey.** For each flow in
+   `productAreas[].flows[]`, write the 1-3 product questions a PM
+   would ask of that journey — phrased as chart-able questions
+   ("where in signup do users drop off?", "what % of recordings
+   complete sync?"). The questions anchor each leg's coverage
+   decision.
 
-2. **Cite specific evidence for each conclusion.** Every claim in the
-   tracking plan — "this area is already covered," "this funnel needs
-   a failure event," "this property is high-cardinality, bucket it" —
-   must reference specific evidence: existing event names from
-   `analytics-patterns.md`, file paths and line numbers from the source,
-   property values from `existing-taxonomy.json`. "Generic existing
-   tracking suffices" without naming the events that actually cover the
-   analyst questions is not specific evidence; it's a hand-wave.
+2. **Cite specific evidence per leg.** When a leg is marked
+   `covered_by_existing`, name the event AND state which analyst
+   question it answers AND which leg-shape it is (start / intermediate /
+   success_end / failure_end). A `success_end` cited with a click event
+   like `SIGNIN_CTA` fails this check — the click fires whether auth
+   succeeded or failed.
 
-3. **Reach a defensible coverage decision per area, not a uniform
-   structural one.** Possible decisions:
-   - *new events proposed* — list them with their analysis_recipe.
-   - *existing coverage adequate* — `coverage_decision` block citing
-     specific named events that answer the analyst questions, with a
-     one-sentence explanation of why each cited event answers which
-     question.
-   - *area is genuinely low-leverage and out of scope this run* —
-     allowed when the area's analyst questions are weak or its traffic
-     is so low that instrumenting it isn't worth review cost. Say so
-     explicitly with a reason; don't write a fake `coverage_decision`.
+3. **Per-leg decision, never per-area.** Every leg the flow needs
+   (start, success_end, named failure_ends) gets its own
+   `covered_by_existing` / `proposed_new` / `intentionally_skipped`
+   line. A flow with 3 failure_end legs and one event covering one of
+   them is not done.
 
-4. **Produce a tracking plan a reviewer can follow end-to-end.** A
-   reviewer reading the final `tracking-plan.md` should be able to
-   trace each area's analyst questions → cited evidence → decision
-   without backfilling. If the reasoning is buried, the bar isn't met
-   regardless of event count.
+4. **End-to-end traceability in the final plan.** A reviewer reading
+   `tracking-plan.md` should be able to trace, for each journey:
+   analyst question → leg → coverage decision → event (existing or
+   proposed) → analysis recipe. If the chain breaks anywhere, the bar
+   isn't met.
 
-Coverage is measured by reasoning quality, not volume. A 3-event plan
-with airtight per-area reasoning is shippable. A 20-event plan with
-hand-wavy reasoning isn't. The agent's judgment is the lever; this
-section gives it the frame to exercise it well.
+Coverage is measured by per-leg completeness, not event count. A
+6-event plan covering 7 flows × 3 legs each (= 21 leg decisions, most
+covered by existing) is shippable. A 6-event plan covering 7 flows
+where 2 of them have uncovered failure_end legs is not.
 
-#### What does NOT count as "specific evidence"
+#### What does NOT count as leg coverage
 
-The reasoning standard above is meaningless if the agent can pad it with
-generic catch-alls. Specific evidence means a **named event with a clear
-mapping to a named analyst question** — `IDEXX_CONNECT_CREDENTIALS_ERROR`
-answers "where do users fail to connect their lab integration?";
-`OFFLINE_CONTENT_ASSIGN_NEW_CASE` answers "do users actually use offline
-recordings to start cases?". The following do **not** answer per-area
-analyst questions and don't count as evidence that an area is covered:
+Specific evidence means a **named event of the right shape for the
+leg** — `IDEXX_CONNECT_CREDENTIALS_ERROR` (failure event) covers the
+IDEXX-connect flow's `failure_end` leg for the
+"credentials rejected" failure mode. The following do NOT cover any
+leg:
 
-- `APP_CLICK` with any `action` / `surface` / `result` property
-- `APP_PAGE_VIEW` with any `path` / `screen_name` property
-- Generic `Click`, `Page Viewed`, or similar pan-product taxonomies that
-  fire on every interaction
+- `APP_CLICK` with any `action` / `surface` / `result` property —
+  pan-product catch-all
+- `APP_PAGE_VIEW` with any `path` / `screen_name` property —
+  pan-product catch-all
 - A standalone unified `ERROR_ENCOUNTERED` / `ERROR_OCCURRED` event,
-  when the area has no area-specific failure event — it's fine *additive*
-  to specific failure events, never as the sole evidence that failure
-  paths are covered
+  unless the leg is the flow's catch-all error and a flow-specific
+  failure event also covers the named failure modes
+- A success/completion event cited as cover for a `failure_end` leg
+  (e.g. `PMS_CONNECTION_REQUEST_SUBMITTED` does not cover PMS-connect
+  failure_end)
+- A click/intent event cited as cover for a `success_end` leg (e.g.
+  `SIGNIN_CTA` does not cover sign-in's success_end — the CTA fires
+  whether auth succeeded or failed)
 
-Why: a funnel built on `APP_CLICK[action=submit_feedback,result=failure]`
-looks fine in a tracking plan and produces unusable analytics — the
-analyst can't tell which submit failed for which reason without
-back-mapping property combinations onto code paths. The per-area
-analyst questions are exactly what the catch-all hides.
-
-When an area's existing evidence is generic catch-alls, the agent should
-propose a specific failure event for the area's flows rather than write
-a hand-wavy "existing tracking suffices" — the latter makes the
-reasoning standard above unmet.
-
-Optional `coverage_decision` format (when the agent reaches an
-"existing coverage adequate" decision and wants to make the cited
-evidence machine-readable for the reviewer):
-
-```yaml
-coverage_decision:
-  area: "<product area name>"
-  analyst_questions:
-    - "<question 1 the area's tracking should answer>"
-  cited_events:
-    - event: "<SPECIFIC_NAMED_EVENT>"
-      answers: "<which analyst question above>"
-  rationale: "<one sentence — why these events answer the questions>"
-```
+Why each rule exists: the analyst can't action a chart that aggregates
+multiple flows or multiple outcomes into one row. `APP_CLICK` with
+`action=submit_feedback,result=failure` looks fine in a tracking plan
+and produces unusable analytics — the analyst can't tell which submit
+failed for which reason without back-mapping property combinations
+onto code paths. The per-leg gate is exactly what the catch-all hides.
 
 ### Priority rules
 
@@ -350,9 +393,27 @@ For every multi-step flow from Phase 3:
 
 Output: `.amplitude/tracking-plan.md`
 
-Sections: executive summary, summary table, funnel definitions,
-already-tracked events, per-area event specs, user properties,
-implementation priority.
+Required sections, in order:
+
+1. **Executive summary** — one-paragraph read of where existing
+   instrumentation is dense and where the per-leg coverage gate found
+   gaps.
+2. **Coverage matrix** — one row per journey, columns for each leg
+   (start / intermediate / success_end / failure_ends). Each cell
+   contains either the cited existing event, the proposed new event,
+   or `intentionally_skipped: <reason>`. This is the at-a-glance
+   completeness check; an empty cell that isn't `intentionally_skipped`
+   is a bug.
+3. **Per-area, per-journey detail** — for each area, list each journey
+   with: analyst questions, the structured leg list (from
+   `productAreas[].flows[].steps[]`), and the per-leg decision.
+4. **Already-tracked events** — events found in code that the gate
+   did NOT propose to change. Reference, not a decision item.
+5. **User properties / identify wiring** — see "User properties and
+   identify wiring" section above.
+6. **Implementation priority** — sorted from critical → low across all
+   `proposed_new` events. funnel_role: success_end and failure_end
+   events on critical/high-priority flows are themselves critical.
 
 ## Phase 5: Implementation
 

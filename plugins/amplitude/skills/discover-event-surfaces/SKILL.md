@@ -41,19 +41,18 @@ analytics philosophy and naming standards.
   "downgrade if unsure" guidance throughout this skill is calibrated to
   this mode.
 
-- **Full-repo / per-area mode** — the `change_brief` was synthesized by
-  `full-repo-instrumentation` (init mode) per product area in
-  `product-map.json[productAreas]`. The user is asking for a comprehensive
-  audit of the codebase's analytics maturity, not a minimal patch. **Be
-  thorough here.** Every product area on the map deserves a real coverage
-  decision: either propose new events that bring this area to a good
-  analytics standard (funnel start/end, async failure branches,
-  segmentation discriminator properties on existing events) OR provide an
-  explicit `coverage_decision` block listing the existing events that
-  cover those needs. **Do not** treat "this area already has some
-  tracking" as a reason to skip evaluation — generic existing coverage
-  often misses failure paths and discriminators that the per-area review
-  is supposed to surface.
+- **Full-repo / per-journey mode** — the `change_brief` was synthesized
+  by `full-repo-instrumentation` (init mode) per **journey** in
+  `product-map.json[productAreas][].flows[]`. The brief includes a
+  `funnel:` block listing the journey's structured legs (start /
+  intermediate / success_end / failure_ends) with `existing_event` per
+  leg. The user is asking for a comprehensive audit. **Per-leg
+  completeness is the bar** (see "Funnel-completeness rule" below):
+  every leg the journey needs gets a per-leg decision. **Do not** treat
+  "this journey already has some tracking" as a reason to skip
+  evaluation — happy-path completion events are common, but the
+  per-leg gate catches missing failure_end coverage that the area-level
+  view hides.
 
 How to tell the modes apart:
 - Look at `classification.analytics_scope` and the source of `surfaces`
@@ -70,6 +69,50 @@ to prune**: aggressive in PR mode, generous in full-repo mode. A 5-event
 candidate list is reasonable for a small PR; a 5-event candidate list for
 a critical product area in full-repo mode is almost certainly under-
 covering and should pull failure-path / discriminator candidates back in.
+
+### Funnel-completeness rule (full-repo / per-journey mode)
+
+When the input `change_brief` includes a `funnel:` block, it carries
+the journey's structured legs from the product map. Your output MUST
+have a per-leg decision for each leg the journey requires:
+
+- One `start` leg
+- Zero or more `intermediate` legs (instrument selectively per the
+  funnel-length guidance — short flows can skip these)
+- One `success_end` leg
+- One or more `failure_end` legs (one per named failure mode in the
+  input)
+
+Per-leg decisions:
+
+- **`covered_by_existing: <EVENT_NAME>`** — if the input leg has a
+  non-null `existing_event` AND that event matches the leg's shape
+  (a failure event for a `failure_end`, a confirmed-outcome event for
+  a `success_end`, an intent event for a `start`), cite it and do not
+  propose a duplicate.
+- **`proposed_new: <EVENT_NAME>`** — leg is uncovered or the cited
+  existing event is the wrong shape; propose a new candidate.
+- **`intentionally_skipped: <reason>`** — sparingly, and **never** for
+  a `failure_end` leg or a `success_end` leg on a critical/high-priority
+  journey. A short flow's intermediate leg may be skipped; an async
+  flow's failure mode may not.
+
+Wrong-shape rejections (cite-and-replace, not cite-as-cover):
+
+- A success/completion event cited on a `failure_end` leg → propose a
+  new failure event. (`PMS_CONNECTION_REQUEST_SUBMITTED` does not cover
+  PMS-connect's failure_end.)
+- A click/intent event cited on a `success_end` leg → propose a new
+  success event. (`SIGNIN_CTA` does not cover sign-in's success_end —
+  it fires regardless of outcome.)
+- A pan-product catch-all (`APP_CLICK`, `APP_PAGE_VIEW`,
+  `ERROR_ENCOUNTERED` standalone) cited on any leg → reject and
+  propose a flow-specific event.
+
+This rule is what makes full-repo mode produce a complete tracking
+plan rather than a failure-bias-only one. Phase 4 of
+`full-repo-instrumentation` aggregates your per-leg decisions into the
+journey-level coverage matrix; missing legs become missing rows.
 
 ---
 
@@ -318,15 +361,32 @@ event_candidates:
         - step: "Step description"
           file: "src/components/Foo.tsx"
           function: "handleOpen"
-          role: start                      # start | intermediate | end
+          role: start                      # start | intermediate | success_end | failure_end
         - step: "Next step"
           file: "src/components/Bar.tsx"
           function: "onSubmit"
           role: intermediate
-        - step: "Final step"
+        - step: "Final success step"
           file: "src/hooks/useSave.ts"
           function: "onSuccess"
-          role: end
+          role: success_end
+        - step: "Provider returns null user"
+          file: "src/auth/handle.ts"
+          function: "handleAuthResult"
+          role: failure_end
+      per_leg_decisions:                   # required when input change_brief carried a funnel: block
+        - role: start
+          decision: covered_by_existing    # covered_by_existing | proposed_new | intentionally_skipped
+          event: "Sign In CTA"             # cited existing event OR proposed new event name
+          reason: "Click intent already tracked at the CTA in handleOpen."
+        - role: success_end
+          decision: proposed_new
+          event: "Sign In Succeeded"
+          reason: "Existing taxonomy has SIGNIN_CTA (click) but no confirmed-outcome event for the success terminal."
+        - role: failure_end
+          decision: proposed_new
+          event: "Sign In Failed"
+          reason: "Provider-rejected branch in handleAuthResult had no specific failure event."
 
   candidates:
     - name: "Event Name Here"

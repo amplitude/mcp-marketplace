@@ -210,9 +210,17 @@ Cart + Checkout + Order Confirmation → Purchase Flow
 - **medium**: Secondary features, settings, admin
 - **low**: Edge cases, rarely used, admin-only
 
-## Step 4: Trace user flows
+## Step 4: Trace user flows (load-bearing)
 
-Find multi-step flows:
+Flows are the unit downstream instrumentation iterates over. A vague
+prose description here ("checkout works as expected") leaves the
+instrumentation phase with nothing to gate against. Be structural.
+
+For each product area, enumerate the **named user flows** — multi-step
+sequences a user moves through to accomplish one outcome. Examples:
+*"Sign in"*, *"Generate clinical note"*, *"Connect IDEXX integration"*,
+*"Plan select → Stripe checkout"*. A single area frequently has 3-6
+flows; do not collapse them into one.
 
 ```bash
 # Navigation chains
@@ -225,9 +233,42 @@ grep -rn "step\|wizard\|stepper\|progress" --include="*.tsx" --include="*.jsx" -
 # Form submissions and redirects
 grep -rn "onSubmit\|handleSubmit" --include="*.tsx" --include="*.jsx" src/ | head -30
 grep -rn "redirect\|router.push\|window.location" --include="*.ts" --include="*.tsx" src/ | head -30
+
+# Async terminal branches — every async flow has at least one success and
+# one failure terminal, often more failure modes than the happy path
+grep -rn "catch\s*(" --include="*.dart" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.py" src/ lib/ | head -50
 ```
 
-For each flow, document: name, ordered steps (with files), start event, end event.
+For each flow, capture **structured steps**, not prose. Each step has a
+`role` so downstream skills can grade per-leg coverage:
+
+| `role`           | What it captures                                                |
+| ---------------- | --------------------------------------------------------------- |
+| `start`          | Funnel entry — user signals intent (CTA tap, modal opened)      |
+| `intermediate`   | Material progress — form filled, selection made, file uploaded  |
+| `success_end`    | Outcome achieved — confirmed result, redirect to confirmation   |
+| `failure_end`    | One named failure mode — provider rejection, timeout, etc.      |
+
+Every flow MUST have at least one `start` step, one `success_end`, and
+one or more `failure_end` steps. A flow with no failure_end is almost
+certainly under-traced — async paths fail. Walk catch branches, error
+returns, and validation rejections; each distinct user-visible failure
+mode is its own `failure_end`.
+
+For each step, also record:
+- `file` — source file where the step happens
+- `handler` — function/method name (e.g. `handleAuthResult`,
+  `_syncLocalCase`, `onSubmit`) so the instrumentation phase knows
+  exactly where to place a track call
+- `existing_event` — name of any existing tracking call already at this
+  step (from grep of `track(`/`trackEvent(`/etc.); `null` if none
+
+`existing_event` is the bridge to the coverage gate. If a flow's
+`success_end` already has `existing_event: "OFFLINE_CONTENT_RECORDING_SAVED"`,
+the instrumentation phase knows that leg is covered without proposing a
+new event. If `existing_event: null`, the leg is uncovered and the
+instrumentation phase must either propose a new event or document why
+the leg is intentionally untraced.
 
 ## Step 5: Assess existing analytics coverage
 
@@ -419,7 +460,40 @@ Write two files. Both layers in both files; same section order.
         { "name": "ComponentName", "file": "src/file.tsx", "type": "page|form|modal|cta|panel" }
       ],
       "flows": [
-        { "name": "Flow name", "description": "what it accomplishes", "steps": ["step descriptions"] }
+        {
+          "name": "Flow name",
+          "description": "what it accomplishes",
+          "steps": [
+            {
+              "label": "step description",
+              "role": "start",
+              "file": "src/path/to/file.tsx",
+              "handler": "functionOrMethodName",
+              "existing_event": "EVENT_NAME_IF_PRESENT_OR_NULL"
+            },
+            {
+              "label": "intermediate step description",
+              "role": "intermediate",
+              "file": "src/path/to/file.tsx",
+              "handler": "handlerName",
+              "existing_event": null
+            },
+            {
+              "label": "success outcome description",
+              "role": "success_end",
+              "file": "src/path/to/file.tsx",
+              "handler": "onSuccessHandler",
+              "existing_event": null
+            },
+            {
+              "label": "failure mode description (one per named failure)",
+              "role": "failure_end",
+              "file": "src/path/to/file.tsx",
+              "handler": "catchHandler",
+              "existing_event": null
+            }
+          ]
+        }
       ],
       "existingEvents": [
         { "name": "event name from code", "file": "src/file.tsx", "line": 42 }
@@ -453,6 +527,8 @@ see subtotal/tax/shipping, and initiate checkout."
 2. **Does every strategy field map to instrumentation?** A north-star you can't compute from your proposed events means either the metric or the events are wrong.
 3. **Did you mark unknowns as `unknown` rather than guess?** Bad map → bad events → bad analysis.
 4. **Is every funnel chainable from the events you propose?** If not, either the funnel is aspirational or the event set is short.
+5. **Does every flow have at least one `start`, one `success_end`, and one or more `failure_end` steps?** A flow with no `failure_end` is almost certainly under-traced — async paths fail. If the flow truly has no observable failure mode (a synchronous toggle), state that explicitly in the flow description rather than emit zero failure terminals.
+6. **Did you enumerate every named flow per area, not just the most prominent one?** A "Case Workspace" area with one `flows` entry covering only PDF upload silently drops case navigation, recording, content generation, sharing. The instrumentation phase iterates over `flows`, so a missing flow becomes a missing event class.
 
 ## Common pitfalls
 
