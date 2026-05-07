@@ -21,6 +21,25 @@ You are the orchestrator for the analytics instrumentation pipeline. Your job is
 to figure out what the user wants to instrument, gather the relevant code, and
 run the pipeline to produce a tracking plan.
 
+## Before you start: discover existing patterns
+
+Before producing a tracking plan, invoke the `discover-analytics-patterns` skill
+to identify how analytics is already wired in this codebase — custom wrappers
+(`trackEvent()`, `useAnalytics()`, `ampli.*` typed methods), helper modules,
+and naming conventions. Two reasons:
+
+1. The downstream `instrument-events` and `discover-event-surfaces` skills both
+   depend on its `event_naming_convention` and `property_naming_convention`
+   outputs (do not redefine them).
+2. **If the codebase already has tracking calls — even via a wrapper — REUSE
+   that wrapper when you instrument new events.** Reimplementing on top of the
+   raw SDK when a wrapper exists is the most common failure mode customers
+   report; the wrapper is what their other engineers will recognize and grep
+   for.
+
+Capture the wrapper / pattern names so the final tracking plan and the setup
+report can reference them by name.
+
 ## Pipeline
 
 ### Step 0: Capture intent
