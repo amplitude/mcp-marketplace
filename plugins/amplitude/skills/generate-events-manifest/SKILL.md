@@ -125,117 +125,11 @@ Write `.amplitude/events.json` with this exact schema:
         }
       ],
       "analysis_recipe": "Specific chart/funnel description with segmentation dimensions",
-      "stakeholder_narrative": "One sentence for a PM slide using this event's data",
-      "volume_estimate": {
-        "low": 800000,
-        "mid": 1015000,
-        "high": 1220000,
-        "confidence": "high",
-        "basis": "existing_analog",
-        "basis_detail": "Matches existing `Product Viewed` (1.0M/30d)",
-        "analog_event": "Product Viewed",
-        "analog_volume_30d": 1000000
-      }
+      "stakeholder_narrative": "One sentence for a PM slide using this event's data"
     }
   ]
 }
 ```
-
-The `volume_estimate` field is **optional**; populate it only for the
-existing-analog case (Step 4a below). Events without a clear analog
-omit the field entirely — downstream surfaces (the prepare-PR inline
-annotations) handle the absence cleanly.
-
-## Step 4a: Annotate volume_estimate for events with existing analogs (DMT-407)
-
-Customers can blow through Amplitude event-volume capacity when a
-proposed instrumentation PR contains high-cardinality events — capacity
-overages are a renewal-conversation event. The prepare-PR review surface
-needs a volume signal so reviewers can spot risk before merging.
-
-For each event you propose, check whether the customer's existing
-taxonomy (read `.amplitude/existing-taxonomy.json` when present — it
-carries every existing event's `volume_30d`) has a clear analog. If
-yes, populate the `volume_estimate` field on the event entry; if no,
-**omit the field entirely** — do not guess, do not use category priors,
-do not invent numbers. The annotation surface handles missing
-`volume_estimate` cleanly.
-
-### Matching heuristic (analog selection)
-
-Walk the existing-taxonomy events in this order; first match wins:
-
-1. **Exact name match** (case-insensitive). The proposed event's
-   `event_type` equals an existing `event_type`.
-2. **Normalized name match.** Strip non-alphanumeric, lowercase both
-   sides, compare. Catches `pageViewed` ↔ `Page Viewed`.
-3. **Category + ≥80% property overlap.** Same `category` AND the
-   proposed event's property names overlap ≥80% (Jaccard) with the
-   existing event's property names.
-
-The match must have a non-null `volume_30d`. If the candidate's volume
-is unknown, skip it and try the next match — without a real volume,
-the analog adds no signal.
-
-### Schema (when populated)
-
-```json
-"volume_estimate": {
-  "low": <int>,
-  "mid": <int>,
-  "high": <int>,
-  "confidence": "high",
-  "basis": "existing_analog",
-  "basis_detail": "Matches existing `<analog_event_type>` (<formatted_volume>/30d)",
-  "analog_event": "<analog_event_type>",
-  "analog_volume_30d": <int>
-}
-```
-
-### Formula
-
-For an analog with `volume_30d = V`:
-
-- `analog_volume_30d` = `V` (the raw 30-day count from existing-taxonomy)
-- `mid` = `round(V * 30.44 / 30)` (30d → monthly normalization, using
-  the standard month-length constant)
-- `low` = `round(mid * 0.8)`
-- `high` = `round(mid * 1.2)`
-
-The ±20% band reflects that analog volume is a strong signal but actual
-fire rates still drift with adoption.
-
-### basis_detail rendering
-
-`basis_detail` is shown to the reviewer in the prepare-PR table and in
-the tracking-plan markdown. Render the volume short-form:
-
-- `< 1,000` → bare integer (e.g. `742`)
-- `< 1,000,000` → thousands (e.g. `1.5k`, `200k`)
-- `≥ 1,000,000` → millions (e.g. `1.5M`, `49M`)
-
-Examples of well-formed `basis_detail`:
-
-- `"Matches existing \`Page Viewed\` (49M/30d)"`
-- `"Matches existing \`Order Completed\` (120k/30d)"`
-- `"Matches existing \`Component Rendered\` (1.5M/30d)"`
-
-### Guardrails
-
-- **Never invent a volume.** If no analog exists, the field is absent.
-  Do not estimate from category priors or hallucinate numbers — those
-  paths belong to a downstream langley-side post-processor that
-  doesn't exist yet. False precision on a renewal-impacting number is
-  the worst failure mode.
-- **Never overwrite a `volume_estimate` already on the entry.** If the
-  events.json already carries the field (e.g. from a prior run), trust
-  it — only populate when the field is absent.
-- **One analog per event.** The first-match-wins rule above prevents
-  ambiguity. Do not "average" multiple candidate analogs.
-- **Math must be exact.** Use integer arithmetic everywhere; do not
-  emit floats. `round(...)` is the canonical rounding mode.
-
----
 
 ## Rules
 
