@@ -23,13 +23,27 @@ precise — no prose around the YAML block.
 Fetch the list of changed files from the source, then categorize each one.
 
 ### Fetching changes
-- **PR URL**
+- **PR URL** (preferred — authoritative; doesn't depend on the local sandbox's refs)
 `gh pr view <number-or-url>`
 `gh pr view <pr-number> --json files --jq '.files[] | "\(.path)\t+\(.additions) -\(.deletions)\t"'`
-- **Branch comparison**
-`git log <main|master>..<branch>`
-`git diff --stat <main|master>..<branch>`
+- **Branch comparison** — **use three-dot (`...`), not two-dot (`..`)**:
+`git log <main|master>...<branch>`
+`git diff --stat <main|master>...<branch>`
 - **Ambiguous mention** (PR number, branch name): infer the right form and fetch without asking unless auth fails.
+
+> **Why three-dot.** `git diff A..B` returns the symmetric difference between
+> the two refs — every file that differs in either direction. When the branch
+> is behind master (stale rebase, never rebased, master moved forward after
+> the branch was created), the two-dot diff includes files master added that
+> the branch never touched, and the agent reads them as "branch removed
+> these" and proposes instrumenting them. `git diff A...B` returns only the
+> changes B added since its merge-base with A — that is, "what this PR
+> contributed." Always use three-dot when a PR or branch is the unit of
+> work. Real incident: amplitude/javascript#113318 (a 1-file test-only PR)
+> ended up with a prepare PR proposing instrumentation for an unrelated
+> GitHub-settings page because master had added tracking there after the
+> branch was created — the two-dot diff exposed it as a phantom "removal."
+> (Linear: DMT-450.)
 
 ### Categorize files
 Assign each file to a category based on its path:
@@ -47,12 +61,12 @@ Read every single **Core Logic** file and create the file summary map.
 Only process and include **Core Logic** files.
 
 ### Fetching detailed diffs
-- **PR**
+- **PR** (preferred — `baseRefOid` pins the merge-base explicitly so the diff doesn't drift if the sandbox's local `main` is stale)
 `gh pr view <number-or-url> --json baseRefOid,headRefOid`
-Using the response, get a detailed diff
+Using the response, get a detailed diff:
 `git diff <baseRefOid>...<headRefOid> -- <file1> <file2> <file_n>`
-- **Branch comparison**
-`git diff main..feature/foo  -- <file1> <file2> <file_n>`
+- **Branch comparison** — **three-dot, not two-dot** (see "Why three-dot" above):
+`git diff main...feature/foo -- <file1> <file2> <file_n>`
 
 ### For each file, record
 - `summary` — 2-line summary of what changed
