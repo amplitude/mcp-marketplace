@@ -24,14 +24,14 @@ Produces test events directly to the local Redpanda `portal_events_local` topic 
 
 ---
 
-## Step 1 — Ensure the script exists
+## Step 1 — Locate the script
 
-```bash
-ls /Users/dinhbao/src/bots/broadcast-router/fire-events/scripts/fire_local.py
+The script is bundled with this plugin at:
+```
+<plugin-root>/skills/fire-events/scripts/fire_local.py
 ```
 
-If missing, write it out using the full source in the `scripts/fire_local.py` file bundled
-with this skill.
+The agent should resolve `<plugin-root>` from the path where this SKILL.md lives.
 
 ---
 
@@ -48,7 +48,7 @@ pip3 install kafka-python zstandard
 Defaults: 10 events, stag org `167943` / app `508225`, partition 0.
 
 ```bash
-python3 /Users/dinhbao/src/bots/broadcast-router/fire-events/scripts/fire_local.py
+python3 <plugin-root>/skills/fire-events/scripts/fire_local.py
 ```
 
 Common options:
