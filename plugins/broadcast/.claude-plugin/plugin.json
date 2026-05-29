@@ -1,0 +1,8 @@
+{
+  "name": "broadcast",
+  "description": "Spin up and test the Amplitude Broadcast pipeline locally against staging resources — router, sender, connector manager, and event firing.",
+  "author": {
+    "name": "Dinhbao Nguyen",
+    "email": "dinhbao.nguyen@amplitude.com"
+  }
+}
