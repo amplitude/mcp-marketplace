@@ -24,15 +24,56 @@ Produces test events directly to the local Redpanda `portal_events_local` topic 
 
 ---
 
+## Why orgId/appId matter
+
+The router does **not** use the orgId/appId in the Kafka message to determine routing.
+Instead, on each batch it calls `ConnectorManager.getRouterSyncsForApp(appId)` to look up
+which syncs are active for that app in the **staging database**. If the app has no active
+syncs in staging, events are silently dropped.
+
+The default org `167943` / app `508225` works because those have real staging syncs. To
+use a different org/app, it must have active syncs configured in staging.
+
+---
+
 ## Step 1 — Install dependencies (once)
 
 ```bash
-pip3 install kafka-python zstandard
+pip3 install kafka-python zstandard thrift
 ```
 
 ---
 
-## Step 2 — Run
+## Step 2 — (Optional) Discover a valid org/app
+
+If you want to confirm which org/app to use, or find a different one:
+
+**If CM is running with fresh credentials** — query it directly:
+```bash
+python3 .agents/skills/fire-events/scripts/discover_org_app.py
+# or for a specific appId:
+python3 .agents/skills/fire-events/scripts/discover_org_app.py --app 508225
+```
+
+Output:
+```
+orgId  : 167943
+appId  : 508225
+syncs  : [(30009145, 'braze'), (30013236, 'webhook')]
+
+Use with fire_local.py:
+  python3 fire_local.py --org-id 167943 --app-id 508225
+```
+
+**If CM credentials have expired** — fall back to the router log:
+```bash
+python3 .agents/skills/fire-events/scripts/discover_org_app.py --from-log
+```
+This parses `/tmp/broadcast-router.log` to find app IDs the router has already processed.
+
+---
+
+## Step 3 — Fire events
 
 Defaults: 10 events, stag org `167943` / app `508225`, partition 0.
 
@@ -46,7 +87,7 @@ Common options:
 # More events, multiple users, delay between batches
 python3 fire_local.py --count 50 --batch-size 5 --users 5 --delay 0.2
 
-# Custom org/app (must exist in stag)
+# Custom org/app (must have active syncs in staging)
 python3 fire_local.py --org-id <org> --app-id <app>
 
 # Specific event types only
@@ -70,14 +111,10 @@ Then verify the router picked up and processed the messages:
 tail -20 /tmp/broadcast-router.log
 ```
 
-A successful pick-up looks like:
+Look for batch stats — these confirm the router routed to syncs and sent to the sender:
 ```
-INFO  com.amplitude.broadcast.kafka.BroadcastRouterKafkaProcessor - Partitions assigned: [portal_events_local-0, ...]
+INFO  BroadcastRouterKafkaProcessor - Batch processing statistics for sync 30009145 (partition: 0, app: 508225) - max latency 246 ms, job count: 5
 ```
 
-If you see `Connection refused` on port 9990, the router received the message but can't
-reach the stag broadcast-sender pod. This is expected without a port-forward. To fix:
-
-```bash
-aws-vault exec staging-engineer -- kubectl port-forward -n broadcast <sender-pod-name> 9990:9990
-```
+If events are being silently dropped (no batch stats appear), the org/app has no active
+syncs in staging. Use `discover_org_app.py` to find a valid one.
