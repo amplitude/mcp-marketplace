@@ -128,6 +128,18 @@ def main():
     )
     users = [(random_id(args.user_prefix), random.randint(100000, 999999)) for _ in range(args.users)]
 
+    # Prompt for org/app if not provided — they must match an org with active syncs in staging
+    if args.org_id == DEFAULT_ORG_ID and args.app_id == DEFAULT_APP_ID:
+        print("Which org/app should events be fired for?")
+        print(f"  (press Enter to use defaults: org={DEFAULT_ORG_ID}, app={DEFAULT_APP_ID})")
+        org_input = input("  orgId: ").strip()
+        app_input = input("  appId: ").strip()
+        if org_input:
+            args.org_id = int(org_input)
+        if app_input:
+            args.app_id = int(app_input)
+        print()
+
     print(f"Bootstrap : {args.bootstrap}")
     print(f"Topic     : {args.topic}  partition={args.partition}")
     print(f"Org/App   : {args.org_id} / {args.app_id}")
