@@ -24,18 +24,7 @@ Produces test events directly to the local Redpanda `portal_events_local` topic 
 
 ---
 
-## Step 1 — Locate the script
-
-The script is bundled with this plugin at:
-```
-<plugin-root>/skills/fire-events/scripts/fire_local.py
-```
-
-The agent should resolve `<plugin-root>` from the path where this SKILL.md lives.
-
----
-
-## Step 2 — Install dependencies (once)
+## Step 1 — Install dependencies (once)
 
 ```bash
 pip3 install kafka-python zstandard
@@ -43,12 +32,12 @@ pip3 install kafka-python zstandard
 
 ---
 
-## Step 3 — Run
+## Step 2 — Run
 
 Defaults: 10 events, stag org `167943` / app `508225`, partition 0.
 
 ```bash
-python3 <plugin-root>/skills/fire-events/scripts/fire_local.py
+python3 .agents/skills/fire-events/scripts/fire_local.py
 ```
 
 Common options:
