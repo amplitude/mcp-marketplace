@@ -1,0 +1,24 @@
+{
+  "projectId": "187520",
+  "defaults": {
+    "mode": "attended",
+    "staleLeaseGraceMinutes": 30,
+    "stalePrInactivityDays": 5,
+    "maxOpportunitiesPerRun": 3,
+    "maxNewIdeasPerRun": 2,
+    "dryRun": false,
+    "measurementWindowDays": 14
+  },
+  "repos": [
+    {
+      "repository": "your-org/your-app",
+      "baseBranch": "main",
+      "setup": "pnpm install",
+      "test": "pnpm test",
+      "lint": "pnpm lint",
+      "build": "pnpm build",
+      "allowMerge": false,
+      "allowExperimentLaunch": false
+    }
+  ]
+}

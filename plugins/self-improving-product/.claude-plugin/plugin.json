@@ -1,0 +1,9 @@
+{
+  "name": "self-improving-product",
+  "description": "Closes the Amplitude Opportunity Manager loop: pull opportunities, validate and sharpen each plan, implement the change, and drive the PR to a ship-ready state - with human gates at merge and experiment launch. Metric-first and conflict-aware. Runnable manually or on a schedule.",
+  "author": {
+    "name": "Amplitude",
+    "email": "support@amplitude.com",
+    "url": "https://amplitude.com"
+  }
+}
