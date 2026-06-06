@@ -23,6 +23,7 @@ analytics, experiments, instrumentation) are the hands.
 | Packaging | **Standalone experimental plugin** named `self-improving-product` | Installable on its own; must not require any other plugin in this repo. |
 | Instrumentation | **Metric-first, instrument last** | Prefer existing metrics/events. Only *recommend* new tracking when measurement is otherwise impossible — never auto-add it. |
 | Concurrency | **Respect shared work** | Opportunities are shared objects. Defer when someone else is actively working an item; only take over when their work is demonstrably stale. |
+| Invocation | **Manual + automation, same entry point** | Callable on demand by a user in an ADE, and triggerable on a schedule by automations (Cursor/Codex automations, Claude scheduled tasks). One skill, two ways in. |
 
 ---
 
@@ -44,6 +45,40 @@ analytics, experiments, instrumentation) are the hands.
    checked out locally).
 
 ---
+
+## 2b. Invocation modes (flexible triggering)
+
+The same `self-improving-product` skill is the single entry point, runnable two ways:
+
+- **Manual (attended).** A user runs it in their ADE ("work the opportunity backlog",
+  `/self-improving-product`, or pointed at one opportunity). The loop can prompt for
+  ambiguous decisions and pause interactively at the gates.
+- **Automated (unattended).** Triggered on a schedule by Cursor/Codex automations or
+  Claude scheduled tasks. No agent-launch API is needed — the automation *is* the
+  thing that starts the session; the skill just runs to completion within it.
+
+To stay safe and useful in both modes the loop is **parameterized, not interactive
+by default**:
+
+- **Bounded runs.** `maxOpportunitiesPerRun` / `maxNewIdeasPerRun` cap a single
+  invocation so a scheduled run can't fan out unbounded.
+- **No blocking prompts when unattended.** A `mode` parameter (`attended` |
+  `unattended`, default inferred from whether the host is interactive). In
+  `unattended` mode the loop **never blocks on a prompt** — it parks the opportunity
+  at the gate (`FOR_REVIEW`, or experiment "prepared"), records what it needs from a
+  human via `add_opportunity_comment`, and moves on. Gates are still hard stops; they
+  just become "report and continue" instead of "wait".
+- **Scope filters.** Optional `objectiveId`, `opportunityId`, `tags`, or repo filter
+  so a schedule can target one workstream (e.g. nightly run over a single objective).
+- **Idempotent + reconciling.** Because every run starts with RECONCILE and checks
+  `get_relations` before acting, repeated scheduled invocations are safe and resume
+  rather than duplicate.
+- **Run summary.** Each invocation ends with a concise summary (claimed / shipped /
+  deferred / parked-at-gate / dismissed) suitable for an automation log or a human
+  skim.
+
+`measure-outcome` is likewise schedulable on its own cadence (e.g. a daily/weekly
+task) since outcomes land days after ship.
 
 ## 3. File layout
 
@@ -218,6 +253,7 @@ entry point the user (or a scheduler / `/loop`) runs days after ship:
 {
   "projectId": "187520",
   "defaults": {
+    "mode": "attended",            // "attended" | "unattended" (scheduled/automation)
     "staleLeaseGraceMinutes": 30,
     "stalePrInactivityDays": 5,
     "maxOpportunitiesPerRun": 3,
