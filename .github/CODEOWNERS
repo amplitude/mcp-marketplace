@@ -1,0 +1,12 @@
+# Default maintainers for marketplace manifests, plugin metadata, skills, and agents.
+* @amplitude/mcp @amplitude/amplitude-mcp
+
+# Changes to automation and marketplace entrypoints should get explicit maintainer review.
+.github/workflows/* @amplitude/mcp @amplitude/amplitude-mcp
+.agents/** @amplitude/mcp @amplitude/amplitude-mcp
+.claude-plugin/** @amplitude/mcp @amplitude/amplitude-mcp
+.cursor-plugin/** @amplitude/mcp @amplitude/amplitude-mcp
+
+# Published and experimental plugin content.
+plugins/amplitude/** @amplitude/mcp @amplitude/amplitude-mcp
+plugins/amplitude-experimental/** @amplitude/mcp @amplitude/amplitude-mcp
