@@ -38,11 +38,60 @@ If there are zero priority-3 events, tell the user and stop.
 
 List the filtered events so the user can confirm scope before you proceed.
 
-## 2. For each critical event, build the instrumentation plan
+## 2. Resolve app-id routing from `.amplitude/instrumentation-agent.yaml`
+
+Before assembling the plan, determine which Amplitude project (`app_id`) each
+event belongs to. Repos that ship analytics to more than one Amplitude project
+declare the path → app-id mapping in `.amplitude/instrumentation-agent.yaml`.
+
+### 2a. Read the config
+
+Read `.amplitude/instrumentation-agent.yaml` from the repo root.
+
+- **If it doesn't exist:** there's no multi-app routing. Fall back to single-app
+  behavior — infer `appId` as before and set `appIdConfidence` honestly
+  (`low`/`med` — an inferred app-id is never `high`). Skip the rest of this
+  section.
+- **If it exists:** parse its `rules`. Each rule maps a path pattern to one or
+  more app-ids:
+
+```yaml
+rules:
+  - pattern: "**"              # catch-all (also `*` or `/`) → the default app_id
+    app_ids: [4567]
+  - pattern: "src/web/**"      # this directory and everything under it
+    app_ids: [1234]
+  - pattern: "packages/shared/**"
+    app_ids: [1234, 4567]      # shared code → event registered in BOTH projects
+```
+
+The **default app_id** is the one matched by the catch-all rule (`**`, `*`, or `/`).
+
+### 2b. Resolve each event's app-id (last-match-wins)
+
+For every event, take each `implementationLocations[].filePath` and resolve its
+app-ids against the rules:
+
+- Walk `rules` in order; **the last matching rule wins**.
+- A trailing `/` (or `/**`) means "this directory and everything under it".
+- A bare `*` or `**` is the catch-all.
+
+Then:
+
+- **All locations resolve to the same app-id(s)** → keep the event as one entry.
+  Set `appId`, or `appIds` if the matched rule lists more than one project.
+- **Locations span different app-ids** → split into separate entries, one per
+  app-id, each carrying only the `implementationLocations` that resolve to it.
+- **Event has no locations** → use the default (catch-all) app-id. If there's no
+  catch-all, leave `appId` null and flag it for the user.
+
+Because the app-id comes from config, set `appIdConfidence: "high"`.
+
+## 3. For each critical event, build the instrumentation plan
 
 Work through each priority-3 event one at a time:
 
-### 2a. Read the hinted file
+### 3a. Read the hinted file
 
 The event candidate has a `file` field pointing to where instrumentation likely
 belongs. Read that file completely. Also read the `instrumentation` field — it
@@ -52,7 +101,7 @@ If the file doesn't exist or the hint seems wrong (the function described in
 `instrumentation` isn't in that file), search nearby files. The hint is a
 starting point, not gospel.
 
-### 2b. Find the exact insertion point
+### 3b. Find the exact insertion point
 
 Using the `instrumentation` hint, locate the specific function, handler, or
 callback where the tracking call should go. Look for:
@@ -67,7 +116,7 @@ callback where the tracking call should go. Look for:
 Record the **line number** and note the **function/block name** as a stable
 anchor (line numbers shift; function names don't).
 
-### 2c. Design properties
+### 3c. Design properties
 
 Look at what variables are **in scope** at the insertion point. These are your
 property candidates. For each one, ask:
@@ -95,9 +144,9 @@ important property exists elsewhere (e.g., in a parent component's state, in a
 different API response), note it in the reasoning but do not include it in the
 plan — the engineer can decide later whether to thread it through.
 
-### 2d. Validate against existing tracking calls
+### 3d. Validate against existing tracking calls
 
-Compare your planned call against the examples you found in step 2:
+Compare your planned call against the examples you found in step 3:
 
 - Same import/function?
 - Same property shape (flat object? nested? typed interface?)?
@@ -105,7 +154,7 @@ Compare your planned call against the examples you found in step 2:
 
 If anything diverges, adjust to match. Consistency > cleverness.
 
-## 3. Assemble the tracking plan
+## 4. Assemble the tracking plan
 
 Output the result as a JSON object following this exact shape:
 
@@ -120,6 +169,8 @@ Output the result as a JSON object following this exact shape:
   },
   "trackingPlan": [
     {
+      "appIds": "number[] | null",
+      "appIdConfidence": "low | med | high",
       "eventName": "Event Name Here",
       "eventProperties": [
         {
@@ -144,6 +195,8 @@ Output the result as a JSON object following this exact shape:
 
 ### Field guidance
 
+- **`appIds`** — the Amplitude project(s) this event routes to. Leave null only when there's no config match and no catch-all.
+- **`appIdConfidence`** — `high` when the app-id was resolved from `.amplitude/instrumentation-agent.yaml`; `low`/`med` when inferred on the fallback path.
 - **`eventDescriptionAndReasoning`** — merge the candidate's `rationale` and `analysis_recipe` into a coherent paragraph. This is the "why" an engineer reads before implementing.
 - **`filePath`** — relative from repo root.
 - **`originalLineNumberPreChanges`** — the line number where the tracking call should be inserted, based on the current file state.
@@ -167,3 +220,11 @@ Ask if they want to adjust anything before an engineer implements it.
 - **Properties earn their place.** Every property must answer: "what chart axis or filter does this enable?" If the answer is vague, cut it.
 - **Scope is sacred.** Only use variables available at the insertion point. Don't propose refactors to thread data through — that's a separate PR.
 - **Critical means critical.** This skill only handles priority 3. If the user wants priority 2 events, they should say so explicitly and you can include them.
+
+
+## 6. Update Tracking plan in Amplitude through MCP
+For each event with high `appIdConfidence`, register it in **every** project it
+routes to:
+- use the `create_events` tool to create the event in that project (`app_id`)
+- use the `create_properties` tool to create the properties attached to the
+  correct event in that same project
