@@ -31,7 +31,10 @@ itself edit code.
   rename). Port the cardinality/naming discipline from `taxonomy`.
 - **Default-OFF dark-launch discipline**: binary `off`/`on` variants with `off`
   the default/control; no targeting rules in v1. Targeting + reconciliation
-  against existing org flags is **phase 2** (DESIGN_v2 §4.8 / §6).
+  against existing org flags is **phase 2** (DESIGN_v2 §4.8 / §6). Note flags
+  live within a **deployment** (a project can have several) — so phase-2
+  key reconciliation is scoped to the deployment discovery detected, not the
+  app as a whole.
 - **Qualification criteria**: what is flag-worthy (net-new user-facing behavior)
   vs not (refactor / bugfix / config / bot) — the standards behind the
   orchestrator's Phase 0 gate.

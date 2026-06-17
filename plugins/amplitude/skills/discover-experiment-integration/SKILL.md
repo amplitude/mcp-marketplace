@@ -38,8 +38,17 @@ the net-new user-facing surfaces in the diff. Feeds `define-feature-flags`
   `discover-analytics-patterns`.
 - **Inventory existing flag keys** referenced in code so the definition stage
   never collides or renames (port the existing-name-inventory contract).
+- **Detect the deployment** (not just app_id). A deployment is the container
+  (with its own key) that serves flags/experiments; **one app/project can have
+  multiple deployments**, so it's a dimension below app_id. The init key is
+  usually an env var or constant, not a literal — record `key_source` (where it
+  comes from), never the secret. → `detected_integration.deployment`.
 - **High-confidence detection heuristic** (DESIGN_v2 §4.7.4): best-effort;
   ambiguous / test-only / vendored SDK import → `confidence: low` → advisory-only.
+  **Multiple wired deployments, an unresolvable key, or per-environment keys
+  also lower confidence** (set `deployment.multiple_detected`) — we handle this
+  here in discovery/confidence rather than trying to fully resolve which
+  deployment a flag lands in.
 - **Identify net-new user-facing surfaces** from the diff (merge-base diff
   semantics consistent with the existing flow).
 
