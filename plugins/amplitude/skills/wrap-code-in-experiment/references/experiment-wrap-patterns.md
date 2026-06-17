@@ -43,6 +43,26 @@ if (variant.value === 'on') {
 const v = experiment.variant('flag-key', { value: 'off' });
 ```
 
+### Client — unified browser SDK (`@amplitude/unified`)
+
+When discovery reports `package: @amplitude/unified`, the Experiment client is the
+`experiment` namespace exported from the unified package. It is initialized once
+via `initAll(API_KEY, { experiment })` (reuse that — never call `initAll` again).
+
+```ts
+import { experiment } from '@amplitude/unified';
+
+// initAll('<AMPLITUDE_API_KEY>', { experiment: { ... } }) is already called at app bootstrap.
+await experiment.fetch(user);
+
+const variant = experiment.variant('flag-key');
+if (variant.value === 'on') {
+  // net-new code path
+} else {
+  // existing behavior (default-off)
+}
+```
+
 ### Client — React hook wrapper (if the repo uses one)
 
 ```tsx

@@ -49,14 +49,27 @@ Search for the Experiment SDK with Grep. Cast a wide net, then narrow.
 
 | What to search for | Why |
 | --- | --- |
-| `@amplitude/experiment-js-client` | **Client** browser/web SDK |
+| `@amplitude/experiment-js-client` | **Client** browser/web SDK (standalone) |
 | `@amplitude/experiment-react-native-client` | **Client** React Native SDK |
 | `@amplitude/experiment-node-server` | **Server** Node SDK |
-| `Experiment\.initialize\(` / `initializeWithAmplitudeAnalytics\(` | Client init |
+| `@amplitude/unified` | **Unified** browser SDK — bundles Analytics + Session Replay + Experiment + Guides; Experiment here is a **client** integration |
+| `Experiment\.initialize\(` / `initializeWithAmplitudeAnalytics\(` | Standalone client init |
 | `Experiment\.initializeRemote\(` / `Experiment\.initializeLocal\(` | Server init (remote eval vs local eval) |
+| `initAll\(` | Unified SDK init (`initAll(API_KEY, { experiment: {...} })`) |
 | `\.variant\(` / `\.variantAndStore\(` | Flag evaluation call |
-| `from .*experiment\|import .*experiment\|require.*experiment` | Import statements |
+| `from .*experiment\|import .*experiment\|require.*experiment` | Import statements (incl. `import { experiment } from '@amplitude/unified'`) |
 | `experiment-tag\|experimentTag` | The no-code/tag bootstrap |
+
+### The unified browser SDK (`@amplitude/unified`)
+
+This is a single package that bundles Analytics, Session Replay, Experiment, and
+Guides & Surveys. It is initialized once with `initAll('<AMPLITUDE_API_KEY>', { experiment: { ... } })`,
+and flags are read through the exported `experiment` namespace
+(`import { experiment } from '@amplitude/unified'` → `experiment.fetch(...)` →
+`experiment.variant('flag-key')`). Treat it as a **client** integration whose
+`package` is `@amplitude/unified` and whose `import_path` is `@amplitude/unified`
+(not a repo-local module). The guard idiom is the standard
+`experiment.variant('key').value === 'on'`.
 
 Other-language SDKs (Python, Go, Ruby, JVM, iOS, Android) follow the same
 `Experiment.initialize*` → `.variant(key)` shape; document them the same way but
@@ -92,6 +105,14 @@ deployments**, so the deployment is a dimension below app_id and worth pinning.
   appears wired (distinct client + server keys, or per-environment keys like
   `*_STAGING` / `*_PROD`). This is expected in many repos but it means a flag's
   evaluation target is ambiguous — feed it into the confidence signal (Step 6).
+
+**Unified SDK exception:** `@amplitude/unified` initializes via
+`initAll('<AMPLITUDE_API_KEY>', { experiment })` with the **API key**, not a
+standalone deployment key — the deployment is resolved from the API key /
+`experiment` config rather than a visible key constant. So for unified
+integrations, set `key_source` to describe that wiring (e.g.
+`unified:initAll(api_key) + experiment config`) and do **not** expect a separate
+deployment-key constant; its absence is normal, not a confidence penalty.
 
 You do **not** need to fully resolve *which* deployment a given flag lands in —
 that is deliberately out of scope. Record what you found and let confidence
