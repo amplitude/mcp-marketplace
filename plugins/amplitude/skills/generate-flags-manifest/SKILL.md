@@ -16,21 +16,20 @@ description: >
 
 # generate-flags-manifest
 
-> **STATUS: scaffold (BA-329).** Frontmatter + skeleton, plus the **locked output
-> schema** at `references/feature-flags.schema.json` (the single source of truth
-> for the contract). Full implementation is **BA-334**. This is the
-> **recording_work** stage of the `add-feature-flags` (BA-330) pipeline; it is
-> the feature-flag analog of `generate-events-manifest`.
+The recording stage of the feature-flag pipeline — the feature-flag analog of
+`generate-events-manifest`. It serializes the run's outcome into
+`.amplitude/feature-flags.json`: what was wrapped, what was only suggested
+(advisory), or that nothing was flag-worthy.
 
-Produces `.amplitude/feature-flags.json` — the run's structured record of what
-was wrapped (or suggested, or skipped).
+**The manifest records the run; it does not decide it.** Verdicts come from the
+upstream stages and the langley ship gate. The manifest's job is to be a
+schema-valid, faithful record.
 
 ## Output contract — the single source of truth
 
 The canonical, machine-checkable schema lives at
 [`references/feature-flags.schema.json`](references/feature-flags.schema.json).
-Every other skill in this set references THIS file rather than restating the
-shape. Summary:
+Every other skill in this set references THIS file. Summary:
 
 ```json
 {
@@ -40,6 +39,7 @@ shape. Summary:
     "import_path": "@/lib/experiment",
     "init_pattern": "Experiment.initialize('DEPLOYMENT_KEY')",
     "guard_pattern": "experiment.variant('key').value === 'on'",
+    "deployment": { "key_source": "env:NEXT_PUBLIC_EXPERIMENT_KEY", "multiple_detected": false },
     "confidence": "high | low"
   },
   "advisory_only": false,
@@ -61,21 +61,65 @@ shape. Summary:
 ```
 
 > `wrap_locations[]` is **model-authored, NOT authoritative** — the PR diff is
-> ground truth (DESIGN_v2 §4.7 L5).
+> ground truth (DESIGN_v2 §4.7 L5). The manifest describes intent; the diff is
+> what the langley ship gate verifies.
 
-## To implement in BA-334
+## Step 1: Assemble inputs
 
-- Emit `.amplitude/feature-flags.json` per the locked schema.
-- **Wrap-location precision**: every location with file + current line, adjusted
-  for edits made earlier in the same file (port the call-site precision from
-  `generate-events-manifest`).
-- **Prior-state handling**: read any existing manifest; keep unchanged flags, add
-  new, update changed, remove deleted.
-- Optional `manifest.json` metadata sibling (`generated_at`, `commit_hash`,
-  `base_branch`, agent-runtime fields) mirroring `generate-events-manifest`.
+Gather the upstream stage outputs:
+- `detected_integration` (from `discover-experiment-integration`), **including
+  its optional `deployment` member when present**.
+- `flags[]` definitions (from `define-feature-flags`).
+- `wrap_locations[]` (from `wrap-code-in-experiment`; empty in advisory mode).
 
-## Manifest metadata sibling *(optional)*
+## Step 2: Set the top-level signals
 
-Mirror `generate-events-manifest`'s `.amplitude/manifest.json` minimal schema
-(`generated_at`, `commit_hash`, `base_branch`) plus agent-runtime fields
-(`mode`, `agent_version`, `amplitude_project`) when running under the agent.
+- `no_flaggable_surfaces: true` → emit `flags: []` and stop (no wraps, advisory
+  irrelevant). This is the "no flags needed" record.
+- `advisory_only: true` → emit `flags[]` with definitions but **empty
+  `wrap_locations`** (nothing was wrapped).
+- otherwise (Wrapped) → emit `flags[]` with populated `wrap_locations`.
+
+These fields are signals, not the ship decision — the langley ship gate decides
+shipping from the real diff (§4.7).
+
+## Step 3: Wrap-location precision
+
+Port the call-site precision discipline from `generate-events-manifest`. Each
+`wrap_locations[]` entry MUST carry:
+- `file` — repo-relative path where the guard sits **after** edits.
+- `line` — 1-indexed line of the guard after edits; **adjust for any insertions
+  made earlier in the same file** so the line is current, not pre-edit.
+- `what_it_wraps` — one sentence on the net-new behavior gated there.
+
+Use an array even for a single location. If the same flag gates several sites,
+record every one.
+
+## Step 4: Write the manifest
+
+Write `.amplitude/feature-flags.json` exactly per the schema. **Round-trip the
+`detected_integration.deployment` block faithfully when present** —
+`key_source` and `multiple_detected` are carried through like any other field
+(never the raw deployment key). Validate the output against
+`references/feature-flags.schema.json` before finishing.
+
+## Step 5: Handling prior state
+
+If `.amplitude/feature-flags.json` already exists (a re-run):
+1. Read the existing manifest.
+2. **Keep** flags still backed by a current surface, unchanged.
+3. **Add** new flags.
+4. **Update** flags whose wrap locations, rationale, or definition changed
+   (re-adjust line numbers).
+5. **Remove** flags whose surface/wrap no longer exists in the code.
+6. Carry forward `detected_integration` (including `deployment`) — preserve or
+   update on re-run; **do not drop** the deployment member.
+7. Note changes for transparency.
+
+## Step 6: Manifest metadata sibling *(optional)*
+
+Mirror `generate-events-manifest`'s `.amplitude/manifest.json` minimal schema —
+`generated_at` (ISO 8601), `commit_hash` (from `git rev-parse HEAD`),
+`base_branch` — plus agent-runtime fields (`mode`, `agent_version`,
+`amplitude_project`) when running under the coding agent. Omit the extra fields
+in standalone mode.
