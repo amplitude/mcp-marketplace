@@ -40,7 +40,7 @@ The orchestrator's `description` should trigger on prompts like: "wrap this PR
 behind a flag", "add a feature flag for this change", "dark-launch this feature",
 "should this be behind a flag", "gate this new code behind an experiment". It
 should **not** fire on pure analytics-instrumentation asks ("instrument this PR",
-"what events should I track") — those are a different workflow.
+"what events should I track") — those are out of scope for this skill.
 
 ## Pass criteria (all cases)
 
