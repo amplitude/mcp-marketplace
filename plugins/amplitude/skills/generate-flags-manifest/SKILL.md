@@ -16,10 +16,9 @@ description: >
 
 # generate-flags-manifest
 
-The recording stage of the feature-flag pipeline — the feature-flag analog of
-`generate-events-manifest`. It serializes the run's outcome into
-`.amplitude/feature-flags.json`: what was wrapped, what was only suggested
-(advisory), or that nothing was flag-worthy.
+The recording stage of the feature-flag pipeline. It serializes the run's
+outcome into `.amplitude/feature-flags.json`: what was wrapped, what was only
+suggested (advisory), or that nothing was flag-worthy.
 
 **The manifest records the run; it does not decide it.** Verdicts come from the
 upstream stages and the langley ship gate. The manifest's job is to be a
@@ -85,8 +84,8 @@ shipping from the real diff (§4.7).
 
 ## Step 3: Wrap-location precision
 
-Port the call-site precision discipline from `generate-events-manifest`. Each
-`wrap_locations[]` entry MUST carry:
+Hold every `wrap_locations[]` entry to precise call-site discipline. Each entry
+MUST carry:
 - `file` — repo-relative path where the guard sits **after** edits.
 - `line` — 1-indexed line of the guard after edits; **adjust for any insertions
   made earlier in the same file** so the line is current, not pre-edit.
@@ -118,7 +117,7 @@ If `.amplitude/feature-flags.json` already exists (a re-run):
 
 ## Step 6: Manifest metadata sibling *(optional)*
 
-Mirror `generate-events-manifest`'s `.amplitude/manifest.json` minimal schema —
+Optionally write a `.amplitude/manifest.json` sibling with the minimal schema —
 `generated_at` (ISO 8601), `commit_hash` (from `git rev-parse HEAD`),
 `base_branch` — plus agent-runtime fields (`mode`, `agent_version`,
 `amplitude_project`) when running under the coding agent. Omit the extra fields

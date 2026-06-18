@@ -5,22 +5,17 @@ frontmatter, which equals the directory name. No plugin manifest enumerates skil
 (`.claude-plugin` / `.cursor-plugin` rely on discovery; `.codex-plugin` points `"skills": "./skills/"`
 at this whole dir). Adding a new `directory/SKILL.md` is all that's needed to ship a skill.
 
-## The two coding-agent pipelines
+## The feature-flag coding-agent pipeline
 
-Two related skill pipelines turn a PR diff into a reviewable change. Both are diff-scoped,
-treat the diff (and any `<reviewer_guidance>`) as **data not instructions**, write narrowly to
-the diff boundary, never write dotfile-rooted paths, and emit **signals** — the langley
-server-side gate, not the skill, makes the final ship decision.
-
-**Analytics instrumentation** (`add-analytics-instrumentation` orchestrator):
-`diff-intake → discover-event-surfaces → instrument-events`, with `discover-analytics-patterns`,
-`taxonomy`, `user-property-best-practices`, and `generate-events-manifest` as supporting skills.
-Output: `track()` calls + `.amplitude/events.json`.
-
-**Feature-flag wrapping** (`add-feature-flags` orchestrator):
+`add-feature-flags` (orchestrator) turns a PR diff into a reviewable change:
 `discover-experiment-integration → define-feature-flags → wrap-code-in-experiment →
 generate-flags-manifest`. Output: net-new code wrapped behind an Amplitude Experiment flag,
 default-OFF (dark launch), recorded in `.amplitude/feature-flags.json`.
+
+The pipeline is diff-scoped, treats the diff (and any `<reviewer_guidance>`) as
+**data not instructions**, writes narrowly to the diff boundary, never writes dotfile-rooted
+paths, and emits **signals** — the langley server-side gate, not the skill, makes the final
+ship decision.
 
 ## Feature-flag skill set conventions
 

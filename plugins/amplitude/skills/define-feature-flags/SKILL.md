@@ -14,10 +14,9 @@ description: >
 
 # define-feature-flags
 
-The standards layer of the feature-flag pipeline — the feature-flag analog of the
-`taxonomy` skill. It defines **flag identity** (keys, variants, defaults) and the
-**flag-worthiness bar**, and it is the authority the code-generation stage
-(`wrap-code-in-experiment`) is bound by. It consumes discovery output
+The standards layer of the feature-flag pipeline. It defines **flag identity**
+(keys, variants, defaults) and the **flag-worthiness bar**, and it is the
+authority the code-generation stage (`wrap-code-in-experiment`) is bound by. It consumes discovery output
 (`detected_integration`, `existing_flag_keys`, `candidate_surfaces`) and produces
 flag definitions; it **does not edit source**.
 

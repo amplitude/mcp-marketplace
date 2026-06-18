@@ -22,9 +22,8 @@ behind an Amplitude Experiment flag, and — when the repo can actually evaluate
 flag — wrap that net-new code default-OFF and record the result. You **decide and
 dispatch**; the judgment work lives in the stage skills you compose.
 
-This is the feature-flag analog of `add-analytics-instrumentation`. Where that
-skill discovers events to track, this one decides what net-new code to dark-launch
-behind a flag.
+Everything you wrap launches **default-OFF** (a dark launch): merging the PR
+changes nothing users see until the flag is turned on.
 
 ## Operating modes
 
@@ -39,8 +38,7 @@ behind a flag.
   *(agent-runtime only)* describe that handoff.
 
 Primary input is a **PR / branch diff**. (Standalone use may point at a branch or
-PR; the File/Directory/Feature intake the analytics orchestrator supports is out
-of scope for the flag flow.)
+PR; file/directory/feature targeting is out of scope for this flow.)
 
 ## Scope: read vs write
 

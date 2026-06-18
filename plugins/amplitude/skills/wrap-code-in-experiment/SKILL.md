@@ -17,10 +17,10 @@ description: >
 
 # wrap-code-in-experiment
 
-The code-generation stage of the feature-flag pipeline — the feature-flag analog
-of `instrument-events`. It takes the flag definitions from `define-feature-flags`
-and the integration facts from `discover-experiment-integration`, and writes the
-**actual Experiment guard** around qualifying net-new code, launched default-OFF.
+The code-generation stage of the feature-flag pipeline. It takes the flag
+definitions from `define-feature-flags` and the integration facts from
+`discover-experiment-integration`, and writes the **actual Experiment guard**
+around qualifying net-new code, launched default-OFF.
 
 Acts as a careful software engineer making a **minimal, reviewable** change: it
 wraps, it does not redesign. The canonical SDK idioms live in

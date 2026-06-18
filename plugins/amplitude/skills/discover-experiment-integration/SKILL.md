@@ -28,9 +28,8 @@ proceed without:
 - **`wrap-code-in-experiment`** — the exact client, import, and guard idiom to
   reuse so generated code looks native (extend before add).
 
-This is the discovery stage of the `add-feature-flags` pipeline and the
-feature-flag analog of `discover-analytics-patterns`. It **reads only** — it
-never edits source.
+This is the discovery stage of the `add-feature-flags` pipeline. It **reads
+only** — it never edits source.
 
 **Source precedence** (strict order):
 1. **The codebase is ground truth** for whether an integration exists and how it
@@ -121,8 +120,8 @@ account for ambiguity.
 ## Step 3: Inventory existing flag-guard patterns
 
 Find every place the codebase already gates behavior on a flag, and group them
-the way `discover-analytics-patterns` groups tracking calls. Two call sites are
-the **same pattern** if they share the SDK/function, method, and call shape.
+by shared idiom. Two call sites are the **same pattern** if they share the
+SDK/function, method, and call shape.
 
 Common shapes to look for:
 
@@ -158,8 +157,7 @@ Capture the **exact flag-key strings** passed to `.variant(...)` /
 `useExperiment(...)` / `fetch` lookups. Downstream **must preserve these
 verbatim** — `define-feature-flags` may not propose a new flag whose key
 collides with an existing one, and may not rename an existing key (that
-silently detaches the flag from its live targeting/rollout config). This is the
-flag-world analog of the event-name-preservation contract.
+silently detaches the flag from its live targeting/rollout config).
 
 ```yaml
 existing_flag_keys:
