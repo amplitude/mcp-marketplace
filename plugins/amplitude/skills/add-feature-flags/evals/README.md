@@ -4,12 +4,14 @@ Evals for the feature-flag skill set. They exercise the
 end-to-end pipeline through the `/add-feature-flags` orchestrator and assert the
 **verdict** plus the **`feature-flags.json`** the run emits.
 
-> **No automated harness yet.** mcp-marketplace has no skill-eval runner at the
-> time of writing (see the repo `QUESTIONS.md`). These cases are authored to be
-> run **manually or by an LLM judge** today, and to port cleanly into a harness
-> later. Each case is self-contained: a *repo context*, an *input diff*,
-> optional *reviewer guidance*, and the *expected* verdict + `feature-flags.json`
-> assertions.
+> **Automated harness.** Run these with the marketplace skill-eval runner:
+> `uv run tools/skill-evals/run_evals.py --skill add-feature-flags` (see
+> `tools/skill-evals/README.md`). It materializes each case, runs the skill
+> through the `claude` CLI, and grades the verdict + `feature-flags.json`
+> mechanically plus an LLM judge for the prose assertions. The cases remain
+> runnable **manually or by an LLM judge** too. Each case is self-contained: a
+> *repo context*, an *input diff*, optional *reviewer guidance*, and the
+> *expected* verdict + `feature-flags.json` assertions.
 
 ## How to run a case
 

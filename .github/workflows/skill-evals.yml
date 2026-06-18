@@ -1,0 +1,86 @@
+name: Skill Evals
+
+# Two lanes:
+#   * dry-run (no model calls, no secrets) — runs on PRs that touch evals or the
+#     runner, so case markdown stays parseable and the harness keeps working.
+#   * full run (calls the claude CLI) — manual only; needs ANTHROPIC_API_KEY.
+on:
+  pull_request:
+    paths:
+      - 'plugins/*/skills/*/evals/**'
+      - 'tools/skill-evals/**'
+      - '.github/workflows/skill-evals.yml'
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Only run cases for this skill (dir name); blank = all'
+        required: false
+        default: ''
+      case:
+        description: 'Only run case id(s) with this prefix; blank = all'
+        required: false
+        default: ''
+      repeats:
+        description: 'Run each case N times'
+        required: false
+        default: '1'
+      no_judge:
+        description: 'Skip the LLM judge (mechanical checks only)'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  dry-run:
+    name: Parse cases (dry run, no model)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: List + dry-run all cases
+        run: |
+          uv run tools/skill-evals/run_evals.py --list --no-color
+          uv run tools/skill-evals/run_evals.py --dry-run --no-color
+
+  full-run:
+    name: Run skill evals
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Guard — require ANTHROPIC_API_KEY
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not set; cannot run the full eval lane."
+            exit 1
+          fi
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Setup Node (for the claude CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ARGS="--no-color --out tools/skill-evals/.out/report.json --repeats ${{ inputs.repeats }}"
+          if [ -n "${{ inputs.skill }}" ]; then ARGS="$ARGS --skill ${{ inputs.skill }}"; fi
+          if [ -n "${{ inputs.case }}" ]; then ARGS="$ARGS --case ${{ inputs.case }}"; fi
+          if [ "${{ inputs.no_judge }}" = "true" ]; then ARGS="$ARGS --no-judge"; fi
+          uv run tools/skill-evals/run_evals.py $ARGS
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-eval-report
+          path: tools/skill-evals/.out/report.json
+          if-no-files-found: ignore
