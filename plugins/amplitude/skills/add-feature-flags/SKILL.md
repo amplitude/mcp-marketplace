@@ -78,7 +78,7 @@ Before doing any other work, decide a single question about the diff:
 If the answer is **no** for every changed file, **STOP** — there is nothing worth
 wrapping. Putting a flag around a refactor-only diff wastes the reviewer's time
 and produces a guard around code whose user-visible behavior never actually
-varies. A flag is only meaningful when there is a *new behavior* that can be on
+varies. A flag is only meaningful when there is a _new behavior_ that can be on
 for some users and off for others.
 
 _(agent-runtime only)_ When stopping, write the marker file
@@ -104,7 +104,6 @@ produces a new or changed behavior the user perceives?
   surrounding code (callers, route definitions, exported symbols). Do not guess.
   The tiebreaker depends on the **trigger source**, which the agent-runtime caller
   passes in the prompt as `Trigger: manual` or `Trigger: autorun`:
-
   - **`Trigger: manual`** (a person explicitly asked — e.g. an `@amplitude`
     command on the PR, or a standalone run). Default to **proceeding** with a
     best attempt — the user asked, so give them a wrap to review — but record the
@@ -142,6 +141,7 @@ nothing to gate:
    +  return PREFIX + x;
    +}
    ```
+
    Nothing to gate. Skip.
 
 2. **Renames** — variable, function, parameter, type, or file renames where call
@@ -151,6 +151,7 @@ nothing to gate:
    -export function getUserId(req) { return req.session.user.id; }
    +export function resolveUserId(req) { return req.session.user.id; }
    ```
+
    Same behavior under any flag value. Skip.
 
 3. **Type-only changes** — adding or refining TypeScript types, Python type hints,
@@ -160,6 +161,7 @@ nothing to gate:
    -function load(id) { ... }
    +function load(id: UserId): Promise<User> { ... }
    ```
+
    Skip.
 
 4. **Formatting and whitespace** — prettier/black/gofmt reflows, import
@@ -214,24 +216,14 @@ enough to proceed:
   setting, or behavior. The flag lets the team roll the new default out gradually
   and roll it back instantly.
 - **A new entry point that reveals new behavior** — a new button, link, nav item,
-  or route. Gate the entry point *together with* the behavior it reveals as one
+  or route. Gate the entry point _together with_ the behavior it reveals as one
   unit; the click handler alone is not the thing worth flagging.
-- **An author-intended toggle already in the diff** — new code sitting behind a
-  hardcoded boolean, an env check, an `if (false)`, a `TODO: launch`, or a
-  constant like `ENABLE_X`. That is a hand-rolled flag; replace it with a real
-  default-OFF Experiment flag.
-- **A modest change on a risky or high-blast-radius user path** — payments, auth,
-  checkout, onboarding, data writes, or a performance-sensitive render — where
-  being able to roll out gradually or flip a kill switch materially reduces risk,
-  even when the change itself is small.
+- **A modest change on a risky or high-blast-radius user path** — payments, auth, checkout, onboarding, data writes, or a performance-sensitive render — where being able to roll out gradually or flip a kill switch materially reduces risk, even when the change itself is small.
 
 **Granularity — gate the feature, not its parts.** One flag wraps one
-feature/surface: the smallest *self-contained* unit of new behavior a user
+feature/surface: the smallest _self-contained_ unit of new behavior a user
 perceives. Do **not** wrap an individual API / `fetch` / RPC call, a lone event
-handler, or a utility function in isolation — those are implementation details of
-a feature, and a flag around one of them toggles nothing a user would notice. If
-you can't state the toggle as "with the flag **on**, the user sees/gets X; with it
-**off**, the prior behavior," it isn't flag-worthy.
+handler, or a utility function in isolation — those are implementation details of a feature, and a flag around one of them toggles nothing a user would notice. If you can't state the toggle as "with the flag **on**, the user sees/gets X; with it **off**, the prior behavior," it isn't flag-worthy.
 
 #### Marker file template _(agent-runtime only)_
 
@@ -302,10 +294,10 @@ Invoke `generate-flags-manifest` to write schema-valid
 
 ## Verdict routing
 
-| Verdict             | Condition                                                                         | Output                                                                                       |
-| ------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Wrapped**         | flag-worthy surface(s) + high-confidence integration + a real non-empty wrap diff | source guards default-OFF + `feature-flags.json` with populated `flags[]`/`wrap_locations[]` |
-| **Advisory-only**   | flag-worthy surface(s) but low-confidence / no usable integration                 | `advisory_only: true`, `flags[]` with empty `wrap_locations`, no source edits                |
+| Verdict             | Condition                                                                         | Output                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Wrapped**         | flag-worthy surface(s) + high-confidence integration + a real non-empty wrap diff | source guards default-OFF + `feature-flags.json` with populated `flags[]`/`wrap_locations[]`                               |
+| **Advisory-only**   | flag-worthy surface(s) but low-confidence / no usable integration                 | `advisory_only: true`, `flags[]` with empty `wrap_locations`, no source edits                                              |
 | **No flags needed** | no flag-worthy surface                                                            | _(agent-runtime)_ `.amplitude/no-flaggable-surfaces.md` marker, silent (no comment/PR/row); _(standalone)_ report no flags |
 
 **You emit signals, not ship decisions.** Whether a flag PR actually ships is
