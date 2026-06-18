@@ -194,24 +194,44 @@ If the diff **mixes** refactor-only files with files that DO introduce a new
 user-reachable path, the gate **opens** — proceed to Step 1. The downstream
 stages scope their work to the user-reachable files.
 
-#### Heuristics that strongly suggest a new user-reachable path (gate opens)
+#### Signals that a change is flag-worthy (gate opens)
 
-Any one of these in a changed file is sufficient evidence to proceed:
+A feature flag wraps a **coherent, user-perceptible unit of new behavior** — not a
+single statement. The strongest signal is a **whole new feature or surface** that
+did not exist before: net-new, user-facing, and shippable-on-a-toggle is exactly
+what a default-OFF flag is for. Short of that, any one of these smaller signals is
+enough to proceed:
 
-- a new exported handler, route, controller, or page component
-- a new `onClick`, `onSubmit`, `onChange`, or other event-handler binding in a
-  user-visible component
-- a new `fetch` / `axios` / RPC call from client code, or a new endpoint
-  registration on the server
-- a new branch in user-reachable control flow that produces user-visible output
-  (toast, modal, redirect, response body, render output)
-- a new form field, button, link, or navigation entry
-- a new feature entry point or capability a team would plausibly want to ship to
-  a fraction of users first rather than to everyone on merge
+- **A new rendered surface inside an existing one** — a new component, section,
+  widget, modal, or step added to a page or flow that already ships. Gate the
+  whole new surface, not the wiring that mounts it.
+- **A new or reworked version of existing behavior** — a redesigned screen, a new
+  layout, a reworked flow, or a new algorithm behind a user-visible result
+  (search ranking, recommendations, pricing/display logic). The classic "ship the
+  new version to some users, keep the old for the rest" case — the flag selects
+  between old and new.
+- **A change to a default users will notice** — new default copy, ordering,
+  setting, or behavior. The flag lets the team roll the new default out gradually
+  and roll it back instantly.
+- **A new entry point that reveals new behavior** — a new button, link, nav item,
+  or route. Gate the entry point *together with* the behavior it reveals as one
+  unit; the click handler alone is not the thing worth flagging.
+- **An author-intended toggle already in the diff** — new code sitting behind a
+  hardcoded boolean, an env check, an `if (false)`, a `TODO: launch`, or a
+  constant like `ENABLE_X`. That is a hand-rolled flag; replace it with a real
+  default-OFF Experiment flag.
+- **A modest change on a risky or high-blast-radius user path** — payments, auth,
+  checkout, onboarding, data writes, or a performance-sensitive render — where
+  being able to roll out gradually or flip a kill switch materially reduces risk,
+  even when the change itself is small.
 
-The strongest signal of all: the diff adds a **whole new feature or surface** that
-did not exist before. Net-new, user-facing, shippable-on-a-toggle is exactly what
-a default-OFF flag is for.
+**Granularity — gate the feature, not its parts.** One flag wraps one
+feature/surface: the smallest *self-contained* unit of new behavior a user
+perceives. Do **not** wrap an individual API / `fetch` / RPC call, a lone event
+handler, or a utility function in isolation — those are implementation details of
+a feature, and a flag around one of them toggles nothing a user would notice. If
+you can't state the toggle as "with the flag **on**, the user sees/gets X; with it
+**off**, the prior behavior," it isn't flag-worthy.
 
 #### Marker file template _(agent-runtime only)_
 
