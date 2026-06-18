@@ -78,6 +78,9 @@ Gather the upstream stage outputs:
 - `advisory_only: true` → emit `flags[]` with definitions but **empty
   `wrap_locations`** (nothing was wrapped).
 - otherwise (Wrapped) → emit `flags[]` with populated `wrap_locations`.
+- `low_confidence_note` (optional, top-level) → carry it through verbatim when the
+  orchestrator's Phase 0 set it (manual trigger + an uncertain gate); omit the
+  field entirely otherwise.
 
 These fields are signals, not the ship decision — the langley ship gate decides
 shipping from the real diff.

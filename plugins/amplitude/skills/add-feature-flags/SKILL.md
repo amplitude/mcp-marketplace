@@ -34,7 +34,7 @@ changes nothing users see until the flag is turned on.
   **diff from its own clone** — it self-analyzes everything it needs from that
   diff. A downstream webhook handler consumes `feature-flags.json` and the wrap
   diff to open a human-review-only flag prepare PR and post a comment. Sections
-  tagged *(agent-runtime only)* describe that handoff.
+  tagged _(agent-runtime only)_ describe that handoff.
 
 Primary input is a **PR / branch diff**. (Standalone use may point at a branch or
 PR; file/directory/feature targeting is out of scope for this flow.)
@@ -69,27 +69,186 @@ review plus the langley ship gate.
 
 ### Phase 0: Product-surface gate
 
-Before anything else, answer one question about the diff:
+Before doing any other work, decide a single question about the diff:
 
-> Does this diff add **net-new user-facing behavior** that a team would
-> plausibly want to dark-launch or roll out behind a flag?
+> Does this diff add a **new user-reachable execution path** — a feature, screen,
+> route, interaction, or branch of user-visible behavior — that a team would
+> plausibly want to **dark-launch or roll out gradually** behind a flag?
 
-Apply the flag-worthiness bar defined in `define-feature-flags` (net-new
-feature / screen / route / interaction / user-visible branch = qualifies;
-refactor, bugfix, rename, formatting, type-only, dep bump, config, tests,
-generated code, dead code, bot-authored = does not). Read file **contents**, not
-just paths; read surrounding code when the diff alone is ambiguous (don't guess).
+If the answer is **no** for every changed file, **STOP** — there is nothing worth
+wrapping. Putting a flag around a refactor-only diff wastes the reviewer's time
+and produces a guard around code whose user-visible behavior never actually
+varies. A flag is only meaningful when there is a *new behavior* that can be on
+for some users and off for others.
 
-- If **no** changed file introduces a flag-worthy surface → **STOP** with the
-  **No flags needed** verdict. *(agent-runtime only)* emit `feature-flags.json`
-  with `no_flaggable_surfaces: true` and `flags: []`; the handler posts **no
-  comment, no PR, and writes no row** — a quiet skip protects reviewer trust.
-  Do not run the rest of the pipeline.
-- If **any** changed file introduces a flag-worthy surface → proceed.
+_(agent-runtime only)_ When stopping, write the marker file
+`.amplitude/no-flaggable-surfaces.md` (template below) so the downstream handler
+posts a quiet "no flaggable surfaces" outcome instead of opening a prepare PR.
+Every false positive trains reviewers to ignore the agent, so the quiet skip
+matters — a prepare PR the reviewer has to close is more expensive than no PR at
+all, not less.
+
+#### Decision rule
+
+Read the **contents** of every changed file (not just the paths). For each file
+ask: does the change introduce or expose a **new user-reachable execution path** —
+code a user directly causes to run by interacting with the product (clicking,
+typing, navigating, submitting, viewing, or calling an exposed API) — that
+produces a new or changed behavior the user perceives?
+
+- If **every** changed file is refactor-only (patterns below) → write
+  `.amplitude/no-flaggable-surfaces.md` and STOP.
+- If **any** changed file introduces a new user-reachable execution path →
+  proceed to Step 1.
+- If you cannot tell from the diff whether a change is user-reachable, read the
+  surrounding code (callers, route definitions, exported symbols). Do not guess.
+  The tiebreaker depends on the **trigger source**, which the agent-runtime caller
+  passes in the prompt as `Trigger: manual` or `Trigger: autorun`:
+
+  - **`Trigger: manual`** (a person explicitly asked — e.g. an `@amplitude`
+    command on the PR, or a standalone run). Default to **proceeding** with a
+    best attempt — the user asked, so give them a wrap to review — but record the
+    uncertainty: write a top-level `low_confidence_note` in `feature-flags.json`
+    describing what made you unsure (e.g. "the new code is an internal service
+    function only reached from a webhook handler; wrapped the webhook entry on the
+    assumption that's the user-facing surface, but close this if the path isn't
+    user-triggered"). The handler renders that note as a caution in the comment so
+    the reviewer scrutinizes the wrap.
+  - **`Trigger: autorun`** (the agent fired itself on PR open with no explicit
+    ask). Default to **stopping** — write the marker and skip. The user didn't ask
+    for a flag; speculating produces a prepare PR they didn't request and erodes
+    trust faster than missing a surface they could have requested explicitly.
+  - **No trigger label** (standalone run, or older callers): treat as manual — a
+    person chose to run this.
+
+#### Refactor patterns that route to no-flaggable-surfaces
+
+These changes do **not** add a new user-reachable execution path, and MUST route
+to the marker file when they are the only kind of change in the diff. None of them
+create a behavior whose value would differ with the flag on vs off — so there is
+nothing to gate:
+
+1. **Constant or literal relocations** — moving a string/number/object literal
+   between scopes (function-local → module-level, inline → named export).
+   Behavior is unchanged; only the binding site moves.
+
+   ```diff
+   -function format(x) {
+   -  const PREFIX = "user_";
+   -  return PREFIX + x;
+   -}
+   +const PREFIX = "user_";
+   +function format(x) {
+   +  return PREFIX + x;
+   +}
+   ```
+   Nothing to gate. Skip.
+
+2. **Renames** — variable, function, parameter, type, or file renames where call
+   sites are updated mechanically and behavior is preserved.
+
+   ```diff
+   -export function getUserId(req) { return req.session.user.id; }
+   +export function resolveUserId(req) { return req.session.user.id; }
+   ```
+   Same behavior under any flag value. Skip.
+
+3. **Type-only changes** — adding or refining TypeScript types, Python type hints,
+   generics, or interface declarations without altering runtime behavior.
+
+   ```diff
+   -function load(id) { ... }
+   +function load(id: UserId): Promise<User> { ... }
+   ```
+   Skip.
+
+4. **Formatting and whitespace** — prettier/black/gofmt reflows, import
+   reordering, trailing-comma changes, line-length wraps.
+
+5. **Code reorganization** — splitting a file into modules, extracting a helper,
+   inlining a one-off function, reordering exports — when call sites resolve to
+   the same behavior. The execution graph is unchanged; only the layout differs.
+
+6. **Comment / docstring / JSDoc edits** — including TODO removals and typo fixes
+   inside comments.
+
+7. **Dead-code deletion** — removing unused exports, unreachable branches, or
+   commented-out blocks. (Removing a path is not a new path to gate.)
+
+8. **Dependency / lockfile bumps** — `package-lock.json`, `yarn.lock`, `uv.lock`,
+   `go.sum`, `Gemfile.lock`, and version-only manifest bumps with no new imported
+   call sites in source.
+
+9. **Build / config / tooling** — CI YAML, `.eslintrc`, `tsconfig.json`,
+   `Makefile`, dockerfiles, `.gitignore`. These don't reach users at runtime.
+
+10. **Test-only diffs** — changes confined to test files (`*.test.*`, `*_test.py`,
+    `spec/`, `__tests__/`). Tests don't run in production. (Caveat: if the "test"
+    file is actually the product — an exported fixture imported by user code —
+    read it to verify before applying this rule.)
+
+11. **Generated code** — files marked auto-generated, vendored bundles, minified
+    output. The generator is what a reviewer would gate; the artifact is not.
+
+If the diff **mixes** refactor-only files with files that DO introduce a new
+user-reachable path, the gate **opens** — proceed to Step 1. The downstream
+stages scope their work to the user-reachable files.
+
+#### Heuristics that strongly suggest a new user-reachable path (gate opens)
+
+Any one of these in a changed file is sufficient evidence to proceed:
+
+- a new exported handler, route, controller, or page component
+- a new `onClick`, `onSubmit`, `onChange`, or other event-handler binding in a
+  user-visible component
+- a new `fetch` / `axios` / RPC call from client code, or a new endpoint
+  registration on the server
+- a new branch in user-reachable control flow that produces user-visible output
+  (toast, modal, redirect, response body, render output)
+- a new form field, button, link, or navigation entry
+- a new feature entry point or capability a team would plausibly want to ship to
+  a fraction of users first rather than to everyone on merge
+
+The strongest signal of all: the diff adds a **whole new feature or surface** that
+did not exist before. Net-new, user-facing, shippable-on-a-toggle is exactly what
+a default-OFF flag is for.
+
+#### Marker file template _(agent-runtime only)_
+
+When the gate closes in agent-runtime mode, write
+`.amplitude/no-flaggable-surfaces.md` with this shape so the handler can identify
+and surface the skip reason:
+
+```markdown
+---
+reason: <one-line summary of why nothing was flag-worthy>
+changed_paths:
+  - <path/to/file.ts>
+  - <path/to/other.py>
+classification: refactor-only | tooling-only | tests-only | docs-only | mixed-non-product
+---
+
+# No flaggable surfaces
+
+This diff was reviewed against the Phase 0 product-surface gate. No changed file
+introduces a new user-reachable execution path whose behavior a team would
+dark-launch behind a flag.
+
+## What we looked at
+
+<one line per file, naming the refactor pattern that applied — e.g.
+"src/utils/format.ts: constant relocation (PREFIX moved to module scope, no
+behavior change)">
+```
+
+Then STOP. Do not write `.amplitude/feature-flags.json`. Do not run Step 1 onward.
+_(agent-runtime only)_ the handler inspects the marker and posts the quiet "no
+flaggable surfaces" outcome on the PR. _(standalone)_ just tell the user no
+flaggable surfaces were found and why.
 
 ### Step 1: discover-experiment-integration (discovery)
 
-Invoke `discover-experiment-integration` on the diff. It returns
+Invoke `discover-experiment-integration` on the repo. It returns
 `detected_integration` (sdk variant, import path, dominant `guard_pattern`,
 `deployment`, `confidence`), `existing_flag_keys`, and `candidate_surfaces`.
 Capture it verbatim.
@@ -123,11 +282,11 @@ Invoke `generate-flags-manifest` to write schema-valid
 
 ## Verdict routing
 
-| Verdict | Condition | Output |
-|---|---|---|
-| **Wrapped** | flag-worthy surface(s) + high-confidence integration + a real non-empty wrap diff | source guards default-OFF + `feature-flags.json` with populated `flags[]`/`wrap_locations[]` |
-| **Advisory-only** | flag-worthy surface(s) but low-confidence / no usable integration | `advisory_only: true`, `flags[]` with empty `wrap_locations`, no source edits |
-| **No flags needed** | no flag-worthy surface | `no_flaggable_surfaces: true`, `flags: []`, silent (no comment/PR/row) |
+| Verdict             | Condition                                                                         | Output                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Wrapped**         | flag-worthy surface(s) + high-confidence integration + a real non-empty wrap diff | source guards default-OFF + `feature-flags.json` with populated `flags[]`/`wrap_locations[]` |
+| **Advisory-only**   | flag-worthy surface(s) but low-confidence / no usable integration                 | `advisory_only: true`, `flags[]` with empty `wrap_locations`, no source edits                |
+| **No flags needed** | no flag-worthy surface                                                            | _(agent-runtime)_ `.amplitude/no-flaggable-surfaces.md` marker, silent (no comment/PR/row); _(standalone)_ report no flags |
 
 **You emit signals, not ship decisions.** Whether a flag PR actually ships is
 decided by langley's **server-side ship gate** (a real, non-empty wrap diff) —
@@ -138,7 +297,7 @@ not by the `advisory_only` boolean and not by you.
 - **Standalone:** summarize the verdict and walk each flag (key, what net-new
   surface it gates, why, where the guard went), then point the user at the diff
   and `feature-flags.json` to review.
-- *(agent-runtime)*: stop after writing artifacts; the handler composes the PR
+- _(agent-runtime)_: stop after writing artifacts; the handler composes the PR
   comment and prepare PR.
 
 ## Error handling & degenerate paths

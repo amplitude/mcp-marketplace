@@ -56,6 +56,10 @@
         }
       }
     },
+    "low_confidence_note": {
+      "description": "Optional, top-level. Written only when the Phase 0 gate was uncertain whether the diff is flag-worthy and proceeded anyway because the trigger was manual (the user explicitly asked). Plain-language description of what made the call uncertain, so a reviewer can sanity-check the wrap. Omit entirely when Phase 0 was confident.",
+      "type": "string"
+    },
     "advisory_only": {
       "description": "True when net-new user-facing surfaces exist but no high-confidence Experiment SDK integration was found — the run suggests flags but wraps no code. The langley ship gate, not this boolean, makes the final ship decision.",
       "type": "boolean"
