@@ -60,8 +60,8 @@ Every other skill in this set references THIS file. Summary:
 ```
 
 > `wrap_locations[]` is **model-authored, NOT authoritative** — the PR diff is
-> ground truth (DESIGN_v2 §4.7 L5). The manifest describes intent; the diff is
-> what the langley ship gate verifies.
+> ground truth. The manifest describes intent; the diff is what the langley ship
+> gate verifies.
 
 ## Step 1: Assemble inputs
 
@@ -80,7 +80,7 @@ Gather the upstream stage outputs:
 - otherwise (Wrapped) → emit `flags[]` with populated `wrap_locations`.
 
 These fields are signals, not the ship decision — the langley ship gate decides
-shipping from the real diff (§4.7).
+shipping from the real diff.
 
 ## Step 3: Wrap-location precision
 

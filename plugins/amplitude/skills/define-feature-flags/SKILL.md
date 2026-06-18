@@ -28,7 +28,7 @@ flag definitions; it **does not edit source**.
    the diff.
 2. **Conservative by default.** A flag is a durable artifact and a code change a
    human will review. When a surface is borderline, prefer **no flag** over a
-   speculative one. Reviewer trust is the scarce resource (DESIGN_v2 §4.4).
+   speculative one. Reviewer trust is the scarce resource.
 3. **Wrap only net-new, default-OFF.** Everything this skill defines launches
    dark. It never changes the behavior users see today.
 4. **Explain every flag.** Each definition carries a `rationale` a reviewer can
@@ -77,7 +77,7 @@ comment, no PR, no row).
   `detected_integration.deployment`). Collision checks and phase-2 reconciliation
   are scoped to the detected deployment, not a flat org namespace. In v1 the only
   hard rule is "don't collide with `existing_flag_keys`"; richer reconciliation
-  against the deployment's registered flags is phase 2 (§6).
+  against the deployment's registered flags is phase 2.
 
 ## Variants & default discipline
 
@@ -86,11 +86,11 @@ comment, no PR, no row).
   this is enforced when `wrap-code-in-experiment` generates the guard, but the
   definition states it as the contract.
 - **No targeting, no rollout %, no multi-variant in v1.** Audience targeting,
-  percentage rollouts, and multivariate experiments are **phase 2** (§6).
+  percentage rollouts, and multivariate experiments are **phase 2**.
 
 ## Wrapped vs advisory verdict (definition-side inputs)
 
-The orchestrator routes the final verdict (§4.4); this skill supplies the
+The orchestrator routes the final verdict; this skill supplies the
 definition-side inputs:
 
 - **Wrapped** — there is ≥1 flag-worthy surface **and** discovery reported
@@ -103,12 +103,12 @@ definition-side inputs:
 - **No flags needed** — no flag-worthy surface → `no_flaggable_surfaces: true`.
 
 The langley server-side ship gate, not the `advisory_only` boolean, makes the
-final ship decision — this skill only sets the signal (§4.7).
+final ship decision — this skill only sets the signal.
 
 ## Rationale authoring
 
 Every flag carries a `rationale`. Frame it as **a code change a reviewer is
-evaluating**, not a telemetry/tracking add (DESIGN_v2 §4.4 / B1):
+evaluating**, not a telemetry/tracking add:
 
 - say what net-new behavior the flag gates and why it benefits from a dark
   launch / gradual rollout
@@ -130,7 +130,7 @@ intentionally minimal:
   integration already supplies — do **not** introduce new identity wiring or
   collect new user properties to drive targeting.
 - Audience rules, targeting properties, and reconciliation against the
-  deployment's registered flags are **phase 2** (§6). If a surface seems to *need*
+  deployment's registered flags are **phase 2**. If a surface seems to *need*
   targeting to be safe, that is a signal to prefer advisory-only and say so.
 
 ## Output

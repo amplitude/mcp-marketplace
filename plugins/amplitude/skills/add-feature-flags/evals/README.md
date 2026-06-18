@@ -1,6 +1,6 @@
 # add-feature-flags — skill evals
 
-Evals for the feature-flag skill set (DESIGN_v2 §5). They exercise the
+Evals for the feature-flag skill set. They exercise the
 end-to-end pipeline through the `/add-feature-flags` orchestrator and assert the
 **verdict** plus the **`feature-flags.json`** the run emits.
 

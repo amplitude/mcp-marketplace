@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://amplitude.com/schemas/feature-flags.json",
   "title": "feature-flags.json",
-  "description": "Output contract for the feature-flag coding-agent skill set. Records what net-new user-facing code (if any) was wrapped behind an Amplitude Experiment flag, default-OFF, and the verdict for the run. This is the single source of truth referenced by generate-flags-manifest and the /add-feature-flags orchestrator. NOTE: wrap_locations[] is model-authored and NOT authoritative — the PR diff is ground truth (DESIGN_v2 §4.7 L5). The langley server-side ship gate (a real, non-empty wrap diff), not the advisory_only boolean, decides whether a PR ships (§4.7).",
+  "description": "Output contract for the feature-flag coding-agent skill set. Records what net-new user-facing code (if any) was wrapped behind an Amplitude Experiment flag, default-OFF, and the verdict for the run. This is the single source of truth referenced by generate-flags-manifest and the /add-feature-flags orchestrator. NOTE: wrap_locations[] is model-authored and NOT authoritative — the PR diff is ground truth. The langley server-side ship gate (a real, non-empty wrap diff), not the advisory_only boolean, decides whether a PR ships.",
   "type": "object",
   "required": ["detected_integration", "advisory_only", "no_flaggable_surfaces", "flags"],
   "additionalProperties": false,
@@ -50,18 +50,18 @@
           "type": "string"
         },
         "confidence": {
-          "description": "Best-effort confidence the integration is real and usable. 'low' (ambiguous / test-only / vendored import) routes the run to advisory_only (DESIGN_v2 §4.7.4).",
+          "description": "Best-effort confidence the integration is real and usable. 'low' (ambiguous / test-only / vendored import) routes the run to advisory_only.",
           "type": "string",
           "enum": ["high", "low"]
         }
       }
     },
     "advisory_only": {
-      "description": "True when net-new user-facing surfaces exist but no high-confidence Experiment SDK integration was found — the run suggests flags but wraps no code. The langley ship gate, not this boolean, makes the final ship decision (§4.7).",
+      "description": "True when net-new user-facing surfaces exist but no high-confidence Experiment SDK integration was found — the run suggests flags but wraps no code. The langley ship gate, not this boolean, makes the final ship decision.",
       "type": "boolean"
     },
     "no_flaggable_surfaces": {
-      "description": "True when the diff has no net-new user-facing behavior worth flagging (refactor/bugfix/config/test/generated/bot). When true, flags[] is empty and the flow produces no comment, no PR, no row (§4.4).",
+      "description": "True when the diff has no net-new user-facing behavior worth flagging (refactor/bugfix/config/test/generated/bot). When true, flags[] is empty and the flow produces no comment, no PR, no row.",
       "type": "boolean"
     },
     "flags": {
@@ -86,7 +86,7 @@
             "items": { "type": "string" }
           },
           "rationale": {
-            "description": "Why this net-new code is wrapped, framed as a code change to review (not a telemetry add) — DESIGN_v2 §4.4 / B1.",
+            "description": "Why this net-new code is wrapped, framed as a code change to review (not a telemetry add).",
             "type": "string"
           },
           "variant_values": {
@@ -101,7 +101,7 @@
             "default": "off"
           },
           "wrap_locations": {
-            "description": "Where the guard was inserted. MODEL-AUTHORED, NOT AUTHORITATIVE — the PR diff is ground truth (§4.7 L5). Empty in advisory_only mode.",
+            "description": "Where the guard was inserted. MODEL-AUTHORED, NOT AUTHORITATIVE — the PR diff is ground truth. Empty in advisory_only mode.",
             "type": "array",
             "items": {
               "type": "object",

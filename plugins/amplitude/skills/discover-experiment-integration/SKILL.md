@@ -196,7 +196,7 @@ act on them. This step does not decide the verdict — it surfaces candidates.
 ## Step 6: Confidence evaluation
 
 Produce a single `confidence` for the integration: `high` or `low`. The wrap-vs-
-advisory verdict hinges on this (DESIGN_v2 §4.7.4) — when in doubt, choose `low`.
+advisory verdict hinges on this — when in doubt, choose `low`.
 
 `high` requires **all** of:
 - a real Experiment SDK import **and** an init call found in shipped (non-test,
