@@ -28,6 +28,94 @@ analytics philosophy and naming standards.
 
 ---
 
+## Operating mode (READ FIRST — affects how aggressively to prune)
+
+`discover-event-surfaces` runs in two modes. The shape of the input
+`change_brief` tells you which one:
+
+- **PR / Branch / File / Feature mode** — the `change_brief` came from
+  `diff-intake` and lists the files the user changed in a single PR or
+  pointed you at a specific file/feature. Scope is the diff or the named
+  target. **Less is more here.** Every event you propose adds reviewer
+  load on a small PR; cut hard. The "less is more" / "be selective" /
+  "downgrade if unsure" guidance throughout this skill is calibrated to
+  this mode.
+
+- **Full-repo / per-journey mode** — the `change_brief` was synthesized
+  by `full-repo-instrumentation` (init mode) per **journey** in
+  `product-map.json[productAreas][].flows[]`. The brief includes a
+  `funnel:` block listing the journey's structured legs (start /
+  intermediate / success_end / failure_ends) with `existing_event` per
+  leg. The user is asking for a comprehensive audit. **Per-leg
+  completeness is the bar** (see "Funnel-completeness rule" below):
+  every leg the journey needs gets a per-leg decision. **Do not** treat
+  "this journey already has some tracking" as a reason to skip
+  evaluation — happy-path completion events are common, but the
+  per-leg gate catches missing failure_end coverage that the area-level
+  view hides.
+
+How to tell the modes apart:
+- Look at `classification.analytics_scope` and the source of `surfaces`
+  / `file_summary_map`. A diff-shaped change_brief lists a handful of
+  modified files; a per-area change_brief lists routes and components
+  scoped to one product area in the map.
+- The orchestrator's prompt may also state the trigger source (`manual`,
+  `autorun`, or `full-repo` / `init`) — honor it when given.
+
+The four event categories (`business_outcome`, `user_journey`,
+`feature_success`, `friction_failure`) and the cardinality discipline
+below apply to both modes equally. The asymmetry is in **how aggressively
+to prune**: aggressive in PR mode, generous in full-repo mode. A 5-event
+candidate list is reasonable for a small PR; a 5-event candidate list for
+a critical product area in full-repo mode is almost certainly under-
+covering and should pull failure-path / discriminator candidates back in.
+
+### Funnel-completeness rule (full-repo / per-journey mode)
+
+When the input `change_brief` includes a `funnel:` block, it carries
+the journey's structured legs from the product map. Your output MUST
+have a per-leg decision for each leg the journey requires:
+
+- One `start` leg
+- Zero or more `intermediate` legs (instrument selectively per the
+  funnel-length guidance — short flows can skip these)
+- One `success_end` leg
+- One or more `failure_end` legs (one per named failure mode in the
+  input)
+
+Per-leg decisions:
+
+- **`covered_by_existing: <EVENT_NAME>`** — if the input leg has a
+  non-null `existing_event` AND that event matches the leg's shape
+  (a failure event for a `failure_end`, a confirmed-outcome event for
+  a `success_end`, an intent event for a `start`), cite it and do not
+  propose a duplicate.
+- **`proposed_new: <EVENT_NAME>`** — leg is uncovered or the cited
+  existing event is the wrong shape; propose a new candidate.
+- **`intentionally_skipped: <reason>`** — sparingly, and **never** for
+  a `failure_end` leg or a `success_end` leg on a critical/high-priority
+  journey. A short flow's intermediate leg may be skipped; an async
+  flow's failure mode may not.
+
+Wrong-shape rejections (cite-and-replace, not cite-as-cover):
+
+- A success/completion event cited on a `failure_end` leg → propose a
+  new failure event. (`PMS_CONNECTION_REQUEST_SUBMITTED` does not cover
+  PMS-connect's failure_end.)
+- A click/intent event cited on a `success_end` leg → propose a new
+  success event. (`SIGNIN_CTA` does not cover sign-in's success_end —
+  it fires regardless of outcome.)
+- A pan-product catch-all (`APP_CLICK`, `APP_PAGE_VIEW`,
+  `ERROR_ENCOUNTERED` standalone) cited on any leg → reject and
+  propose a flow-specific event.
+
+This rule is what makes full-repo mode produce a complete tracking
+plan rather than a failure-bias-only one. Phase 4 of
+`full-repo-instrumentation` aggregates your per-leg decisions into the
+journey-level coverage matrix; missing legs become missing rows.
+
+---
+
 ## 1. Parse the change_brief
 
 - `classification.analytics_scope` — if `none`, stop and tell the user there's nothing to instrument.
@@ -148,6 +236,41 @@ you built in step 3. For each candidate:
 If you drop a candidate because it already exists, note it in a
 `already_tracked` list in the output so the user can see what's covered.
 
+### Screen / lifecycle coverage — autocapture-first
+
+Screen-level tracking (`Screen Viewed` on mobile, `Page Viewed` on web) is
+ubiquitous and worth surfacing, but the right fix depends on what the SDK
+already does. Before proposing manual screen track calls, check the SDK init:
+
+**iOS (Amplitude-Swift 1.8+):** look for `.autocapture(` in `AppDelegate.swift`,
+`App.swift`, or wherever `Amplitude.instance.configure(...)` is called. If the
+options include `.screenViews`, the SDK emits `[Amplitude] Screen Viewed` on
+every `UIViewController.viewDidAppear` and SwiftUI navigation push — do NOT
+propose manual `Screen Viewed` track calls. Propose the autocapture config
+change instead if it's missing.
+
+**Android (Amplitude-Kotlin 1.10+):** look for
+`autocapture = setOf(AutocaptureOption.SCREEN_VIEWS, ...)` in the Amplitude
+builder (typically in `Application.onCreate` or a DI module). Same rule: if
+screen-views is wired, the SDK handles it for AppCompat activities and
+Jetpack Compose NavHost destinations.
+
+**React Native:** browser autocapture does NOT cover native navigation.
+Look for `@react-navigation/amplitude-plugin` or a manual `NavigationContainer`
+`onStateChange` handler. If neither is wired, per-screen manual tracking is
+the right candidate.
+
+**Flutter:** no first-party screen autocapture today. A `NavigatorObserver`
+or route-wrap helper is required; propose manual screen tracking.
+
+**Web:** `[Amplitude] Page Viewed` is autocaptured by default on
+`@amplitude/analytics-browser`. Do not propose a custom `Page Viewed` unless
+you need business-specific properties that autocapture can't provide.
+
+For mobile-clean sites with no autocapture config and no manual tracking,
+`Screen Viewed` per top-level screen is a high-value candidate — these are
+the funnel anchors analysts need to segment everything else by.
+
 ## 5. Quality filter
 
 Every candidate must pass all three:
@@ -210,9 +333,11 @@ To decide how many *intermediate* funnel events to mark critical, gauge the leng
 - **Medium process (3-5 steps, possibly spanning pages):** Add one intermediate event at the most likely drop-off point — typically where the user commits effort (fills a form, makes a key selection, uploads a file).
 - **Long process (5+ steps, multi-page or wizard-style):** 2-3 intermediate events at natural phase boundaries. Think "started → configured → submitted → confirmed" rather than tracking every field interaction.
 
-Be selective with intermediate events. Every funnel event you mark critical is one more thing an engineer must implement and a PM must monitor. If you're unsure whether an intermediate step is worth tracking, it probably isn't — the start and end events will reveal whether there's a problem, and the team can always add granularity later once they see where drop-off is high.
+**Be selective with intermediate events** *(PR / Branch / File / Feature mode)*. Every funnel event you mark critical is one more thing an engineer must implement and a PM must monitor on a small PR. If you're unsure whether an intermediate step is worth tracking, it probably isn't — the start and end events will reveal whether there's a problem, and the team can always add granularity later once they see where drop-off is high.
 
-Less is more. A focused set of critical events that actually get dashboarded beats a sprawling list nobody looks at. When in doubt, downgrade — it's easier to add an event later than to remove one that's already in dashboards.
+**Less is more** *(PR / Branch / File / Feature mode)*. A focused set of critical events that actually get dashboarded beats a sprawling list nobody looks at. When in doubt, downgrade — it's easier to add an event later than to remove one that's already in dashboards.
+
+**In full-repo / per-area mode, invert this**. The customer is asking for a comprehensive audit of an area. "When in doubt, downgrade" becomes "when in doubt, keep the candidate at `2 (useful)` and let the per-area coverage gate decide." A single area that looks well-covered on the happy path almost always has missing failure-path candidates and missing segmentation discriminators (signup_method, plan_tier, error_reason); a too-tight per-area candidate list silently leaves those gaps unfilled. Brevity is the right reflex on a 50-line PR; it is the wrong reflex on a customer's first-touch full-repo audit.
 
 ## 9. Emit YAML output
 
@@ -236,15 +361,32 @@ event_candidates:
         - step: "Step description"
           file: "src/components/Foo.tsx"
           function: "handleOpen"
-          role: start                      # start | intermediate | end
+          role: start                      # start | intermediate | success_end | failure_end
         - step: "Next step"
           file: "src/components/Bar.tsx"
           function: "onSubmit"
           role: intermediate
-        - step: "Final step"
+        - step: "Final success step"
           file: "src/hooks/useSave.ts"
           function: "onSuccess"
-          role: end
+          role: success_end
+        - step: "Provider returns null user"
+          file: "src/auth/handle.ts"
+          function: "handleAuthResult"
+          role: failure_end
+      per_leg_decisions:                   # required when input change_brief carried a funnel: block
+        - role: start
+          decision: covered_by_existing    # covered_by_existing | proposed_new | intentionally_skipped
+          event: "Sign In CTA"             # cited existing event OR proposed new event name
+          reason: "Click intent already tracked at the CTA in handleOpen."
+        - role: success_end
+          decision: proposed_new
+          event: "Sign In Succeeded"
+          reason: "Existing taxonomy has SIGNIN_CTA (click) but no confirmed-outcome event for the success terminal."
+        - role: failure_end
+          decision: proposed_new
+          event: "Sign In Failed"
+          reason: "Provider-rejected branch in handleAuthResult had no specific failure event."
 
   candidates:
     - name: "Event Name Here"

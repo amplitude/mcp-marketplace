@@ -1,0 +1,12 @@
+{
+  "$comment": "Data-driven config read by tools/skill-evals/run_evals.py. Every field has a default in the runner; this file pins the add-feature-flags contract explicitly. Paths are repo-root-relative except 'orchestrator', which is relative to this evals/ dir.",
+  "skill": "add-feature-flags",
+  "orchestrator": "../SKILL.md",
+  "trigger": "manual",
+  "output": {
+    "manifest": ".amplitude/feature-flags.json",
+    "marker": ".amplitude/no-flaggable-surfaces.md"
+  },
+  "schema": "plugins/amplitude/skills/generate-flags-manifest/references/feature-flags.schema.json",
+  "verdict_rules": "feature-flags"
+}

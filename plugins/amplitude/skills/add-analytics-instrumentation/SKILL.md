@@ -21,7 +21,272 @@ You are the orchestrator for the analytics instrumentation pipeline. Your job is
 to figure out what the user wants to instrument, gather the relevant code, and
 run the pipeline to produce a tracking plan.
 
+## Operating modes
+
+This skill runs in two contexts:
+
+- **Standalone** (Claude Code, manual invocation): you produce artifacts and a
+  tracking plan that the human reviews and decides whether to commit. No
+  downstream automation reads your output.
+- **Agent-runtime** (Amplitude Coding Agent, automated PR workflow): a webhook
+  handler downstream may consume the artifacts you produce — for example, to
+  open a "prepare PR" with the proposed instrumentation, or to register events
+  into Amplitude's taxonomy when that PR merges.
+
+Sections below tagged *(agent-runtime only)* describe behavior that exists to
+hand off cleanly to that downstream automation. In standalone mode they are
+informational — you can skip the handoff plumbing and just present the result
+to the user.
+
+## Scope: read vs write
+
+Read scope is wider than write scope, and they are not the same thing.
+
+- **Write scope** is bounded by the diff (in PR/Branch mode) or the user's
+  named target (in File/Directory/Feature mode). You only modify code inside
+  that boundary. Renaming a sibling file's helper, reformatting an unrelated
+  module, fixing typos in a file the diff doesn't touch — all out of bounds.
+- **Read scope** is the whole repository. Reading code outside the write
+  boundary is always in-lane, and it's expected when it would let you
+  instrument the target with higher confidence. Concretely: verifying the SDK
+  is initialized somewhere upstream so a freshly-added `track()` call actually
+  fires; reading the contract of an API endpoint the touched frontend calls so
+  failure-event branches reflect what the backend can actually return; finding
+  existing tracking patterns in sibling modules so naming and call style match
+  the codebase; confirming a helper signature your insertion depends on.
+
+When you catch yourself reaching for a "low confidence: not in this diff"
+caveat in the analysis, treat that as a signal to read the file in question
+first. A confirmed read produces a sharper proposal than a hedged guess; a
+caveat is appropriate only when the read genuinely doesn't resolve the
+uncertainty (the contract is documented elsewhere, the upstream initializer
+is in a sibling repo, etc.).
+
+### Dotfile-rooted paths are off-limits for writes
+
+Inside the write scope, a hard rule: **never modify any path whose top-level
+segment starts with `.`**. That includes:
+
+- `.github/**` — workflows, CODEOWNERS, issue templates, PR templates. Owned
+  by the customer's CI/CD config, not the agent's surface.
+- `.cursor/**`, `.agents/**` — IDE / skill config staged at clone time.
+- `.gitignore`, `.gitattributes`, `.eslintrc*`, `.prettierrc*`, `.npmrc`,
+  `.editorconfig`, `.env*` — repo-level dotfile config.
+- `.vscode/**`, `.idea/**`, `.husky/**` — editor / hook state.
+
+The runtime working directory `.amplitude/` is a special case. You write
+artifacts there during the run (events.json, tracking-plan.md,
+business-context.md, product-map.json, manifest.json,
+no-trackable-surfaces.md) — that is correct and expected. The orchestrator
+reads them via `save_artifacts` and persists them to the handoff DB. They
+are **not** committed to the prepare branch. If your tracking plan would
+require touching any other dotfile-rooted path, the answer is no — surface
+the requirement in your analysis instead and let the reviewer decide.
+
+The langley `commit_and_push` tool enforces this structurally: after
+`git add -A` it unstages every dotfile-rooted path, and refuses the commit
+outright if anything dotfile-rooted survives staging. A prompt that asks
+the agent to commit `.github/workflows/*` or `.amplitude/*` will produce a
+hard error, not a silent commit.
+
 ## Pipeline
+
+### Phase 0: Product-surface gate (PR / Branch mode only)
+
+Before doing any other work in PR or branch mode, decide a single question:
+
+> Does this diff add a **new user-reachable execution path** that produces a
+> surface, response, or feedback a user perceives?
+
+If the answer is **no** for every changed file, **STOP** and tell the user the
+diff has no user-reachable surfaces worth instrumenting. Do not proceed to
+Step 0. Proposing events for a refactor-only diff wastes the reviewer's time
+and produces tracking calls that never fire.
+
+*(agent-runtime only)* When stopping, also write the marker file
+`.amplitude/no-trackable-surfaces.md` (template below) so the downstream
+webhook handler can post a "no trackable surfaces" comment on the original
+PR instead of opening a prepare PR with events that would never fire. Every
+false positive trains reviewers to ignore the agent's output, so the marker
+matters — a prepare PR the reviewer closes is more expensive than a quiet
+skip, not less.
+
+**Apply the gate to PR / Branch input only.** File / Directory and Feature
+inputs (Step 1a / Step 1b) are explicit user requests to instrument specific
+code; Phase 0 does not apply there.
+
+#### Decision rule
+
+Read the **contents** of every changed file (not just paths). For each file,
+ask: does the change introduce or expose a new user-reachable execution path?
+A user-reachable execution path is code a user **directly causes to run** by
+interacting with the product (clicking, typing, navigating, submitting,
+viewing, calling an exposed API), and which produces something the user
+perceives.
+
+- If **every** changed file is refactor-only (see patterns below) → write
+  `.amplitude/no-trackable-surfaces.md` and STOP.
+- If **any** changed file introduces a new user-reachable execution path →
+  proceed to Step 0.
+- If you cannot tell from the diff whether a change is user-reachable, read
+  the surrounding code (callers, route definitions, exported symbols). Do not
+  guess. The tiebreaker depends on the **trigger source**, which the
+  agent-runtime caller passes in the prompt as ``Trigger: manual`` or
+  ``Trigger: autorun``:
+
+  - **Trigger: manual** (the user explicitly invoked the agent — e.g. by
+    commenting ``@amplitude track`` on a PR, or by running this skill via
+    Claude Code). Default to **proceeding** with a best attempt — the user
+    asked for instrumentation, so produce something for them to review. But
+    record your uncertainty: write a top-level ``low_confidence_note`` field
+    in ``events.json`` (see the ``generate-events-manifest`` skill) describing
+    what specifically made you uncertain (e.g. "no clear user-facing handler
+    in this diff; the changes are inside an internal service module that's
+    only called from a webhook handler — instrumented the webhook entry on
+    the assumption that's the user-perceived surface"). The orchestrator
+    surfaces this note as a ``> **⚠️ Low confidence:**`` callout in the PR
+    comment so the reviewer is primed to check the proposed events.
+  - **Trigger: autorun** (the agent fired itself on PR open with no explicit
+    user ask). Default to **stopping** — write the marker and skip
+    instrumentation. The user didn't ask for events; speculating produces
+    a prepare PR they didn't request and erodes trust faster than missing
+    a real surface they could've explicitly requested via ``@amplitude
+    track``.
+  - **No trigger label given** (standalone Claude Code invocation, file/
+    directory/feature mode, or older agent-runtime versions): treat as
+    manual — the user is in front of the screen and chose to run this.
+
+#### Refactor patterns that route to no-trackable-surfaces
+
+These changes do **not** add new user-reachable execution paths and MUST route
+to the marker file when they are the only kind of change in the diff:
+
+1. **Constant or literal relocations** — moving a string/number/object
+   literal from one scope to another (e.g. function-local → module-level,
+   inline → named export). Behaviour is unchanged; only the binding site
+   moves.
+
+   *Example: a constant relocated from function scope to module scope:*
+   ```diff
+   -function format(x) {
+   -  const PREFIX = "user_";
+   -  return PREFIX + x;
+   -}
+   +const PREFIX = "user_";
+   +function format(x) {
+   +  return PREFIX + x;
+   +}
+   ```
+   No new surface. Skip.
+
+2. **Renames** — variable, function, parameter, type, or file renames where
+   call sites are updated mechanically and behaviour is preserved.
+
+   *Example:*
+   ```diff
+   -export function getUserId(req) { return req.session.user.id; }
+   +export function resolveUserId(req) { return req.session.user.id; }
+   ```
+   No new surface. Skip. (If the rename touches a tracking call name, that's
+   a separate concern handled downstream — never rename event names in
+   `events.json`.)
+
+3. **Type-only changes** — adding/refining TypeScript types, Python type
+   hints, generic parameters, or interface declarations without altering
+   runtime behaviour.
+
+   *Example:*
+   ```diff
+   -function load(id) { ... }
+   +function load(id: UserId): Promise<User> { ... }
+   ```
+   No new surface. Skip.
+
+4. **Formatting and whitespace** — prettier/black/gofmt reflows, import
+   reordering, trailing-comma changes, line-length wraps.
+
+5. **Code reorganization** — splitting a file into modules, extracting a
+   helper, inlining a one-off function, reordering exports — when call sites
+   resolve to the same behaviour. The execution graph is unchanged; only the
+   file layout differs.
+
+6. **Comment / docstring / JSDoc edits** — including TODO removals and
+   typo fixes inside comments.
+
+7. **Dead-code deletion** — removing unused exports, unreachable branches,
+   or commented-out blocks.
+
+8. **Dependency / lockfile bumps** — `package-lock.json`, `yarn.lock`,
+   `uv.lock`, `Pipfile.lock`, `go.sum`, `Gemfile.lock`. Same applies to
+   version-only `package.json` / `pyproject.toml` bumps with no new
+   imported call sites in source files.
+
+9. **Build / config / tooling** — CI YAML, `.eslintrc`, `tsconfig.json`,
+   `Makefile`, dockerfiles, `.gitignore`. These don't reach users at
+   runtime.
+
+10. **Test-only diffs** — changes confined to test files (`*.test.*`,
+    `*_test.py`, `spec/`, `__tests__/`). Tests don't run in production and
+    don't fire tracking calls a user perceives. (Caveat: if the test file is
+    actually the product — e.g. an exported test fixture imported by user
+    code — read the contents to verify before applying this rule.)
+
+11. **Generated code** — files marked auto-generated, vendored bundles,
+    minified output. The source generator is what a reviewer would
+    instrument; the artifact is not.
+
+If the diff mixes refactor-only files with files that DO introduce new
+user-reachable paths, the gate **opens** — proceed to Step 0. The
+downstream pipeline will scope its analysis to the user-reachable files.
+
+#### Heuristics that strongly suggest a new user-reachable path (gate opens)
+
+Any of these in a changed file is sufficient evidence to proceed:
+
+- A new exported handler, route, controller, or page component
+- A new `onClick`, `onSubmit`, `onChange`, or other event-handler binding in
+  a user-visible component
+- A new `fetch` / `axios` / RPC call from client code, or a new endpoint
+  registration on the server
+- A new branch in user-reachable control flow that produces user-visible
+  output (toast, modal, redirect, response body, render output)
+- A new feature-flag check that gates user-visible behaviour
+- A new form field, button, link, or navigation entry
+- A new SDK call site (`.track(`, `.identify(`, `.setUserId(`,
+  `.setGroup(`, `.groupIdentify(`) — if the diff is already adding these,
+  the gate is moot, but their presence confirms the path is user-reachable
+
+#### Marker file template *(agent-runtime only)*
+
+When the gate closes in agent-runtime mode, write
+`.amplitude/no-trackable-surfaces.md` with this shape so the webhook handler
+can identify and surface the skip reason:
+
+```markdown
+---
+reason: <one-line summary of why no surfaces were found>
+changed_paths:
+  - <path/to/file.ts>
+  - <path/to/other.py>
+classification: refactor-only | tooling-only | tests-only | docs-only | mixed-non-product
+---
+
+# No trackable surfaces
+
+This diff was reviewed against the Phase 0 product-surface gate. No changed
+file introduces a new user-reachable execution path that would warrant
+instrumentation.
+
+## What we looked at
+
+<bulleted summary, one line per file, naming the refactor pattern that
+applied — e.g. "src/utils/format.ts: constant relocation (PREFIX moved to
+module scope, no behaviour change)">
+```
+
+Then STOP. Do not write `.amplitude/events.json`. Do not run Step 0 onward.
+*(agent-runtime only)* The webhook handler inspects the marker and posts the
+"no trackable surfaces" comment on the original PR.
 
 ### Step 0: Capture intent
 

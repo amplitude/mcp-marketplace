@@ -1,1 +1,4 @@
 .DS_Store
+
+# skill-eval runner outputs (reports + run working dirs)
+tools/skill-evals/.out/

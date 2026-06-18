@@ -218,6 +218,33 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 **Consistency is the top priority.** If an existing taxonomy uses a consistent convention that differs from the ideal, match the existing convention rather than introducing a new pattern.
 
+**Preserve existing event names VERBATIM.** If the `discover-analytics-patterns`
+skill produced an `existing_event_names:` inventory — events already fired at
+call sites in the codebase (including non-Amplitude SDKs like Segment, Mixpanel,
+PostHog, or custom wrappers) — the names in that inventory MUST pass through
+unchanged. This is non-negotiable: renaming an existing event in Amplitude
+breaks every chart, funnel, cohort, and alert built on the original name, and
+for migration scenarios (e.g., Segment → Amplitude) it severs the continuity
+the migration was supposed to give the customer. Concretely:
+
+- `analytics.track("Product Added", …)` in the source → taxonomy entry is
+  `Product Added` (not `Cart Item Added`, not `Product Added to Cart`).
+- `analytics.track("Products Searched", …)` → `Products Searched` (not
+  `Search Executed`).
+- `analytics.track("Order Completed", …)` → `Order Completed` (not
+  `Purchase Completed`, even though the latter fits the "user perspective"
+  guidance above).
+
+The "one action = one event name" and "user perspective, not system
+perspective" rules apply only to **brand-new** events the agent is proposing
+for the first time. Never apply them as a reason to rewrite an already-firing
+event name.
+
+If the existing name violates a standard (e.g., `product_added` in snake_case
+on a project that otherwise uses Title Case), flag it as a **suggestion** in
+the analysis output, not a silent rewrite. The customer chooses whether to
+migrate the historical data or leave the name in place.
+
 **User perspective, not system perspective:**
 - `Message Sent` (user sent) not `Message Delivered` (system delivered)
 - `Purchase Completed` (user completed) not `Payment Processed` (system processed)
@@ -230,7 +257,61 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 **One action = one event name.** No duplicates across the codebase.
 
-**Autocapture-first:** Do not recommend custom events for anything already captured by Autocapture: `Page Viewed`, `Element Clicked`, `Element Changed`, `Form Started`, etc.
+**Naming self-check before finalizing events.json.** For each net-new event name, run this four-question check. Drift on any of these silently breaks analyst continuity.
+
+1. **Am I using the canonical name for this action?** Common defaults analysts expect:
+   - `Product Added to Cart` (not `Product Added`, `Cart Item Added`, `Product Added to Basket`)
+   - `Search Performed` (not `Search Submitted`, `Search Executed`, `Products Searched`)
+   - `User Signed Up` (not `Account Signed Up`, `Registration Completed`)
+   - `Checkout Started` / `Order Placed` / `Order Completed` (not `Purchase Initiated`, `Payment Completed`)
+2. **Did I drop a canonical qualifier?** If the product has both `Product Added to Cart` and `Product Added to Wishlist`, keep them as distinct events — never merge semantically different actions under one name. Shortening `Product Added to Cart` → `Product Added` collapses that distinction and is always wrong on a site with a wishlist.
+3. **Did I swap the domain object without reason?** `Account` and `User` can mean the same or different things; pick the one your business uses consistently and never silently swap. A baseline signup event is `User Signed Up` unless the codebase uses `Account` for a distinct org/tenant concept.
+4. **Am I reinventing a name for an action the SDK auto-captures?** If `[Amplitude] Page Viewed` exists, don't add `Screen Viewed` unless it's mobile-native AND autocapture isn't configured (see the Autocapture Awareness section below).
+
+**Autocapture awareness:** Amplitude's SDKs can automatically capture a growing set of events. Before proposing new events, check whether autocapture is enabled for this project by looking for `[Amplitude]`-prefixed events in `existing-taxonomy.json` and by grepping the codebase's SDK init for `.autocapture(`.
+
+**Web (`@amplitude/analytics-browser`):** `[Amplitude] Page Viewed`, `[Amplitude] Element Clicked`, `[Amplitude] Element Changed`, `[Amplitude] Form Started`, `[Amplitude] Form Submitted`.
+
+**iOS (`amplitude-swift` 1.8+):** `.autocapture([.screenViews])` emits `[Amplitude] Screen Viewed` for every `UIViewController.viewDidAppear` and `NavigationStack` push. Other options cover element taps and sessions. If the init calls `.autocapture(` with `.screenViews`, do NOT propose manual `Screen Viewed` track calls on views — it's duplicate instrumentation.
+
+**Android (`amplitude-kotlin` 1.10+):** `autocapture = setOf(AutocaptureOption.ELEMENT_INTERACTIONS, AutocaptureOption.SCREEN_VIEWS)` covers AppCompat activities and Jetpack Compose. Same rule.
+
+**React Native:** the browser autocapture plugin does NOT cover native navigation. Manual screen tracking via a `@react-navigation` listener or route-wrap helper is required unless you wire a native autocapture plugin. Assume manual is needed here.
+
+**Flutter:** no first-party screen autocapture today. Manual screen tracking per `NavigatorObserver` is required.
+
+Decision matrix:
+- **Autocapture events present AND cover your action** → do NOT add a custom event that duplicates. Only add if you need business-specific properties (`product_id`, `price`) that autocapture can't provide.
+- **Autocapture off OR doesn't cover your runtime (mobile clean sites, RN, Flutter)** → propose the custom event. Screen-level tracking counts as a legitimate gap.
+- **Partial autocapture (init wires some options but not `.screenViews`)** → propose the autocapture config change as the first fix; the manual track calls are the fallback, not the default.
+
+### Cardinality Discipline: Bucket Values, Not Just Names
+
+Property names are a signal but the real risk is the **value**. Before writing events.json, scan every property for value shape. Raw free-form user text explodes cardinality, breaks funnel/segmentation charts, and frequently carries PII or PCI that shouldn't leave the device.
+
+**Never send raw; always replace with a bounded shape:**
+
+| Instead of raw value | Use bucketed shape |
+|---|---|
+| `search_query: "red summer dress"` | `query_length: 17`, `has_results: true`, `result_count: 12` |
+| `error_message: "TypeError: Cannot read..."` | `error_type: "type_error"`, `error_code: "E_NULL_REF"` |
+| `filter_value: "red"` (free-form) | `filter_type: "color"`, `filter_value_bucket: "color"` (enum) |
+| `comment_body: "..."` | `comment_length: 142`, `has_mentions: true`, `comment_hash: "ab12..."` |
+| `review_text: "..."` | `review_length: 92`, `rating: 4` |
+| `employer_name: "Acme Corp Inc."` | `employer_provided: true` (boolean) — a raw company name is high-cardinality, frequently doubles as PII for B2C, and the analytic question is almost always "did they fill it in" or "what industry," not the literal string. If industry is needed, derive `employer_industry: "tech"` (enum) at the call site. |
+| `job_title: "Senior Software Engineer"` | `job_title_provided: true` or `job_seniority: "senior"` (enum). Free-form titles fragment the same role across hundreds of variants and are useless for segmentation. |
+| `company_name: "..."` | Same rule as `employer_name` — boolean or enumerated industry. |
+| `address_street: "123 Main St"` | Never send. If geographic segmentation is needed, send only `address_country` / `address_state` / `postal_code_prefix` (first 3 of US ZIP) — no street-level data. |
+
+**Bounded by enum is OK.** If the value space is genuinely enumerable (e.g., `filter_type: "color" | "size" | "price"`), declare the `enum` in events.json and the raw value is safe. If you can't enumerate it, bucket it.
+
+**Property name ≠ value shape.** A name like `query_length` is safe because the value is an integer regardless of name. A name like `search_filter` is unsafe if the value is free-form text — rename the property to reflect the bucketed shape. Name-based heuristics (forbidding `query`, `message`, `text` in names) are a safety net; the real contract is the value shape.
+
+**Error events in particular.** Always prefer `Error Encountered` with `error_type` (enum) + `error_code` (stable short identifier) + optional `error_message_length`. Never send raw `error_message` — stack traces leak PII, paths, user input, and explode cardinality. **A property description that says "human-readable but bounded failure summary" is a hedge, not a declaration — if it's truly bounded, declare the `enum` or rename it to `error_type`. If you can't enumerate the allowed values, it's not bounded.**
+
+**Filter-style properties in particular.** When a property describes a user-chosen filter value (`filter_value`, `applied_filter`, `selected_option`), the value shape depends on WHICH filter dimension was picked. A color filter is an enum, a rating is a number, a price range is a bucket — but "the selected value" across dimensions is unbounded. Don't paper over this with a single `filter_value: string` property. Split by dimension (`filter_category`, `filter_rating`, `filter_price_bucket`) OR emit `filter_type` (enum of dimensions) + `filter_value_bucket` (enum of allowed values per dimension) OR hash the raw value. Same rule applies to `search_filter`, `sort_value`, `option_selected` — any property that carries a dimension-dependent value.
+
+**Rule of thumb: if you write "bounded" in a property description but haven't declared the `enum`, you're wrong.** The declaration IS the binding contract — not the description. Either commit to the enum or rename the property to reflect the actually-unbounded shape.
 
 ### Property Naming Standards
 
@@ -267,6 +348,121 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 - **E-commerce:** Use `product_engagement` (items in this action) + `cart_contents` (full cart snapshot) arrays
 - **B2B:** Instrument at least one group type (`org_id`, `account_id`)
 - **Property consistency for funnels:** Capture the same property (e.g., `product_id`) across all events in a funnel
+
+### Mobile Platform Patterns
+
+Mobile analytics has concrete conventions that differ from web. Use these
+explicitly on iOS / Android / React Native / Flutter codebases.
+
+**Cross-platform event-name parity.** The same user action emits the same
+event name on iOS AND Android — platform differences go in a `platform`
+property, never in the event name. `Product Added to Cart` is the right
+name on every platform; `iOS Product Added` / `Android Product Added` is
+wrong. This is how analysts build cross-platform funnels.
+
+**Canonical mobile events (when not covered by autocapture):**
+
+| Event | Fires when | Common properties |
+|---|---|---|
+| `App Opened` | Cold-start or foreground-return from background | `entry_method` (icon/notification/deep_link), `first_open_since_install: bool` |
+| `App Backgrounded` | User sends app to background | `session_duration_seconds` |
+| `Screen Viewed` | Top-level screen becomes active (only if autocapture isn't configured) | `screen_name` (bounded enum of routes), `previous_screen_name` |
+| `Permission Requested` / `Permission Granted` / `Permission Denied` | OS-level permission prompts (push, camera, location, photos) | `permission_type` (enum), `prompt_trigger` (the feature that asked) |
+| `Push Notification Tapped` | User taps an Amplitude / vendor push notification | `notification_id`, `notification_type`, `campaign_id` |
+| `Deep Link Opened` | App opened via universal link / app link / custom scheme | `deep_link_url`, `deep_link_source` (email/social/paid/etc.), `destination_screen` |
+| `In-App Purchase Started` / `In-App Purchase Completed` / `In-App Purchase Failed` | Apple App Store / Google Play billing flow | `product_sku`, `price_usd`, `currency`, `purchase_type` (consumable/non-consumable/subscription), `failure_reason` (enum, on failed) |
+
+Don't add events from this list gratuitously — add them when the
+corresponding surface exists in the code. But when the surface IS there,
+prefer these canonical names to something bespoke.
+
+**Mobile-first user properties (via `identify` at the triggering surface):**
+
+| Property | Semantics | Set via |
+|---|---|---|
+| `app_version` | Current app version (Semver preferred) | `identify` on every app open; SDK auto-captures this on most platforms — only set manually if it isn't |
+| `os_version` | iOS/Android version at capture time | SDK auto; manual backfill only if SDK is too old |
+| `platform` | `"ios" | "android" | "react_native" | "flutter"` | `identify` once with `setOnce` |
+| `device_model` | Hardware model string | SDK auto |
+| `install_source` | How the user got the app (organic / paid / referral) | `identify` with `setOnce` on first open — this is the attribution property analysts actually need |
+| `notification_permission_status` | Current push-permission state (`granted` / `denied` / `not_determined`) | `identify` on every app open + on permission prompt resolution |
+| `idfa_tracking_authorized` (iOS) | ATT framework state | `identify` on every app open |
+
+Never send raw tokens (APNs / FCM push tokens, `idfa`, `adid`) as
+properties — they're high-cardinality user identifiers that don't
+belong in event properties. If you need them, set as user properties
+(not event properties) so they don't multiply across every event.
+
+**Mobile interaction verbs.** Prefer `Tapped` over `Clicked` on touch
+surfaces, `Swiped` for gesture-based interactions, `Long Pressed` for
+secondary actions. These match the actual input modality; `Clicked` is
+web vocabulary. But keep the `[Object] [Past-Tense Verb]` shape:
+`Product Tapped`, not `Tap Product`.
+
+**Screen context in every event.** Every tracked interaction on mobile
+should carry a `screen_name` property (enum of your navigation routes) so
+analysts can segment any event by screen without reconstructing it from
+page-view sequences. This is the single highest-ROI property on mobile
+instrumentation and is frequently omitted.
+
+### GA4 Migration Patterns
+
+When the source codebase emits Google Analytics 4 events (via `gtag()`,
+`gtag('event', ...)`, `dataLayer.push(...)`, or the GA4 Firebase SDK),
+you're migrating TO Amplitude. The migration is not 1:1 — GA4 auto-emits
+events that Amplitude's browser autocapture covers differently, and
+GA4's event vocabulary doesn't match Amplitude's canonical names.
+
+**Canonical GA4 → Amplitude event name mapping:**
+
+| GA4 event | Amplitude canonical | Notes |
+|---|---|---|
+| `page_view` | (skip — autocapture emits `[Amplitude] Page Viewed`) | Don't propose a custom `Page Viewed` on GA4→Amplitude migrations |
+| `session_start` | (SDK emits `session_start` automatically — skip) | |
+| `first_visit` | `User First Seen` (identify() with `setOnce` on `first_seen_at`) | Better as a user property than an event |
+| `view_item` | `Product Viewed` | |
+| `view_item_list` | `Product List Viewed` | |
+| `select_item` | `Product Selected` | |
+| `add_to_cart` | `Product Added to Cart` | NOT `Product Added` — preserve "to Cart" |
+| `remove_from_cart` | `Product Removed from Cart` | |
+| `begin_checkout` | `Checkout Started` | |
+| `add_payment_info` | `Payment Info Entered` | |
+| `add_shipping_info` | `Shipping Info Entered` | |
+| `purchase` | `Order Completed` | NOT `Purchase Completed` (`Order Completed` is the Segment/Amplitude canonical) |
+| `refund` | `Order Refunded` | |
+| `sign_up` | `User Signed Up` | |
+| `login` | `User Logged In` | |
+| `search` | `Search Performed` | Keep `query_length` + `result_count`; drop raw `search_term` |
+| `select_content` | `Content Selected` | |
+| `share` | `Content Shared` | |
+
+**GA4 auto-events to DROP on migration:**
+
+These are Amplitude-SDK auto-captured OR noise not worth tracking explicitly:
+- `page_view`, `scroll`, `click` — Amplitude browser autocapture covers
+- `session_start`, `user_engagement`, `first_visit` — Amplitude SDK manages sessions + first-seen
+- `view_promotion`, `select_promotion` — instrument only if the site uses promos; map to `Promotion Viewed` / `Promotion Clicked`
+- `exception` — map to `Error Encountered` with bucketed `error_type`, not raw message
+- `form_start`, `form_submit` — Amplitude autocapture covers `[Amplitude] Form Started` / `[Amplitude] Form Submitted`
+
+**GA4 property mapping:**
+
+| GA4 param | Amplitude property | Notes |
+|---|---|---|
+| `items[]` (array) | `cart_contents` (array) on cart events, `product_engagement` on product events | Keep the array shape; drop GA4-specific fields like `item_list_id` if unused |
+| `item_id`, `item_name`, `item_category` | `product_id`, `product_name`, `product_category` | Use `product_` prefix consistently |
+| `value`, `currency` | `order_value`, `currency` | Rename `value` to the domain concept (order_value, cart_value) |
+| `transaction_id` | `order_id` | |
+| `search_term` | `query_length` + `has_results` + `result_count` | **Drop the raw string** — it's free-form user text |
+| `content_type`, `content_id` | `content_type` (enum), `content_id` | Keep |
+| `method` (for sign_up / login) | `signup_method` / `login_method` | Rename to be action-specific |
+
+**Don't drag GA4 anti-patterns forward.** GA4 tolerates free-form strings
+in many parameters (`search_term`, `page_path` with full URLs, custom
+dimensions with PII). Amplitude's cardinality discipline applies — bucket
+or enumerate everything per the Cardinality Discipline section above.
+Never emit raw URLs as properties; extract `page_type`, `page_category`,
+and optionally `page_path_template` (the route pattern, not the filled URL).
 
 ### Category Assignment
 

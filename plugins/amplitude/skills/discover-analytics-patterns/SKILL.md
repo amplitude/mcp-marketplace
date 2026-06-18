@@ -177,9 +177,121 @@ together in one example.
 
 ---
 
-## Step 5: Handle no results
+## Step 5: Inventory existing event names (for downstream name preservation)
+
+If any tracking calls were found in Step 1, capture the **exact event name
+strings** used at those call sites and emit them as a dedicated section of the
+output. Downstream skills (`taxonomy`, `instrument-events`,
+`generate-events-manifest`) are required to **preserve these names verbatim**
+when the new instrumentation extends an existing event — renaming is a
+breaking change that orphans historical data and breaks downstream charts,
+funnels, and cohorts built on the old name.
+
+This matters most for migration cases (e.g., an existing Segment or Mixpanel
+installation that the agent is asked to extend or port to Amplitude): the
+analytics-standard event names (`Product Added`, `Order Completed`, `Signed
+Up`, `Products Searched`, etc.) MUST be carried through unchanged.
+
+Emit the inventory in this shape:
+
+```yaml
+existing_event_names:
+  # One entry per unique event name found. Preserve capitalization and spacing exactly.
+  - name: "Order Completed"
+    sdk: "segment"                 # segment | amplitude | mixpanel | posthog | custom-wrapper | ...
+    call_sites:
+      - "src/app/checkout/review/page.tsx:42"
+      - "src/app/api/orders/route.ts:18"
+    property_names:                # flat list of property keys seen in the args
+      - order_id
+      - total
+      - currency
+  - name: "Product Added"
+    sdk: "segment"
+    call_sites:
+      - "src/components/product-card.tsx:31"
+    property_names:
+      - product_id
+      - product_category
+      - price
+```
+
+### Downstream contract (explicit)
+
+Any skill that consumes this output must obey these rules:
+
+1. **Never rename.** If the codebase fires `analytics.track("Product Added", …)`,
+   the Amplitude equivalent must also be `"Product Added"` — not "Cart Item
+   Added", "Product Added to Cart", or any other variant.
+2. **Additive only.** New instrumentation at a NEW call site may add brand-new
+   events (with new names), but may not shadow, split, or re-cast an existing
+   one.
+3. **Property name continuity.** Reuse existing property keys from the
+   inventory above when tracking the same semantic value — e.g., `product_id`
+   stays `product_id`, don't rename to `productId` or `item_id`.
+4. **Property type continuity.** Never change the `type` of an property that
+   already exists in the codebase or Amplitude taxonomy. The most common
+   breaking case: an existing `addon_products` property is registered as
+   `array`, and a newer analysis infers `string` from one specific call site
+   — writing that back to the taxonomy breaks every downstream `ampli pull`
+   consumer's build (the generated client code starts expecting a string
+   where a list was being passed). If the inferred type disagrees with what's
+   registered, treat it the same way you'd treat a rename: flag, don't fix.
+5. **Flag, don't fix, rename/retype intents — by default.** If the diff
+   itself clearly renames an existing event or retypes an existing property,
+   surface it as a breaking-change warning in the analysis output instead
+   of silently applying the change. A downstream taxonomy registrar may
+   reject type changes at the RPC boundary anyway — flagging early is
+   what lets the reviewer see the situation in context (PR comment, plan
+   output, or wherever the analysis surfaces) before the change ships.
+
+   The flag should always include a recommendation — typically the
+   **parallel-property pattern**: keep the existing property unchanged
+   and add a sibling that captures the new shape (e.g.
+   `query_length: number` stays + add `query_length_bucket: string`),
+   so both register cleanly and analysts pick whichever they need. Don't
+   pre-apply this; surface it as a recommendation so the reviewer can
+   decide.
+
+   Customer-clean phrasing for the flag: "I held off on changing this in
+   case the existing schema is intentional. If you want me to apply the
+   recommended change anyway, re-run with `@amplitude track please apply
+   the schema change recommendations`." That gives the customer a
+   one-liner to invite the change after they've reviewed the conflict.
+
+6. **Apply rename/retype intents WHEN the user explicitly consents on a
+   re-run.** If the agent-runtime caller passes a ``<reviewer_guidance>``
+   block whose text explicitly directs the agent to apply the previously-
+   flagged rename or schema change (phrasings like "apply the schema
+   change recommendations," "yes rename the event," "go ahead and change
+   the type"), treat that as informed consent and DO apply the change in
+   this run. The reviewer has already seen the callout from the prior
+   run, understood the breaking-change implications, and asked for it.
+
+   Concretely, on consent:
+   - Write the divergent shape into events.json (the registered taxonomy
+     is now what's wrong; the customer's code is the source of truth).
+   - Apply the parallel-property edit (if that's what the prior callout
+     recommended) or accept the source-code rename/retype as-is.
+   - Note the consent path in the analysis output ("Applied schema
+     change for `<Event>.<property>` per reviewer guidance: '<short
+     quote from the guidance>'") so the next comment renders an
+     acknowledgment instead of a flag.
+
+   Without explicit consent in reviewer guidance, default to rule 5
+   (flag, don't fix). Phrases like "looks good," generic 👍/👎, or
+   "merge this" do NOT count as consent for a schema change — the
+   customer has to direct it specifically.
+
+---
+
+## Step 6: Handle no results
 
 If no tracking calls are found with any search strategy, say so clearly. Suggest
 that the user check whether Amplitude (or another analytics library) has been set
 up in the project, and offer to search for other analytics libraries (Segment,
 Mixpanel, PostHog, etc.) if relevant.
+
+Also emit an empty `existing_event_names: []` section so downstream skills can
+distinguish "no existing tracking" (greenfield — invent names freely per the
+taxonomy skill) from "skill wasn't run" (unknown state).
