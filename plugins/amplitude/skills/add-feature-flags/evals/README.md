@@ -38,9 +38,8 @@ end-to-end pipeline through the `/add-feature-flags` orchestrator and assert the
 
 The orchestrator's `description` should trigger on prompts like: "wrap this PR
 behind a flag", "add a feature flag for this change", "dark-launch this feature",
-"should this be behind a flag", "gate this new code behind an experiment". It
-should **not** fire on pure analytics-instrumentation asks ("instrument this PR",
-"what events should I track") — those are out of scope for this skill.
+"should this be behind a flag", "gate this new code behind an experiment". Every
+trigger is a request to gate code behind a flag.
 
 ## Pass criteria (all cases)
 

@@ -86,7 +86,7 @@
             "items": { "type": "string" }
           },
           "rationale": {
-            "description": "Why this net-new code is wrapped, framed as a code change to review (not a telemetry add).",
+            "description": "Why this net-new code is wrapped, framed as a code change to review.",
             "type": "string"
           },
           "variant_values": {

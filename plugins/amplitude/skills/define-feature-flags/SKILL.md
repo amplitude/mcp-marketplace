@@ -108,7 +108,7 @@ final ship decision — this skill only sets the signal.
 ## Rationale authoring
 
 Every flag carries a `rationale`. Frame it as **a code change a reviewer is
-evaluating**, not a telemetry/tracking add:
+evaluating**:
 
 - say what net-new behavior the flag gates and why it benefits from a dark
   launch / gradual rollout
@@ -119,7 +119,7 @@ evaluating**, not a telemetry/tracking add:
 > can be dark-launched and rolled out gradually instead of shipping to 100% on
 > merge."
 >
-> Avoid: "Adds a flag for tracking checkout." (flags are not telemetry)
+> Avoid: "Flag for checkout." — too vague; name the behavior and the rollout reason.
 
 ## Identity & targeting (light — mostly phase 2)
 
