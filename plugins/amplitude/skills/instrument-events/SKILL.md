@@ -102,12 +102,20 @@ step 7 depends on it.
   > Amplitude project each event belongs to (events won't be auto-registered
   > without it). Pick one:
   >
-  > 1. **Create it** at your repo root mapping paths → app IDs (format below).
+  > 1. **Create it** at your repo root mapping paths → app IDs (example below).
   >    Find app IDs in **Settings → Projects** in Amplitude, then re-run.
   > 2. **Let me bootstrap it** — I'll scan the repo and propose a mapping for you
   >    to confirm.
   > 3. **Give me one app ID** and I'll proceed single-app (events won't be
   >    auto-registered, but you get the full plan).
+  >
+  > ```yaml
+  > rules:
+  >   - pattern: "**"          # default project, all paths
+  >     app_ids: [YOUR_APP_ID]
+  >   - pattern: "src/web/**"  # override a sub-tree
+  >     app_ids: [YOUR_WEB_APP_ID]
+  > ```
 
   If they pick **bootstrap (2)**: scan for where analytics is initialized (API
   keys, `init()` calls, env vars, per-package SDK setup) to map directories →
