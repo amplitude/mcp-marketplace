@@ -73,26 +73,20 @@ and what it's for, so they can improve this and future runs:
 >
 > ```markdown
 > # Instrumentation context
->
 > ## Conventions
 > - Event names: Title Case, object-action ("Checkout Completed")
-> - Always include `surface` and `plan_tier` properties
->
 > ## Reference files
 > - docs/analytics/taxonomy.md
-> - src/lib/analytics/README.md
 > ```
 >
 > Add it at your repo root and re-run to have these applied. Proceeding without
 > it for now.
 
-Continue either way.
-
 ## 3. Resolve app-id routing from `.amplitude/instrumentation-agent.yaml`
 
-Before assembling the plan, determine which Amplitude project (`app_id`) each
-event belongs to. Repos that ship analytics to more than one Amplitude project
-declare the path → app-id mapping in `.amplitude/instrumentation-agent.yaml`.
+Determine which Amplitude project (`app_id`) each event belongs to. Repos
+shipping analytics to more than one project declare the path → app-id mapping in
+`.amplitude/instrumentation-agent.yaml`.
 
 ### 3a. Read the config
 
@@ -102,55 +96,30 @@ The mapping file is **required** — it's the only reliable way to know which
 Amplitude project each event belongs to, and high-confidence write-back in
 step 7 depends on it.
 
-- **If it doesn't exist:** Stop and prompt the user to set it up before
-  continuing:
+- **If it doesn't exist:** Stop and prompt the user, offering three paths:
 
-  > `.amplitude/instrumentation-agent.yaml` was not found. Without it I can't
-  > reliably determine which Amplitude project each event belongs to, and events
-  > won't be automatically registered in Amplitude at the end.
+  > `.amplitude/instrumentation-agent.yaml` was not found, so I can't tell which
+  > Amplitude project each event belongs to (events won't be auto-registered
+  > without it). Pick one:
   >
-  > Create this file at your repo root with your path → app-id mapping:
-  >
-  > ```yaml
-  > rules:
-  >   - pattern: "**"          # default project (all paths)
-  >     app_ids: [YOUR_APP_ID]
-  >   - pattern: "src/web/**"  # override for a sub-tree
-  >     app_ids: [YOUR_WEB_APP_ID]
-  > ```
-  >
-  > Find your app IDs in **Settings → Projects** in Amplitude. Once the file
-  > exists, re-run this skill.
-  >
-  > Or, if you only have one project and know its app ID, tell me and I'll
-  > proceed with a single-app fallback (events won't be auto-registered, but
-  > you'll get the full instrumentation plan).
+  > 1. **Create it** at your repo root mapping paths → app IDs (format below).
+  >    Find app IDs in **Settings → Projects** in Amplitude, then re-run.
+  > 2. **Let me bootstrap it** — I'll scan the repo and propose a mapping for you
+  >    to confirm.
+  > 3. **Give me one app ID** and I'll proceed single-app (events won't be
+  >    auto-registered, but you get the full plan).
 
-  Also offer to bootstrap the mapping for them:
+  If they pick **bootstrap (2)**: scan for where analytics is initialized (API
+  keys, `init()` calls, env vars, per-package SDK setup) to map directories →
+  apps, group paths into `pattern` → `app_ids` rules with a `**` catch-all, and
+  leave `YOUR_APP_ID` placeholders where you can't ground an ID in real config —
+  **never invent numeric app IDs.** Present the YAML, and only after the user
+  confirms the IDs, write the file with the Write tool and continue as if it
+  existed (`appIdConfidence: "high"`).
 
-  > I can take a first pass at the mapping for you — I'll scan the repo for
-  > analytics call sites and project/SDK config, infer the likely path → app-id
-  > rules, and show you a proposed `.amplitude/instrumentation-agent.yaml`. You
-  > confirm or correct the app IDs and I'll write the file.
-
-  If they accept, scan the codebase to propose the mapping:
-  - Find where analytics is initialized (API keys, `init()` calls, env vars,
-    per-package/per-app SDK setup) and which directories or packages map to
-    which app.
-  - Group source paths into candidate `pattern` → `app_ids` rules, with a `**`
-    catch-all for the dominant app.
-  - Leave app IDs as `YOUR_APP_ID` placeholders wherever you can't ground them
-    in real config — **never invent numeric app IDs.**
-
-  Present the proposed YAML and ask the user to fill in / confirm the app IDs.
-  **Only after they approve**, write `.amplitude/instrumentation-agent.yaml`
-  with the Write tool, then continue this section as if the file existed
-  (resolved app-ids get `appIdConfidence: "high"`).
-
-  If the user instead provides their app ID directly or explicitly asks to
-  proceed without a mapping file, infer `appId` from what they gave you and set
-  `appIdConfidence: "low"`. Continue, but carry this flag — step 6 and step 7
-  depend on it. Skip the rest of this section.
+  If they pick **single-app (3)**: infer `appId` from what they gave you, set
+  `appIdConfidence: "low"`, and carry that flag — steps 6 and 7 depend on it.
+  Skip the rest of this section.
 - **If it exists:** parse its `rules`. Each rule maps a path pattern to one or
   more app-ids:
 
@@ -184,7 +153,7 @@ Then:
 - **Event has no locations** → use the default (catch-all) app-id. If there's no
   catch-all, leave `appId` null and flag it for the user.
 
-Because the app-id comes from config, set `appIdConfidence: "high"`.
+Config-resolved app-ids are `appIdConfidence: "high"` (see field guidance).
 
 ## 4. For each critical event, build the instrumentation plan
 
@@ -314,8 +283,8 @@ it goes (file + function), and what properties it sends and why.
 
 Events with `appIdConfidence: "high"` — app-id resolved from
 `.amplitude/instrumentation-agent.yaml` (or from a mapping you scanned and the
-user approved). For each, name the Amplitude project(s) it routes to. **These
-are the only events you'll register in step 7.**
+user approved). For each, name the Amplitude project(s) it routes to. These are
+the only events that get registered (see step 7).
 
 ### Won't be added yet — low confidence
 
@@ -337,9 +306,7 @@ too:
 > Re-run after that and I'll register them. You can still implement the tracking
 > code now — only the Amplitude taxonomy registration is deferred.
 
-**Never register a low-confidence event** — surface it here for the user to
-resolve first. Ask if they want to adjust anything before an engineer
-implements it.
+Ask if they want to adjust anything before an engineer implements it.
 
 ---
 
