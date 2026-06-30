@@ -99,15 +99,15 @@ step 7 depends on it.
 - **If it doesn't exist:** Stop and prompt the user, offering three paths:
 
   > `.amplitude/instrumentation-agent.yaml` was not found, so I can't tell which
-  > Amplitude project each event belongs to (events won't be auto-registered
-  > without it). Pick one:
+  > Amplitude project each event belongs to (events won't be planned
+  > automatically without it). Pick one:
   >
   > 1. **Create it** at your repo root mapping paths → app IDs (example below).
   >    Find app IDs in **Settings → Projects** in Amplitude, then re-run.
   > 2. **Let me bootstrap it** — I'll scan the repo and propose a mapping for you
   >    to confirm.
   > 3. **Give me one app ID** and I'll proceed single-app (events won't be
-  >    auto-registered, but you get the full plan).
+  >    planned automatically, but you get the full plan).
   >
   > ```yaml
   > rules:
@@ -138,7 +138,7 @@ rules:
   - pattern: "src/web/**"      # this directory and everything under it
     app_ids: [1234]
   - pattern: "packages/shared/**"
-    app_ids: [1234, 4567]      # shared code → event registered in BOTH projects
+    app_ids: [1234, 4567]      # shared code → event planned in BOTH projects
 ```
 
 The **default app_id** is the one matched by the catch-all rule (`**`, `*`, or `/`).
@@ -292,7 +292,7 @@ it goes (file + function), and what properties it sends and why.
 Events with `appIdConfidence: "high"` — app-id resolved from
 `.amplitude/instrumentation-agent.yaml` (or from a mapping you scanned and the
 user approved). For each, name the Amplitude project(s) it routes to. These are
-the only events that get registered (see step 7).
+the only events that get planned (see step 7).
 
 ### Won't be added yet — low confidence
 
@@ -302,7 +302,7 @@ no `.amplitude/instrumentation-agent.yaml`, or the call site's path matched no
 rule and there's no catch-all. Be specific per event rather than lumping them
 together.
 
-Then tell the user exactly how to resolve it so these events can be registered
+Then tell the user exactly how to resolve it so these events can be planned
 too:
 
 > ⚠️ **X event(s) won't be added to Amplitude yet** because their app ID
@@ -311,8 +311,8 @@ too:
 >   app IDs (see step 3 — I can scan the repo and propose one for you), **or**
 > - Tell me the app ID for these paths directly.
 >
-> Re-run after that and I'll register them. You can still implement the tracking
-> code now — only the Amplitude taxonomy registration is deferred.
+> Re-run after that and I'll plan them. You can still implement the tracking
+> code now — only the Amplitude taxonomy planning is deferred.
 
 Ask if they want to adjust anything before an engineer implements it.
 
@@ -328,16 +328,16 @@ Ask if they want to adjust anything before an engineer implements it.
 
 ## 7. Update Tracking plan in Amplitude through MCP
 
-Register **only** `appIdConfidence: "high"` events. Never write back a `med` or
+Plan **only** `appIdConfidence: "high"` events. Never write back a `med` or
 `low` confidence event — those were surfaced in step 6 for the user to resolve
 first.
 
-Before registering, confirm with the user what will be created. List:
+Before planning, confirm with the user what will be created. List:
 - Each event with `appIdConfidence: "high"` and the project(s) it will be
-  registered in
+  planned in
 - Any events being skipped due to `med`/`low` confidence, and why
 
-Get explicit confirmation, then for each high-confidence event register it in
+Get explicit confirmation, then for each high-confidence event plan it in
 **every** project it routes to:
 - use the `create_events` tool to create the event in that project (`app_id`)
 - use the `create_properties` tool to create the properties attached to the
