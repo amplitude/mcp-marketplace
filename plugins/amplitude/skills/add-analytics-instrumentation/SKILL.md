@@ -130,6 +130,9 @@ After step 3 completes, present the tracking plan to the user. Walk through each
 event briefly:
 
 - What it tracks and why it matters
+- Which Amplitude project(s) it routes to (`appId`/`appIds`) — call this out when
+  the repo has an `.amplitude/instrumentation-agent.yaml` and events span more
+  than one project
 - Where the tracking call goes (file + function)
 - What properties it sends
 
