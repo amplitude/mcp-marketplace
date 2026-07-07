@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PLACEHOLDER: <title> — "<Dashboard name> — Analysis" -->
+<title>Dashboard Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --accent:#3b4cca; --accent-dark:#2a3798; --accent-light:#eef0fb;
+    --green:#1ba672; --green-bg:#e6f6ef;
+    --yellow:#c78a06; --yellow-bg:#fdf5e2;
+    --red:#d43d3d; --red-bg:#fbeaea;
+    --ink:#1a1c25; --muted:#666b7a; --line:#e6e7ee; --card:#fff; --bg:#f8f9fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+  header.top{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;border-radius:16px;padding:28px 32px;margin-bottom:24px}
+  header.top h1{margin:0 0 6px;font-size:24px;font-weight:700}
+  header.top .sub{opacity:.9;font-size:14px}
+  header.top .meta{margin-top:14px;font-size:12.5px;opacity:.85;display:flex;flex-wrap:wrap;gap:18px}
+  header.top a{color:#fff;text-decoration:underline;text-underline-offset:2px}
+  .verdict{display:flex;gap:16px;align-items:flex-start;border-radius:12px;padding:18px 22px;margin-bottom:28px;
+    background:var(--green-bg);border:1px solid #bfe8d6;border-left:6px solid var(--green)}
+  .verdict.y{background:var(--yellow-bg);border-color:#f0dca6;border-left-color:var(--yellow)}
+  .verdict.r{background:var(--red-bg);border-color:#f0c2c2;border-left-color:var(--red)}
+  .verdict .big{font-size:30px;line-height:1}
+  .verdict h2{margin:0 0 4px;font-size:17px}
+  .verdict p{margin:0;font-size:14px}
+  h2.section{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+    margin:34px 0 14px;padding-bottom:6px;border-bottom:2px solid var(--accent-light)}
+  table.status{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table.status th{background:var(--accent-light);text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:11px 16px}
+  table.status td{padding:13px 16px;border-top:1px solid var(--line);font-size:14px;vertical-align:top}
+  table.status td.metric{white-space:nowrap;font-weight:600;width:170px}
+  table.status td.chk{white-space:nowrap;font-weight:600;width:100px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .pill.g{background:var(--green-bg);color:var(--green)}
+  .pill.y{background:var(--yellow-bg);color:var(--yellow)}
+  .pill.r{background:var(--red-bg);color:var(--red)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h3{margin:0 0 2px;font-size:14.5px}
+  .card h3 .open{float:right;font-size:11.5px;font-weight:600;color:var(--accent);text-decoration:none}
+  .card .cap{margin:0 0 14px;font-size:12px;color:var(--muted)}
+  .card .cap a{color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1px dotted var(--accent)}
+  .card .chartbox{position:relative;height:240px}
+  .full{grid-column:1 / -1}
+  code{background:var(--accent-light);padding:1px 6px;border-radius:5px;font-size:12.5px;color:var(--accent-dark)}
+  ul.tight{margin:8px 0 0;padding-left:20px}
+  ul.tight li{margin:4px 0;font-size:13.5px}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  footer a{color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1px dotted var(--accent)}
+  .legend-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- PLACEHOLDER: header — dashboard name, one-line description, and meta chips
+       (analysis date range, a "Dashboard: <link>" chip pointing to the dashboard URL, project/app id). -->
+  <header class="top">
+    <h1>Dashboard name — Analysis</h1>
+    <div class="sub">One-line description of what this dashboard tracks.</div>
+    <div class="meta">
+      <span>📅 Data as of &lt;date&gt; · &lt;range&gt;</span>
+      <span>📊 Dashboard: <a href="https://app.amplitude.com/analytics/&lt;org&gt;/dashboard/&lt;id&gt;">&lt;id&gt;</a></span>
+    </div>
+  </header>
+
+  <!-- PLACEHOLDER: verdict banner — set class to verdict (green) | verdict y | verdict r,
+       the .big emoji to 🟢|🟡|🔴, an <h2> one-liner, and a <p> naming the top gate/action. -->
+  <div class="verdict">
+    <div class="big">🟢</div>
+    <div>
+      <h2>Overall health one-liner.</h2>
+      <p>The single most important action or gate.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Status at a glance</h2>
+  <!-- PLACEHOLDER: one <tr> per KPI/area/check. td.chk holds a <span class="pill g|y|r">🟢|🟡|🔴 Label</span>.
+       Include a row for each data-quality / instrumentation gap. -->
+  <table class="status">
+    <thead><tr><th>Check</th><th>Status</th><th>Reading &amp; why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="metric">Metric / area name</td>
+        <td class="chk"><span class="pill g">🟢 Green</span></td>
+        <td>What the number is and why it earns this status.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="section">Charts</h2>
+  <!-- PLACEHOLDER: one .card per key chart. Each card links to the exact Amplitude chart (header .open link
+       AND the chart id in .cap). Render a Chart.js viz from the queried data into the <canvas>. If a chart
+       can't be faithfully reproduced, drop the .chartbox/canvas and keep only the "Open in Amplitude ↗" link.
+       Use .card.full for a full-width row. -->
+  <div class="grid">
+    <div class="card">
+      <h3>Chart title <a class="open" href="https://app.amplitude.com/analytics/&lt;org&gt;/chart/&lt;id&gt;">Open in Amplitude ↗</a></h3>
+      <p class="cap">What this chart shows · <a href="https://app.amplitude.com/analytics/&lt;org&gt;/chart/&lt;id&gt;">&lt;id&gt;</a></p>
+      <div class="chartbox"><canvas id="chart1"></canvas></div>
+    </div>
+  </div>
+
+  <h2 class="section">Recommendations &amp; open items</h2>
+  <!-- PLACEHOLDER: up to ~5 action-first bullets, each prefixed [p0]–[p3]. Gating items first. -->
+  <div class="card full">
+    <ul class="tight">
+      <li><b>[p0]</b> Most urgent action.</li>
+    </ul>
+  </div>
+
+  <!-- PLACEHOLDER: footer — chart IDs used, data-as-of date, caveats
+       (incomplete periods; non-additive metrics like uniques/rates; instrumentation gaps), and a Sources list. -->
+  <footer>
+    <div><b>Source:</b> Amplitude dashboard &lt;name/link&gt;. Figures are live queries as of &lt;date&gt;.</div>
+    <div class="legend-row"><span><b>Chart IDs:</b> &lt;id&gt;, &lt;id&gt;, …</span></div>
+    <div class="legend-row"><span>⚠️ Caveats: &lt;incomplete periods / non-additive metrics / instrumentation gaps&gt;.</span></div>
+  </footer>
+
+</div>
+
+<script>
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = "#666b7a";
+const ACCENT="#3b4cca", GREEN="#1ba672", YEL="#c78a06", RED="#d43d3d", GREY="#b8bcca";
+
+// Reusable dashed reference line (for a target or baseline). Pass the value and label.
+// Usage: plugins:[refLine(70.2,'Baseline 70.2%',RED)] on a chart whose y-axis covers the value.
+function refLine(value, label, color){
+  return {id:'refline-'+label, afterDraw:(c)=>{
+    const y=c.scales.y.getPixelForValue(value); const {left,right}=c.chartArea; const ctx=c.ctx;
+    ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle=color; ctx.font='600 11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(label, right-4, y-5); ctx.restore();
+  }};
+}
+
+/* PLACEHOLDER: one `new Chart(document.getElementById('chartN'), {...})` per chart card,
+   built from the queried data. Use refLine(...) for target/baseline overlays. Example:
+
+new Chart(document.getElementById('chart1'), {
+  type:'line',
+  data:{labels:[...], datasets:[{label:'…', data:[...], borderColor:ACCENT,
+    backgroundColor:'rgba(59,76,202,.12)', fill:true, tension:.3}]},
+  options:{responsive:true, maintainAspectRatio:false,
+    scales:{y:{ticks:{callback:v=>v+'%'}}},
+    plugins:{legend:{display:false}}},
+  plugins:[refLine(20,'Target 20%',GREEN)]
+});
+*/
+</script>
+</body>
+</html>
