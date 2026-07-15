@@ -44,6 +44,10 @@ Read `package.json` and match against this table:
 Ask the user for their **project API key** — it's on their Amplitude **Setup page** (if they
 have no project yet: sign up, create one, the Setup page appears after that).
 
+Also ask which **data center** their project is on — **EU or US**. Quick check: if their
+Amplitude Setup page URL is `app.eu.amplitude.com`, it's EU; `app.amplitude.com` is US.
+You'll need this in Step 3.
+
 Put it in `.env` at the project root (create the file if missing, keep existing lines),
 using the framework's public prefix from the table:
 
@@ -92,7 +96,7 @@ export default function AmplitudeInit() {
     amplitude.initAll(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY!, {
       analytics: { autocapture: true },
     });
-    amplitude.track('Setup Verified', { skill_version: 'BA395.2' });
+    amplitude.track('Setup Verified', { skill_version: 'BA395.3' });
   }, []);
   return null;
 }
@@ -107,6 +111,10 @@ import { init, track } from '@amplitude/analytics-node';
 init(process.env.AMPLITUDE_API_KEY!);
 ```
 
+> **EU data center:** add top-level `serverZone: 'EU'` to the init options —
+> `amplitude.initAll(key, { serverZone: 'EU', analytics: { autocapture: true } })` (browser) /
+> `init(key, { serverZone: 'EU' })` (Node backend). US is the default; omit it for US projects.
+
 > ⚠️ Browser branches use **`amplitude.initAll`** exactly — `amplitude.init(...)` is a
 > different, analytics-only entry point and is NOT acceptable there. The Node package's
 > correct call IS `init(...)` — do not swap `initAll` into the backend branch.
@@ -118,13 +126,13 @@ the version property. Browser (Vite family) — in the component that first moun
 run-once `useEffect` (Next.js: already included in the snippet above):
 
 ```ts
-amplitude.track('Setup Verified', { skill_version: 'BA395.2' });
+amplitude.track('Setup Verified', { skill_version: 'BA395.3' });
 ```
 
 Node backend — right after `init` at boot:
 
 ```ts
-track('Setup Verified', { skill_version: 'BA395.2' }, { user_id: 'setup-verify' });
+track('Setup Verified', { skill_version: 'BA395.3' }, { user_id: 'setup-verify' });
 ```
 
 Autocapture will also collect real interactions — a bonus, but always fire this explicit
@@ -145,9 +153,11 @@ the source of truth: **do not claim success before it flips.**
 
 If it doesn't flip within a minute:
 
-1. Restart the dev server — env vars load at startup.
-2. Try an incognito window / disable ad blockers — both silently drop analytics requests.
-3. Re-check the key in `.env` against the Setup page — no extra spaces or quotes.
+1. EU project but `serverZone` not set — events went to the US endpoint. Add
+   `serverZone: 'EU'` to the init options (Step 3).
+2. Restart the dev server — env vars load at startup.
+3. Try an incognito window / disable ad blockers — both silently drop analytics requests.
+4. Re-check the key in `.env` against the Setup page — no extra spaces or quotes.
 
 ## Non-negotiables — enforce, don't ratify
 
