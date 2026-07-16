@@ -76,17 +76,31 @@ https://app.eu.amplitude.com/analytics/<slug>/setup   # EU
 Have the user confirm that URL loads. If they don't know the slug, have them log in at the
 data center's host URL and open Setup from there.
 
-Put the key in an env file, following the repo's existing env-file convention (fall back to
-`.env` at the project root; create it if missing, keep existing lines), using the
-framework's public prefix from the table:
+**Key placement — follow the repo's convention:**
 
-```
-VITE_AMPLITUDE_API_KEY=<key>        # Vite family
-NEXT_PUBLIC_AMPLITUDE_API_KEY=<key> # Next.js
-AMPLITUDE_API_KEY=<key>             # Node backend
-```
+- **Repo already uses env machinery** (existing `.env*` files or framework env config) →
+  put the key in the env file the repo already uses (create it if missing, keep existing
+  lines), with the framework's public prefix from the table:
 
-Never hardcode the key in source.
+  ```
+  VITE_AMPLITUDE_API_KEY=<key>        # Vite family
+  NEXT_PUBLIC_AMPLITUDE_API_KEY=<key> # Next.js
+  AMPLITUDE_API_KEY=<key>             # Node backend
+  ```
+
+  Prefixed vars are inlined at build time, so an unset var is a **silent** production
+  failure — every snippet that reads the key carries a missing-key guard (see Step 4)
+  that warns loudly instead.
+
+- **Bare repo, no env system** → hardcode the key in the init module, with this comment:
+
+  ```ts
+  // Amplitude ingestion key — public by design (ships in the bundle either way);
+  // consider moving to an env var when you set up environments — see the final step.
+  const AMPLITUDE_API_KEY = '<key>';
+  ```
+
+Either way, the key must never be silently absent.
 
 ## Step 3: Find the first event
 
@@ -121,9 +135,10 @@ npm install @amplitude/analytics-node@^1   # Node backend branch
 
 Initialize **once**, at the app entry. The file paths and placement below are an example
 integration — adapt them to this repo's conventions, and match the repo's language: the
-init module's extension follows the repo (`.ts` / `.js`), and TypeScript-only syntax (like
-the `!` non-null assertion in these snippets) never goes into a `.js` file. The package,
-import style, and init call are **exact** — correct any deviation before proceeding.
+init module's extension follows the repo (`.ts` / `.js`), and TypeScript-only syntax never
+goes into a `.js` file. The package, import style, and init call are **exact** — correct
+any deviation before proceeding. On the bare-repo branch (hardcoded key per Step 2),
+replace each env read below with the commented constant from Step 2.
 
 **EU projects:** the generated init call must include `serverZone: 'EU'` — it is marked in
 place in each snippet below. US projects omit that line. Not optional; see Non-negotiables.
@@ -133,10 +148,15 @@ place in each snippet below. US projects omit that line. Not optional; see Non-n
 ```ts
 import * as amplitude from '@amplitude/unified';
 
-amplitude.initAll(import.meta.env.VITE_AMPLITUDE_API_KEY, {
-  serverZone: 'EU', // EU data center only — omit this line for US
-  analytics: { autocapture: true },
-});
+const key = import.meta.env.VITE_AMPLITUDE_API_KEY;
+if (key) {
+  amplitude.initAll(key, {
+    serverZone: 'EU', // EU data center only — omit this line for US
+    analytics: { autocapture: true },
+  });
+} else {
+  console.warn('[amplitude] VITE_AMPLITUDE_API_KEY is not set — analytics disabled');
+}
 ```
 
 Then add `import './amplitude';` as the **first** import in the entry file (example:
@@ -156,7 +176,12 @@ export default function AmplitudeInit() {
   useEffect(() => {
     if (initialized) return;
     initialized = true;
-    amplitude.initAll(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY!, {
+    const key = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
+    if (!key) {
+      console.warn('[amplitude] NEXT_PUBLIC_AMPLITUDE_API_KEY is not set — analytics disabled');
+      return;
+    }
+    amplitude.initAll(key, {
       serverZone: 'EU', // EU data center only — omit this line for US
       analytics: { autocapture: true },
     });
@@ -173,11 +198,16 @@ it only runs in the browser (the module is also evaluated during server-side ren
 ```ts
 import * as amplitude from '@amplitude/unified';
 
+const key = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
 if (typeof window !== 'undefined') {
-  amplitude.initAll(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY!, {
-    serverZone: 'EU', // EU data center only — omit this line for US
-    analytics: { autocapture: true },
-  });
+  if (key) {
+    amplitude.initAll(key, {
+      serverZone: 'EU', // EU data center only — omit this line for US
+      analytics: { autocapture: true },
+    });
+  } else {
+    console.warn('[amplitude] NEXT_PUBLIC_AMPLITUDE_API_KEY is not set — analytics disabled');
+  }
 }
 ```
 
@@ -188,14 +218,20 @@ Then import it at the top of `pages/_app.*`.
 ```ts
 import { init, track } from '@amplitude/analytics-node';
 
-init(process.env.AMPLITUDE_API_KEY!, {
-  serverZone: 'EU', // EU data center only — omit this line for US
-});
+const key = process.env.AMPLITUDE_API_KEY;
+if (key) {
+  init(key, {
+    serverZone: 'EU', // EU data center only — omit this line for US
+  });
+} else {
+  console.warn('[amplitude] AMPLITUDE_API_KEY is not set — analytics disabled');
+}
 ```
 
-> ⚠️ The package determines the init call, exactly: `@amplitude/unified` exposes
-> **`initAll`** (`init` does not exist there); `@amplitude/analytics-node` exposes
-> **`init`**. Never mix the two.
+> ⚠️ The package determines the init call, exactly: `@amplitude/unified` also exports
+> `init`, but it initializes analytics ONLY — session replay, experiment, and engagement
+> are silently dropped. Never use `init` with unified; always **`initAll`**.
+> (`@amplitude/analytics-node`'s correct call IS `init`.)
 
 ## Step 5: Instrument the chosen event
 
@@ -211,7 +247,7 @@ Browser branches:
 
 ```ts
 amplitude.track('Viewed Home Page', {
-  skill_version: 'BA395.5', // helps improve this setup flow — safe to remove
+  skill_version: 'BA395.6', // helps improve this setup flow — safe to remove
 });
 ```
 
@@ -219,7 +255,7 @@ Node backend:
 
 ```ts
 track('Viewed Home Page', {
-  skill_version: 'BA395.5', // helps improve this setup flow — safe to remove
+  skill_version: 'BA395.6', // helps improve this setup flow — safe to remove
 }, { user_id: 'first-event-verify' });
 ```
 
@@ -251,7 +287,8 @@ If nothing shows within a minute:
    `serverZone: 'EU'` to the init options (Step 4).
 2. Restart the dev server — env vars load at startup.
 3. Try an incognito window / disable ad blockers — both silently drop analytics requests.
-4. Re-check the key in the env file against the Setup page — no extra spaces or quotes.
+4. Re-check the key (env file or init module) against the Setup page — no extra spaces or
+   quotes.
 
 ## Non-negotiables — enforce, don't ratify
 
@@ -260,10 +297,13 @@ These are exact, not suggestions. If anything deviates, fix it before moving on 
 
 1. Exactly **one** explicit event, chosen with the user from their own codebase, carrying
    the removable `skill_version` property.
-2. Package ↔ init call: `@amplitude/unified` exposes `amplitude.initAll(...)` (`init` does
-   not exist there); `@amplitude/analytics-node` exposes `init(...)`. Never mix the two.
+2. Package ↔ init call: with `@amplitude/unified`, always `amplitude.initAll(...)` — its
+   `init` export initializes analytics only and silently drops session replay, experiment,
+   and engagement. `@amplitude/analytics-node`'s correct call IS `init(...)`.
 3. Region correct for their data center: EU project → `serverZone: 'EU'` in the init call.
-4. Key in an env var, never in source.
+4. Key placed per the repo's convention — env file with a missing-key guard where the repo
+   has env machinery, hardcoded with the explanatory comment on bare repos. Either way it
+   must never be silently absent.
 5. No events the user didn't choose — never invent a taxonomy.
 6. Never claim success you didn't observe.
 
@@ -275,7 +315,8 @@ Audit this list before your final message — every box, honestly:
 - [ ] Exactly one explicit event exists — the chosen one, `skill_version` present.
 - [ ] Package ↔ init call correct for the branch.
 - [ ] Region correct for their data center.
-- [ ] Key lives in an env file, not in source.
+- [ ] Key placed per the repo's convention — env file + missing-key guard, or hardcoded +
+      explanatory comment — and never silently absent.
 - [ ] The user confirmed the landing — checklist flip plus their event name in the stream.
       You cannot observe this yourself; if unconfirmed, say so and stop.
 
@@ -289,6 +330,9 @@ usage alongside it."** (Node backend: their event landed — no autocapture clai
 Then one default next step: if the Amplitude MCP is connected, offer to build a first chart
 of their chosen event over time via the create-chart skill — a modest smoke-test of their
 new data. No MCP → point them at the chart builder in the Amplitude UI.
+
+If the key is hardcoded: when you set up environments or deploys, move it to an env var
+(and consider per-environment projects).
 
 Then ask ONE question — **more events, session replay, or a guided taxonomy?** — and expand
 only the matching handoff:
