@@ -1,23 +1,35 @@
 ---
 name: send-first-event
 description: >
-  Installs the Amplitude SDK from zero and verifies the first event reaches the user's
-  project. Use when the user asks "set up Amplitude", "install Amplitude", "add Amplitude
-  to this app", "add analytics to my app", "get my first event into Amplitude", or
-  "instrument this app with Amplitude" and the repo has no Amplitude tracking yet. If
-  tracking already exists, use discover-analytics-patterns or add-analytics-instrumentation
-  instead. Stops at one verified event.
+  Installs the Amplitude SDK from zero and verifies one real event from the user's own
+  app lands in their project. Use when the user asks "set up Amplitude", "install
+  Amplitude", "add Amplitude to this app", "add analytics to my app", "get my first event
+  into Amplitude", or "instrument this app with Amplitude" and the repo has no Amplitude
+  tracking yet. If tracking already exists, use discover-analytics-patterns or
+  add-analytics-instrumentation instead. Stops at one verified event.
 ---
 
 # send-first-event
 
-You are setting up Amplitude in the user's project and verifying one real event reaches their
-Amplitude project. Goal: **detect → install + init → fire one verify event → confirm.**
-Nothing more — no tracking plan, no custom event design, no dashboards.
+You are setting up Amplitude in the user's project and verifying one real event — chosen
+with the user from their own codebase — reaches their Amplitude project. Goal:
+**preflight → detect → find their event → install + init → instrument → confirm.**
+Nothing more — no tracking plan, no event taxonomy, no dashboards.
 
-> **Scope rule (enforce):** do not add any events beyond the single verify event below — no
-> click or interaction tracking, no event taxonomy; autocapture already covers interactions.
-> If the user wants more events, finish the first event, then hand off (see **Done**).
+> **Scope rule (enforce):** exactly one explicit event, and only the one the user chose —
+> no additional click or interaction tracking, no taxonomy; autocapture already covers
+> generic interactions. If the user wants more events, finish this one, then hand off
+> (see **Done**).
+
+> **Conflict rule:** if the user's instructions conflict with anything this skill does —
+> in either direction — say so explicitly and let them decide. Never silently override.
+
+## Step 0: Preflight — is Amplitude already here?
+
+Scan before touching anything: `@amplitude/*` in any `package.json`, and Amplitude
+`init(` / `initAll(` / `track(` patterns in source. If found, **stop — make no changes** —
+and route: discover-analytics-patterns to map what exists, then
+add-analytics-instrumentation to extend it.
 
 ## Step 1: Detect the framework
 
@@ -26,26 +38,31 @@ first match, top-down:
 
 | Dependency | Branch | Entry point | Env var prefix | SDK |
 |---|---|---|---|---|
-| `next` | Next.js | client component imported by `app/layout.tsx` | `NEXT_PUBLIC_` | `@amplitude/unified` |
+| `next` (has `app/`) | Next.js App Router | client component imported by `app/layout.tsx` | `NEXT_PUBLIC_` | `@amplitude/unified` |
+| `next` (has `pages/`) | Next.js Pages Router | init module imported in `pages/_app.*` | `NEXT_PUBLIC_` | `@amplitude/unified` |
 | `react` + `vite` | React + Vite | `src/main.tsx` | `VITE_` | `@amplitude/unified` |
 | `vue` + `vite` | Vue + Vite | `src/main.ts` | `VITE_` | `@amplitude/unified` |
 | `vite` (plain JS) | JS + Vite | `src/main.js` | `VITE_` | `@amplitude/unified` |
 | none of the above, has a server entry | Node backend | server entry file | none — `process.env` | `@amplitude/analytics-node` |
 
+- **Monorepo:** operate on the workspace that owns the runnable app. If it's ambiguous
+  which one that is, ask before touching anything.
 - **Not a JavaScript-family project** (no `package.json`, or Python/Go/mobile/etc.): stop —
   make no code changes. Tell the user this skill covers JS apps today and point them to
   the platform SDK docs at https://amplitude.com/docs/sdks.
-- Framework not in the table but JS-based: keep the same steps, use the closest row, and
-  adapt file names and env access — never invent SDK option names.
+- Framework not in the table but JS-based: keep the same steps and adapt file names and
+  env access — but if you cannot confidently map the client boundary or the env access,
+  stop and say so instead of improvising. Never invent SDK option names.
 
-## Step 2: Get the API key into an env var
+## Step 2: Get the API key, data center, and Setup page
 
 Ask the user for their **project API key** — it's on their Amplitude **Setup page** (if they
 have no project yet: sign up, create one, the Setup page appears after that).
 
 Also ask which **data center** their project is on — **EU or US**. Quick check: if their
 Amplitude URL when logged in is `app.eu.amplitude.com`, it's EU; `app.amplitude.com` is US.
-You'll need this in Step 3.
+Settle this **now, before any code is generated** — it changes the init options in Step 4,
+and events sent to the wrong endpoint never arrive.
 
 To point them at the Setup page directly, ask for their org's **URL slug** — the segment
 right after `/analytics/` in their Amplitude URL when logged in (not the org display name;
@@ -71,10 +88,31 @@ AMPLITUDE_API_KEY=<key>             # Node backend
 
 Never hardcode the key in source.
 
-## Step 3: Install and initialize — exactly once
+## Step 3: Find the first event
 
-Install with the project's package manager, pinned to the verified major (npm shown as
-the example):
+The first event should be a real product moment from **their** app — not a placeholder.
+Scan the repo for low-hanging meaningful moments:
+
+- routes / pages → `Viewed Home Page`
+- auth flows → `Signed Up`
+- the primary CTA → e.g. `Started Checkout`
+
+Propose 1–3 candidates **with file evidence** (the path and line of the route, handler, or
+component each one comes from). Recommend the candidate that fires at load/mount time — it
+confirms in seconds without anyone having to click. Be honest about the trade-off:
+autocapture (Step 4) already logs generic page views; an explicit named event gives them a
+clean, chartable, named moment of their own.
+
+The user picks — or names their own; their word is final. Bare scaffold with nothing
+meaningful in it yet → default to `Viewed Home Page`. Naming guidance, one line: Title
+Case, past-tense action ("Signed Up", "Viewed Home Page").
+
+**Exactly one event.** More events are a hand-off (see **Done**), not a bigger Step 3.
+
+## Step 4: Install and initialize — exactly once
+
+Install with the project's package manager, pinned to the minimum verified version within
+major 1 (npm shown as the example):
 
 ```bash
 npm install @amplitude/unified@^1.1.20     # browser branches
@@ -82,8 +120,13 @@ npm install @amplitude/analytics-node@^1   # Node backend branch
 ```
 
 Initialize **once**, at the app entry. The file paths and placement below are an example
-integration — adapt them to this repo's conventions. The package, import style, and init
-call are **exact** — correct any deviation before proceeding.
+integration — adapt them to this repo's conventions, and match the repo's language: the
+init module's extension follows the repo (`.ts` / `.js`), and TypeScript-only syntax (like
+the `!` non-null assertion in these snippets) never goes into a `.js` file. The package,
+import style, and init call are **exact** — correct any deviation before proceeding.
+
+**EU projects:** the generated init call must include `serverZone: 'EU'` — it is marked in
+place in each snippet below. US projects omit that line. Not optional; see Non-negotiables.
 
 **React/Vue/JS + Vite** — create an init module (example: `src/amplitude.ts`):
 
@@ -91,35 +134,32 @@ call are **exact** — correct any deviation before proceeding.
 import * as amplitude from '@amplitude/unified';
 
 amplitude.initAll(import.meta.env.VITE_AMPLITUDE_API_KEY, {
+  serverZone: 'EU', // EU data center only — omit this line for US
   analytics: { autocapture: true },
 });
-amplitude.track('Setup Verified', { skill_version: 'BA395.4' });
 ```
-
-The verify event fires right after `initAll` on purpose — the SDK queues events fired
-before init completes, so this works in any Vite-family app with no framework hooks.
 
 Then add `import './amplitude';` as the **first** import in the entry file (example:
 `src/main.tsx`).
 
-**Next.js** — create a client component (example: `components/AmplitudeInit.tsx`; do NOT
-mark the root layout `"use client"`):
+**Next.js App Router** — create a client component (example: `components/AmplitudeInit.tsx`;
+do NOT mark the root layout `"use client"`):
 
 ```tsx
 'use client';
 import * as amplitude from '@amplitude/unified';
 import { useEffect } from 'react';
 
-let fired = false; // React StrictMode double-invokes effects in dev
+let initialized = false; // React StrictMode double-invokes effects in dev
 
 export default function AmplitudeInit() {
   useEffect(() => {
-    if (fired) return;
-    fired = true;
+    if (initialized) return;
+    initialized = true;
     amplitude.initAll(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY!, {
+      serverZone: 'EU', // EU data center only — omit this line for US
       analytics: { autocapture: true },
     });
-    amplitude.track('Setup Verified', { skill_version: 'BA395.4' });
   }, []);
   return null;
 }
@@ -127,83 +167,138 @@ export default function AmplitudeInit() {
 
 Render `<AmplitudeInit />` once inside the root layout's body (`app/layout.tsx`).
 
+**Next.js Pages Router** — create an init module (example: `lib/amplitude.ts`), guarded so
+it only runs in the browser (the module is also evaluated during server-side rendering):
+
+```ts
+import * as amplitude from '@amplitude/unified';
+
+if (typeof window !== 'undefined') {
+  amplitude.initAll(process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY!, {
+    serverZone: 'EU', // EU data center only — omit this line for US
+    analytics: { autocapture: true },
+  });
+}
+```
+
+Then import it at the top of `pages/_app.*`.
+
 **Node backend** — at the server entry:
 
 ```ts
 import { init, track } from '@amplitude/analytics-node';
-init(process.env.AMPLITUDE_API_KEY!);
-```
 
-> **EU data center:** add top-level `serverZone: 'EU'` to the init options —
-> `amplitude.initAll(key, { serverZone: 'EU', analytics: { autocapture: true } })` (browser) /
-> `init(key, { serverZone: 'EU' })` (Node backend). US is the default; omit it for US projects.
+init(process.env.AMPLITUDE_API_KEY!, {
+  serverZone: 'EU', // EU data center only — omit this line for US
+});
+```
 
 > ⚠️ The package determines the init call, exactly: `@amplitude/unified` exposes
 > **`initAll`** (`init` does not exist there); `@amplitude/analytics-node` exposes
 > **`init`**. Never mix the two.
 
-## Step 4: Fire the one verify event
+## Step 5: Instrument the chosen event
 
-One explicit event, named exactly `Setup Verified` (Title Case, with the space), carrying
-the version property:
+Add the one chosen event at the moment it represents:
 
-```ts
-amplitude.track('Setup Verified', { skill_version: 'BA395.4' });
-```
+- **Load/mount-time event** (e.g. `Viewed Home Page`) — right after `initAll` in the init
+  module (App Router: inside the guarded effect, right after `initAll`). The SDK queues
+  events fired before init completes, so this is safe.
+- **Interaction event** (e.g. `Signed Up`) — in that action's existing handler, at the
+  point where the action has actually succeeded.
 
-Browser branches: already wired in Step 3 — the Vite init module fires it right after
-`initAll`, and the Next.js component fires it inside the guarded effect.
-
-Node backend — right after `init` at boot:
+Browser branches:
 
 ```ts
-track('Setup Verified', { skill_version: 'BA395.4' }, { user_id: 'setup-verify' });
+amplitude.track('Viewed Home Page', {
+  skill_version: 'BA395.5', // helps improve this setup flow — safe to remove
+});
 ```
 
-Autocapture will also collect real interactions — a bonus, but always fire this explicit
-event so success doesn't depend on the user clicking around.
+Node backend:
 
-## Step 5: Verify it compiles
+```ts
+track('Viewed Home Page', {
+  skill_version: 'BA395.5', // helps improve this setup flow — safe to remove
+}, { user_id: 'first-event-verify' });
+```
+
+Use the user's chosen event name — `Viewed Home Page` above is only the example. The
+`skill_version` property rides along on this one event and is safe to delete later.
+
+Autocapture will also collect real interactions — a bonus, but the chosen explicit event
+is the verification target, so success never depends on someone happening to click around.
+
+## Step 6: Verify it compiles
 
 Run the project's build (`npm run build`, or this project's equivalent). If Amplitude lines
 error, reconcile against the installed package's exported types — do not invent options or
 exports. If the error is in code you didn't touch, it's likely pre-existing — say so instead
 of fixing unrelated code. **Never claim success on a failing build.**
 
-## Step 6: Run and confirm
+## Step 7: Run and confirm
 
 Have the user start the app and watch the **checklist on their Amplitude Setup page** (the
-`/setup` URL built in Step 2) — it flips to confirmed the moment the first event lands
-(usually seconds). That in-app flip is
-the source of truth: **do not claim success before it flips.**
+`/setup` URL built in Step 2). It flips to confirmed the moment any event arrives (usually
+seconds) — that proves *something* landed. The specific proof is their **chosen event
+name** showing up in the project's live event stream (the Setup page's event feed). Both
+together = done. That in-app confirmation is the source of truth: **do not claim success
+before you have it.**
 
-If it doesn't flip within a minute:
+If nothing shows within a minute:
 
 1. EU project but `serverZone` not set — events went to the US endpoint. Add
-   `serverZone: 'EU'` to the init options (Step 3).
+   `serverZone: 'EU'` to the init options (Step 4).
 2. Restart the dev server — env vars load at startup.
 3. Try an incognito window / disable ad blockers — both silently drop analytics requests.
-4. Re-check the key in `.env` against the Setup page — no extra spaces or quotes.
+4. Re-check the key in the env file against the Setup page — no extra spaces or quotes.
 
 ## Non-negotiables — enforce, don't ratify
 
 These are exact, not suggestions. If anything deviates, fix it before moving on — never
 "that's fine":
 
-1. Package ↔ init call: `@amplitude/unified` exposes `amplitude.initAll(...)` (`init` does
+1. Exactly **one** explicit event, chosen with the user from their own codebase, carrying
+   the removable `skill_version` property.
+2. Package ↔ init call: `@amplitude/unified` exposes `amplitude.initAll(...)` (`init` does
    not exist there); `@amplitude/analytics-node` exposes `init(...)`. Never mix the two.
-2. Wrong package installed → uninstall it, install the right one.
-3. Event name `Setup Verified` exactly.
-4. The verify event carries `skill_version`.
-5. Key in an env var, never in source.
-6. No events beyond the verify event.
+3. Region correct for their data center: EU project → `serverZone: 'EU'` in the init call.
+4. Key in an env var, never in source.
+5. No events the user didn't choose — never invent a taxonomy.
+6. Never claim success you didn't observe.
+
+## Complete when
+
+Audit this list before your final message — every box, honestly:
+
+- [ ] Build passes.
+- [ ] Exactly one explicit event exists — the chosen one, `skill_version` present.
+- [ ] Package ↔ init call correct for the branch.
+- [ ] Region correct for their data center.
+- [ ] Key lives in an env file, not in source.
+- [ ] The user confirmed the landing — checklist flip plus their event name in the stream.
+      You cannot observe this yourself; if unconfirmed, say so and stop.
+
+Anything unchecked → report it plainly. Never claim completion over an unchecked box.
 
 ## Done
 
-Once the checklist confirms, tell the user their first event landed and where to go next:
+Open with their result: **"Your `<chosen event>` landed, and autocapture is collecting real
+usage alongside it."** (Node backend: their event landed — no autocapture claim.)
 
-- **Ongoing / repo-wide instrumentation** → the add-analytics-instrumentation skill
-  (start with discover-analytics-patterns if the repo may already have tracking).
+Then one default next step: if the Amplitude MCP is connected, offer to build a first chart
+of their chosen event over time via the create-chart skill — a modest smoke-test of their
+new data. No MCP → point them at the chart builder in the Amplitude UI.
+
+Then ask ONE question — **more events, session replay, or a guided taxonomy?** — and expand
+only the matching handoff:
+
+- **More events** → the add-analytics-instrumentation skill (start with
+  discover-analytics-patterns if the repo may already have tracking you didn't create).
+- **Session replay** → its own enablement decision (sampling rate, privacy, masking) — do
+  not embed that configuration here. Once sessions exist, debug-replay and replay-ux-audit
+  consume them.
 - **Guided taxonomy / dashboards** → the Amplitude wizard: `npx @amplitude/wizard`.
 
-Do not design tracking plans or dashboards here — hand off.
+If a named skill or MCP isn't available in this environment, describe the Amplitude-UI
+equivalent instead. Do not design tracking plans or dashboards here — hand off.
