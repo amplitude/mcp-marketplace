@@ -1,5 +1,5 @@
 ---
-name: setup-amplitude-first-event
+name: send-first-event
 description: >
   Installs the Amplitude SDK from zero and verifies the first event reaches the user's
   project. Use when the user asks "set up Amplitude", "install Amplitude", "add Amplitude
@@ -9,7 +9,7 @@ description: >
   instead. Stops at one verified event.
 ---
 
-# setup-amplitude-first-event
+# send-first-event
 
 You are setting up Amplitude in the user's project and verifying one real event reaches their
 Amplitude project. Goal: **detect → install + init → fire one verify event → confirm.**
@@ -21,7 +21,8 @@ Nothing more — no tracking plan, no custom event design, no dashboards.
 
 ## Step 1: Detect the framework
 
-Read `package.json` and match against this table:
+Read `package.json` and match against this table. Exactly **one** row applies — take the
+first match, top-down:
 
 | Dependency | Branch | Entry point | Env var prefix | SDK |
 |---|---|---|---|---|
