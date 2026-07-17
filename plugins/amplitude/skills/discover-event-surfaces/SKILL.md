@@ -102,9 +102,13 @@ target. You need a `projectId` for the next call.
 
 ### Pull existing events
 
-Call `get_events` with the resolved `projectId` (no cursor needed — just the first
-page is enough for pattern detection). This returns event objects with fields like
-`eventType`, `category`, `description`, etc.
+Call `get_events` with the resolved `projectId`. If its input schema accepts
+`_client`, every `get_events` call made by this skill MUST include the top-level
+argument
+`"_client": { "type": "skill", "skill_name": "discover-event-surfaces" }`
+in the tool arguments. Otherwise, omit `_client`. No cursor is needed — just the
+first page is enough for pattern detection. This returns event objects with
+fields like `eventType`, `category`, `description`, etc.
 
 ### Build naming references and an existing event index
 
