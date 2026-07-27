@@ -24,6 +24,13 @@ Nothing more — no tracking plan, no event taxonomy, no dashboards.
 > **Conflict rule:** if the user's instructions conflict with anything this skill does —
 > in either direction — say so explicitly and let them decide. Never silently override.
 
+> **Amplitude MCP (if connected):** when an Amplitude MCP server is available in this
+> environment, prefer its tools where a step offers an **[MCP path]** — programmatic key
+> retrieval and server-side ingestion verification replace the manual asks. Every step
+> still works without it via the ask-the-user path. Use only tools the connected server
+> actually exposes — never invent tool names; if the tool a step expects isn't there,
+> take the no-MCP path.
+
 ## Step 0: Preflight — is Amplitude already here?
 
 Scan before touching anything: `@amplitude/*` in any `package.json`, and Amplitude
@@ -55,6 +62,16 @@ first match, top-down:
   stop and say so instead of improvising. Never invent SDK option names.
 
 ## Step 2: Get the API key, data center, and Setup page
+
+**[MCP path]** — with the Amplitude MCP connected, skip the questions below: confirm
+which Amplitude **project** to target (ask only if ambiguous — e.g. the MCP context shows
+several), read the **data center** from that project's context, and **defer the key fetch
+to Step 4** — retrieve it just-in-time with the MCP's key tool when you write the init
+module. Human round-trips are expensive, so the no-MCP path front-loads its questions;
+tool calls are cheap, so the MCP path fetches at the moment of use instead. Then go to
+Step 3.
+
+**[No MCP — ask the user]:**
 
 Ask the user for their **project API key** — it's on their Amplitude **Setup page** (if they
 have no project yet: sign up, create one, the Setup page appears after that).
@@ -247,7 +264,7 @@ Browser branches:
 
 ```ts
 amplitude.track('Viewed Home Page', {
-  skill_version: 'BA395.6', // helps improve this setup flow — safe to remove
+  skill_version: 'BA395.7', // helps improve this setup flow — safe to remove
 });
 ```
 
@@ -255,7 +272,7 @@ Node backend:
 
 ```ts
 track('Viewed Home Page', {
-  skill_version: 'BA395.6', // helps improve this setup flow — safe to remove
+  skill_version: 'BA395.7', // helps improve this setup flow — safe to remove
 }, { user_id: 'first-event-verify' });
 ```
 
@@ -274,12 +291,24 @@ of fixing unrelated code. **Never claim success on a failing build.**
 
 ## Step 7: Run and confirm
 
-Have the user start the app and watch the **checklist on their Amplitude Setup page** (the
-`/setup` URL built in Step 2). It flips to confirmed the moment any event arrives (usually
-seconds) — that proves *something* landed. The specific proof is their **chosen event
-name** showing up in the project's live event stream (the Setup page's event feed). Both
-together = done. That in-app confirmation is the source of truth: **do not claim success
-before you have it.**
+The source of truth is **observed ingestion** — either the MCP's server-side check or the
+user's in-app confirmation. Never your own assumption, and never the network tab alone:
+a request that left the browser is not an event that landed.
+
+**[MCP path]** — once the app runs and the chosen event has fired (load/mount events fire
+on start; interaction events need the action performed — ask the user to do it, or do it
+yourself only with their permission), call the MCP's ingestion-check tool for the chosen
+event name in the last few minutes. The tool confirming arrival = you have observed
+success and may say so, citing the tool result. Still point the user at their Setup page
+so they see the checklist flip themselves. Tool shows nothing after ~a minute → fall
+through to the debug list below; do not claim success.
+
+**[No MCP]** — have the user start the app and watch the **checklist on their Amplitude
+Setup page** (the `/setup` URL built in Step 2). It flips to confirmed the moment any
+event arrives (usually seconds) — that proves *something* landed. The specific proof is
+their **chosen event name** showing up in the project's live event stream (the Setup
+page's event feed). Both together = done. **Do not claim success before the user
+confirms.**
 
 If nothing shows within a minute:
 
@@ -317,8 +346,9 @@ Audit this list before your final message — every box, honestly:
 - [ ] Region correct for their data center.
 - [ ] Key placed per the repo's convention — env file + missing-key guard, or hardcoded +
       explanatory comment — and never silently absent.
-- [ ] The user confirmed the landing — checklist flip plus their event name in the stream.
-      You cannot observe this yourself; if unconfirmed, say so and stop.
+- [ ] The landing is confirmed — by the MCP ingestion check (cite the tool result), or by
+      the user (checklist flip plus their event name in the stream). Without the MCP you
+      cannot observe this yourself; if unconfirmed either way, say so and stop.
 
 Anything unchecked → report it plainly. Never claim completion over an unchecked box.
 
