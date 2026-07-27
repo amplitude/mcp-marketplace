@@ -6,7 +6,8 @@ description: >
   Amplitude", "add Amplitude to this app", "add analytics to my app", "get my first event
   into Amplitude", or "instrument this app with Amplitude" and the repo has no Amplitude
   tracking yet. If tracking already exists, use discover-analytics-patterns or
-  add-analytics-instrumentation instead. Stops at one verified event.
+  add-analytics-instrumentation instead. Stops at one verified event. Requires the
+  Amplitude MCP server (key retrieval + server-side event verification).
 ---
 
 # send-first-event
@@ -24,12 +25,12 @@ Nothing more — no tracking plan, no event taxonomy, no dashboards.
 > **Conflict rule:** if the user's instructions conflict with anything this skill does —
 > in either direction — say so explicitly and let them decide. Never silently override.
 
-> **Amplitude MCP (if connected):** when an Amplitude MCP server is available in this
-> environment, prefer its tools where a step offers an **[MCP path]** — programmatic key
-> retrieval and server-side ingestion verification replace the manual asks. Every step
-> still works without it via the ask-the-user path. Use only tools the connected server
-> actually exposes — never invent tool names; if the tool a step expects isn't there,
-> take the no-MCP path.
+> **Requires the Amplitude MCP.** This skill assumes an Amplitude MCP server is connected
+> — programmatic key retrieval and server-side ingestion verification are how it works.
+> No Amplitude MCP in this environment → **stop before making any changes**: point the
+> user at the Amplitude MCP install docs (https://amplitude.com/docs → Amplitude MCP) and
+> resume once it's connected. Use only tools the connected server actually exposes —
+> never invent tool names; where a specific tool is missing, the step names its fallback.
 
 ## Step 0: Preflight — is Amplitude already here?
 
@@ -61,52 +62,38 @@ first match, top-down:
   env access — but if you cannot confidently map the client boundary or the env access,
   stop and say so instead of improvising. Never invent SDK option names.
 
-## Step 2: Get the API key, data center, and Setup page
+## Step 2: Project, data center, and key timing
 
-**[MCP path]** — with the Amplitude MCP connected, skip the questions below, with three
-guards:
+Settle three things via the MCP — each with its fallback when the context doesn't carry
+the answer:
 
 - **Project:** state the target project **by name** and get a yes — even when only one is
   selected. A silently-wrong project passes Step 7's ingestion check while the user's
-  real project stays empty.
+  real project stays empty. (No project yet → the user signs up / creates one first.)
 - **Data center:** read EU/US from the project's context. If the context doesn't clearly
-  show it, don't guess — ask the user exactly as the no-MCP path does; wrong region =
-  events silently never arrive.
+  show it, don't guess — ask the user (quick check: their logged-in URL —
+  `app.eu.amplitude.com` is EU, `app.amplitude.com` is US). Settle this **before any code
+  is generated** — it changes the init options in Step 4, and events sent to the wrong
+  endpoint never arrive.
 - **Setup page:** take the project's Setup-page URL from the MCP context if it exposes
-  one; otherwise collect the org slug and build the link as below — Step 7 uses it.
+  one; otherwise ask for the org's **URL slug** — the segment right after `/analytics/`
+  in their logged-in Amplitude URL (not the org display name; the two can differ) — and
+  build it (Step 7 uses it):
+
+  ```
+  https://app.amplitude.com/analytics/<slug>/setup      # US
+  https://app.eu.amplitude.com/analytics/<slug>/setup   # EU
+  ```
 
 **Key timing:** if the server exposes a dedicated key-retrieval tool, defer the key fetch
-to Step 4 and retrieve it just-in-time — human round-trips are expensive, so the no-MCP
-path front-loads its questions; tool calls are cheap, so fetch at the moment of use. If
-there is no dedicated key tool (or it's unclear which tool that is), do **not** defer:
-ask the user for the key now, exactly as below — and never use a generic data/query tool
-to obtain a key. Either way the key gets placed per **Key placement** at the end of this
-step. Then go to Step 3.
+to Step 4 and retrieve it just-in-time — tool calls are cheap, so fetch at the moment of
+use. If there is no dedicated key tool (or it's unclear which tool that is), ask the user
+for their **project API key** now — it's on the Setup page above — and never use a
+generic data/query tool to obtain a key. Either way the key gets placed per
+**Key placement** below. Then go to Step 3.
 
-**[No MCP — ask the user]:**
-
-Ask the user for their **project API key** — it's on their Amplitude **Setup page** (if they
-have no project yet: sign up, create one, the Setup page appears after that).
-
-Also ask which **data center** their project is on — **EU or US**. Quick check: if their
-Amplitude URL when logged in is `app.eu.amplitude.com`, it's EU; `app.amplitude.com` is US.
-Settle this **now, before any code is generated** — it changes the init options in Step 4,
-and events sent to the wrong endpoint never arrive.
-
-To point them at the Setup page directly, ask for their org's **URL slug** — the segment
-right after `/analytics/` in their Amplitude URL when logged in (not the org display name;
-the two can differ) — and build the link:
-
-```
-https://app.amplitude.com/analytics/<slug>/setup      # US
-https://app.eu.amplitude.com/analytics/<slug>/setup   # EU
-```
-
-Have the user confirm that URL loads. If they don't know the slug, have them log in at the
-data center's host URL and open Setup from there.
-
-**Key placement — BOTH paths, follow the repo's convention** (however the key was
-obtained — MCP fetch or user-provided — it lands the same way):
+**Key placement — follow the repo's convention** (however the key was obtained — MCP
+fetch or user-provided — it lands the same way):
 
 - **Repo already uses env machinery** (existing `.env*` files or framework env config) →
   put the key in the env file the repo already uses (create it if missing, keep existing
@@ -163,14 +150,14 @@ npm install @amplitude/unified@^1.1.20     # browser branches
 npm install @amplitude/analytics-node@^1   # Node backend branch
 ```
 
-**[MCP path, deferred key]** — fetch the key now with the server's dedicated
+**[Deferred key]** — fetch the key now with the server's dedicated
 key-retrieval tool and place it per Step 2's **Key placement** rules (env file +
 missing-key guard, or hardcoded constant + comment) **before** writing the init module —
 the snippets below read the key from wherever you placed it, and a fetched-but-unplaced
 key means the guard fires and analytics is silently disabled. If you wrote an env file
 while a dev server was already running, note that it must be restarted — env vars load
-at startup. If the fetch fails or returns no key, fall back to asking the user (Step 2's
-no-MCP ask) — the key must never be silently absent.
+at startup. If the fetch fails or returns no key, fall back to asking the user for the
+key (it's on their Setup page) — the key must never be silently absent.
 
 Initialize **once**, at the app entry. The file paths and placement below are an example
 integration — adapt them to this repo's conventions, and match the repo's language: the
@@ -317,7 +304,7 @@ The source of truth is **observed ingestion** — either the MCP's server-side c
 user's in-app confirmation. Never your own assumption, and never the network tab alone:
 a request that left the browser is not an event that landed.
 
-**[MCP path]** — once the app runs and the chosen event has fired (load/mount events fire
+**Primary — the ingestion check:** once the app runs and the chosen event has fired (load/mount events fire
 on start; interaction events need the action performed — ask the user to do it, or, only
 with their permission, perform it **through the running app's real flow**; never by
 calling `track()` or the HTTP API directly, which would confirm an event the app didn't
@@ -330,10 +317,11 @@ checklist flip themselves — if you have no Setup URL, the ingestion check is t
 skip the pointer. Tool shows nothing (or only autocapture) after ~a minute → fall through
 to the debug list below; do not claim success.
 
-**[No MCP]** — have the user start the app and watch the **checklist on their Amplitude
-Setup page** (the `/setup` URL built in Step 2). It flips to confirmed the moment any
-event arrives (usually seconds) — that proves *something* landed. The specific proof is
-their **chosen event name** showing up in the project's live event stream (the Setup
+**Fallback — the server exposes no ingestion-check tool** (it may be gated or not rolled
+out to this org): have the user start the app and watch the **checklist on their
+Amplitude Setup page** (the `/setup` URL from Step 2). It flips to confirmed the moment
+any event arrives (usually seconds) — that proves *something* landed. The specific proof
+is their **chosen event name** showing up in the project's live event stream (the Setup
 page's event feed). Both together = done. **Do not claim success before the user
 confirms.**
 
@@ -376,9 +364,10 @@ Audit this list before your final message — every box, honestly:
 - [ ] Region correct for their data center.
 - [ ] Key placed per the repo's convention — env file + missing-key guard, or hardcoded +
       explanatory comment — and never silently absent.
-- [ ] The landing is confirmed — by the MCP ingestion check (cite the tool result), or by
-      the user (checklist flip plus their event name in the stream). Without the MCP you
-      cannot observe this yourself; if unconfirmed either way, say so and stop.
+- [ ] The landing is confirmed — by the ingestion check (cite the tool result), or by
+      the user (checklist flip plus their event name in the stream). Without the
+      ingestion-check tool you cannot observe this yourself; if unconfirmed either way,
+      say so and stop.
 
 Anything unchecked → report it plainly. Never claim completion over an unchecked box.
 
@@ -388,9 +377,9 @@ Once the landing is confirmed (the last **Complete when** box — not before), o
 their result: **"Your `<chosen event>` landed, and autocapture is collecting real
 usage alongside it."** (Node backend: their event landed — no autocapture claim.)
 
-Then one default next step: if the Amplitude MCP is connected, offer to build a first chart
-of their chosen event over time via the create-chart skill — a modest smoke-test of their
-new data. No MCP → point them at the chart builder in the Amplitude UI.
+Then one default next step: offer to build a first chart of their chosen event over time
+via the create-chart skill — a modest smoke-test of their new data (if that skill isn't
+available here, point them at the chart builder in the Amplitude UI).
 
 If the key is hardcoded: when you set up environments or deploys, move it to an env var
 (and consider per-environment projects).
