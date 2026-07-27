@@ -63,13 +63,25 @@ first match, top-down:
 
 ## Step 2: Get the API key, data center, and Setup page
 
-**[MCP path]** — with the Amplitude MCP connected, skip the questions below: confirm
-which Amplitude **project** to target (ask only if ambiguous — e.g. the MCP context shows
-several), read the **data center** from that project's context, and **defer the key fetch
-to Step 4** — retrieve it just-in-time with the MCP's key tool when you write the init
-module. Human round-trips are expensive, so the no-MCP path front-loads its questions;
-tool calls are cheap, so the MCP path fetches at the moment of use instead. Then go to
-Step 3.
+**[MCP path]** — with the Amplitude MCP connected, skip the questions below, with three
+guards:
+
+- **Project:** state the target project **by name** and get a yes — even when only one is
+  selected. A silently-wrong project passes Step 7's ingestion check while the user's
+  real project stays empty.
+- **Data center:** read EU/US from the project's context. If the context doesn't clearly
+  show it, don't guess — ask the user exactly as the no-MCP path does; wrong region =
+  events silently never arrive.
+- **Setup page:** take the project's Setup-page URL from the MCP context if it exposes
+  one; otherwise collect the org slug and build the link as below — Step 7 uses it.
+
+**Key timing:** if the server exposes a dedicated key-retrieval tool, defer the key fetch
+to Step 4 and retrieve it just-in-time — human round-trips are expensive, so the no-MCP
+path front-loads its questions; tool calls are cheap, so fetch at the moment of use. If
+there is no dedicated key tool (or it's unclear which tool that is), do **not** defer:
+ask the user for the key now, exactly as below — and never use a generic data/query tool
+to obtain a key. Either way the key gets placed per **Key placement** at the end of this
+step. Then go to Step 3.
 
 **[No MCP — ask the user]:**
 
@@ -93,7 +105,8 @@ https://app.eu.amplitude.com/analytics/<slug>/setup   # EU
 Have the user confirm that URL loads. If they don't know the slug, have them log in at the
 data center's host URL and open Setup from there.
 
-**Key placement — follow the repo's convention:**
+**Key placement — BOTH paths, follow the repo's convention** (however the key was
+obtained — MCP fetch or user-provided — it lands the same way):
 
 - **Repo already uses env machinery** (existing `.env*` files or framework env config) →
   put the key in the env file the repo already uses (create it if missing, keep existing
@@ -149,6 +162,15 @@ major 1 (npm shown as the example):
 npm install @amplitude/unified@^1.1.20     # browser branches
 npm install @amplitude/analytics-node@^1   # Node backend branch
 ```
+
+**[MCP path, deferred key]** — fetch the key now with the server's dedicated
+key-retrieval tool and place it per Step 2's **Key placement** rules (env file +
+missing-key guard, or hardcoded constant + comment) **before** writing the init module —
+the snippets below read the key from wherever you placed it, and a fetched-but-unplaced
+key means the guard fires and analytics is silently disabled. If you wrote an env file
+while a dev server was already running, note that it must be restarted — env vars load
+at startup. If the fetch fails or returns no key, fall back to asking the user (Step 2's
+no-MCP ask) — the key must never be silently absent.
 
 Initialize **once**, at the app entry. The file paths and placement below are an example
 integration — adapt them to this repo's conventions, and match the repo's language: the
@@ -296,12 +318,17 @@ user's in-app confirmation. Never your own assumption, and never the network tab
 a request that left the browser is not an event that landed.
 
 **[MCP path]** — once the app runs and the chosen event has fired (load/mount events fire
-on start; interaction events need the action performed — ask the user to do it, or do it
-yourself only with their permission), call the MCP's ingestion-check tool for the chosen
-event name in the last few minutes. The tool confirming arrival = you have observed
-success and may say so, citing the tool result. Still point the user at their Setup page
-so they see the checklist flip themselves. Tool shows nothing after ~a minute → fall
-through to the debug list below; do not claim success.
+on start; interaction events need the action performed — ask the user to do it, or, only
+with their permission, perform it **through the running app's real flow**; never by
+calling `track()` or the HTTP API directly, which would confirm an event the app didn't
+produce), call the MCP's ingestion-check tool for the chosen event in the last few
+minutes — **against the same project confirmed in Step 2** (key and check scoped to
+different projects = false verdicts in both directions). Success = the tool's result
+naming **your chosen event** — generic autocapture arrivals are not proof it landed. With that observed you may claim success, citing the
+tool result; still point the user at their Setup page (URL from Step 2) so they see the
+checklist flip themselves — if you have no Setup URL, the ingestion check is the proof,
+skip the pointer. Tool shows nothing (or only autocapture) after ~a minute → fall through
+to the debug list below; do not claim success.
 
 **[No MCP]** — have the user start the app and watch the **checklist on their Amplitude
 Setup page** (the `/setup` URL built in Step 2). It flips to confirmed the moment any
@@ -316,8 +343,8 @@ If nothing shows within a minute:
    `serverZone: 'EU'` to the init options (Step 4).
 2. Restart the dev server — env vars load at startup.
 3. Try an incognito window / disable ad blockers — both silently drop analytics requests.
-4. Re-check the key (env file or init module) against the Setup page — no extra spaces or
-   quotes.
+4. Re-check the key (env file or init module) against the Setup page — or, on the MCP
+   path, re-fetch it with the key tool and compare — no extra spaces or quotes.
 
 ## Non-negotiables — enforce, don't ratify
 
@@ -334,7 +361,10 @@ These are exact, not suggestions. If anything deviates, fix it before moving on 
    has env machinery, hardcoded with the explanatory comment on bare repos. Either way it
    must never be silently absent.
 5. No events the user didn't choose — never invent a taxonomy.
-6. Never claim success you didn't observe.
+6. Never claim success you didn't observe. Observation means exactly two things: the MCP
+   ingestion check returning **the chosen event by name** in the confirmed project, or
+   the user confirming in their own UI. Nothing else counts — not the network tab, not
+   a passing build, not autocapture traffic.
 
 ## Complete when
 
@@ -354,7 +384,8 @@ Anything unchecked → report it plainly. Never claim completion over an uncheck
 
 ## Done
 
-Open with their result: **"Your `<chosen event>` landed, and autocapture is collecting real
+Once the landing is confirmed (the last **Complete when** box — not before), open with
+their result: **"Your `<chosen event>` landed, and autocapture is collecting real
 usage alongside it."** (Node backend: their event landed — no autocapture claim.)
 
 Then one default next step: if the Amplitude MCP is connected, offer to build a first chart
