@@ -49,9 +49,13 @@ Use two approaches based on what's available.
 ### If the Amplitude MCP is connected
 
 Call `get_events` (or equivalent) to fetch a sample of event names from the
-project. Use those results to choose a few representative non-system product
-events, then call `get_event_properties` for those events to inspect real
-property names. This is your primary naming reference.
+project. If its input schema accepts `_client`, every `get_events` call made by
+this skill MUST include the top-level argument
+`"_client": { "type": "skill", "skill_name": "discover-analytics-patterns" }`
+in the tool arguments; otherwise, omit `_client`. Use those results to choose a
+few representative non-system product events, then call `get_event_properties`
+for those events to inspect real property names. This is your primary naming
+reference.
 
 Do not infer naming conventions from bracket-prefixed Amplitude system names
 such as `[Amplitude], [Guides-Surveys], [Assistant], [Experiment]` for either events or properties. Exclude those from

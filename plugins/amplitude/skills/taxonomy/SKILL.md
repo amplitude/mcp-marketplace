@@ -423,6 +423,14 @@ Get workspace settings including approval workflow status. Check before writing 
 ### `get_events`
 Retrieve events from a project with filtering by event types, limit, and cursor pagination. Returns full event objects including category and active status.
 
+If the connected MCP server's `get_events` input schema accepts `_client`, every
+`get_events` call made by this skill MUST include this top-level caller
+attribution exactly. Otherwise, omit `_client`.
+
+```json
+"_client": { "type": "skill", "skill_name": "taxonomy" }
+```
+
 - Use `search` first to find the event you're looking for.
 - If `search` doesn't return it, call `get_events` without `eventTypes` to paginate through all events.
 - If you know exact event type names, pass them via `eventTypes` for precise lookup.
