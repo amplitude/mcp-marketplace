@@ -10,3 +10,10 @@
 # Published and experimental plugin content.
 plugins/amplitude/** @amplitude/mcp @amplitude/amplitude-mcp
 plugins/amplitude-experimental/** @amplitude/mcp @amplitude/amplitude-mcp
+
+# Taxonomy and data governance skills also require Governance PE review.
+plugins/amplitude/skills/discover-analytics-patterns/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
+plugins/amplitude/skills/discover-event-surfaces/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
+plugins/amplitude/skills/instrument-events/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
+plugins/amplitude/skills/taxonomy/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
+plugins/amplitude-experimental/skills/event-description-generator/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
