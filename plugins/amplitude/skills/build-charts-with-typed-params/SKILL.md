@@ -1,137 +1,195 @@
 ---
 name: build-charts-with-typed-params
-description: Builds Amplitude chart definitions using the typed chart-parameter schema — segments, intervals, date ranges, and per-chart-type enums — and runs them with query_amplitude_data. Use when constructing a chart definition from scratch, when a definition returns empty data, or when adapting an existing chart's parameters to a new question.
+description: Builds Amplitude charts using the typed `chart` parameter on query_amplitude_data — events, filters, group-bys, segments, date ranges, and per-kind fields for segmentation, funnel, retention, sessions, and data tables. Use when creating a chart, modifying or forking a saved one, or when a query returns empty data.
 x-amp-flags: [mcp-consolidate-charts]
 ---
 
 # Build Charts With Typed Params
 
-Construct a valid chart definition, confirm every event and property name
-against the project's taxonomy, then run it.
+Express the chart as typed, UI-shaped parameters and let the server compile it.
+Do not hand-build raw definition JSON.
+
+## Typed `chart` first
+
+`query_amplitude_data` takes **exactly one of** `chart` or `definition`.
+
+- **`chart` (preferred)** — a small model mirroring the chart builder UI. It is
+  compiled server-side by Langley's `CompileChart` into a validated definition,
+  so a successful compile is structurally correct by construction. Compile
+  errors name the offending field and come back with a fix-oriented hint.
+- **`definition` (fallback)** — raw definition JSON. Only for chart types the
+  typed model does not cover (`composition`, `revenueLtv`) or advanced params
+  with no typed field.
+
+Field names are snake_case; they are validated server-side by Pydantic.
 
 ## The one thing that goes wrong
 
-The chart schema validates **structure only**. It does not check event or
-property names against your project's taxonomy. A misspelled key does not
-raise an error — it returns a well-formed chart with **empty data**, which
-reads like a real answer of "zero".
+The compiler validates **structure**, not your taxonomy. An event or property
+name that doesn't exist won't error — it returns a well-formed chart with
+**empty data**, which reads like a real answer of "zero".
 
-So: never type an event or property name you have not read back from a tool.
-Empty results are a name problem until proven otherwise.
+Resolve names first with `search`, and `get_properties`
+(`propertyType: 'event'` or `'user'`). Use the exact name **and scope** that
+comes back. There is no `get_event_properties` tool — if a description mentions
+it, use `get_properties`.
 
-## Workflow
+## Two workflows
 
-### 1. Resolve the project
+**Create:** `search` for the taxonomy → build the typed `chart` → call
+`query_amplitude_data` → `render_amplitude_chart` with the returned
+`chartEditId` to show it.
 
-Call `get_amplitude_context` with no arguments to list accessible projects,
-then again with a `projectId` for its settings. Every step below needs that id.
+**Modify or fork a saved chart:** `search` to find the chart id →
+`get_amplitude_charts` with `include: 'typed'` → edit the returned object →
+call `query_amplitude_data` with that `chart` **and** `chartId` set to the saved
+chart id. Passing `chartId` links the edit to its parent, and the parent's
+params fill any gaps the typed model omits. Reading a real chart back as typed
+params is also the fastest way to see how this project spells things.
 
-### 2. Resolve names before building
+`get_amplitude_charts` has five modes on `include`: `link` (default; validates
+ids, returns URLs, doesn't run the chart), `typed`, `definition` (raw), `data`
+(runs it, max 3 ids), and `guide` (schema for the raw fallback). All except
+`guide` need concrete ids — resolve them via `search` or `get_from_url` first.
 
-Do this first, not after a query comes back empty.
+## Building blocks
 
-- `search` — find events, properties, and existing charts by fuzzy name. This is
-  the reliable starting point; it is always available.
-- `get_properties` with `propertyType: 'event'` — event properties. Use
-  `propertyType: 'user'` for user properties.
-- For listing event names, use whichever event tool this server exposes —
-  `manage_amp_events` or `get_events`. Which one appears depends on a separate
-  taxonomy rollout, so read the tool list rather than assuming a name.
+These are shared across every chart kind.
 
-There is no `get_event_properties` tool. If a tool description or an older skill
-tells you to call it, use `get_properties` with `propertyType: 'event'`.
-
-### 3. Copy from a similar chart when one exists
-
-A saved chart's definition is guaranteed to reference real taxonomy, so it beats
-building from the schema. Resolve an id first — `get_amplitude_charts` rejects
-speculative calls:
-
-1. `search` by name, or `get_from_url` if you have a chart link.
-2. `get_amplitude_charts` with `include: 'definition'` and `chartIds`.
-3. Reuse the segment and param shapes; swap in your own events.
-
-`include` selects the mode: `link` (default — validates ids, returns URLs, does
-not run the chart), `definition` (config; `chartIds` only), `data` (runs it, max
-3 ids), `guide` (schema, no ids needed).
-
-### 4. Look up the type's schema
-
-`get_amplitude_charts` with `include: 'guide'` and a `chartType` returns that
-type's params, valid enums, and a working example. Omit `chartType` to list
-supported types: `eventsSegmentation`, `funnels`, `retention`, `sessions`,
-`composition`, `revenueLtv`, `stickiness`, `metricExplorer`.
-
-You can skip this — `query_amplitude_data` returns the same schema on a
-validation failure — but calling it first is cheaper than a failed query when
-you are unsure of the shape.
-
-### 5. Build the definition
-
-Always set a descriptive `name`; it becomes the chart title.
-
-**Segments.** All users is `[{conditions: []}]` — not `[]`.
+**Condition** — one filter (`+ Filter by`, or a segment condition):
 
 ```jsonc
-// property-based
-[{ "conditions": [{ "type": "property", "group_type": "User", "prop_type": "user",
-                    "prop": "country", "op": "is", "values": ["United States"] }] }]
-
-// behavioral (event-based)
-[{ "conditions": [{ "type": "event", "event_type": "Some Event",
-                    "time_type": "rolling", "time_value": 30,
-                    "op": ">=", "value": 1 }] }]
+{ "property": "platform", "op": "is", "values": ["iOS"], "scope": "event" }
 ```
 
-`time_value`'s format depends on `time_type`, and mixing them up silently
-changes the window:
+`op`: `is`, `is not`, `contains`, `does not contain`, `greater than`,
+`less than`, `set`, `is not null`. Use `contains` for prefix/substring matching
+and `set` / `is not null` for presence. `scope`: `event`, `user`, `group`,
+`session`, or `derivedV2` for computed properties — take the scope from the
+taxonomy lookup rather than guessing. Group-scoped properties also need
+`group_type` (e.g. `"org id"`).
 
-| `time_type`       | `time_value` format                                |
-| ----------------- | -------------------------------------------------- |
-| `rolling`         | int, **days** (`30` = last 30 days)                |
-| `absolute`        | two ints, **epoch seconds** (`[start, end]`)       |
-| `since`           | int, epoch seconds                                  |
-| `relative`        | int, **seconds** (`2592000` = 30 days)             |
-| `forEachInterval` | must be `0`                                         |
+**Event** — `{ event, where[], group_by[] }`. A **composite event** puts several
+events in one slot: add `object_type` as `INLINE_CUSTOM_EVENT` (any member
+counts) or `COMPARISON_EVENT` (members compared), plus `members[]`.
 
-Operators: `>=`, `<=`, `=`, `>`, `<`, `!=`.
+**Segment** — a population, combining property conditions **and** behaviors:
 
-**Intervals.** Fixed codes, not durations:
+```jsonc
+{
+  "where": [{ "property": "country", "op": "is", "values": ["United States"], "scope": "user" }],
+  "performed": [{ "event": "Purchase", "op": ">=", "count": 1,
+                  "time_type": "rolling", "time_value": 30 }]
+}
+```
 
-| Value      | Bucket                                     |
-| ---------- | ------------------------------------------ |
-| `-3600000` | hourly                                     |
-| `-300000`  | realtime, 5-min (`eventsSegmentation` only) |
-| `1`        | daily                                      |
-| `7`        | weekly                                     |
-| `30`       | monthly                                    |
-| `90`       | quarterly                                  |
+Omit `segments` entirely for all users. In `performed`, `time_type` defaults to
+`forEachInterval`; use `rolling` with `time_value` as **lookback days**.
 
-**Date range.** `range` (`"Last 30 Days"`, `"This Quarter"`, `"Yesterday"`) is
-mutually exclusive with `start`/`end`. ISO strings and relative forms like
-`"now-7d"` are coerced to Unix seconds. `start` alone is a valid open-ended
-"Since" range; `end` without `start` is invalid.
+**Date range** — required, and either relative or absolute, never both:
 
-**Other common fields.** `countGroup` defaults to `"User"`. `groupBy` takes
-top-level breakdowns, e.g. `[{type: "user", value: "country", group_type: "User"}]`.
+```jsonc
+{ "relative": "Last 30 Days" }
+{ "start": 1716854400, "end": 1717459200 }   // epoch seconds; omit end for "up to now"
+```
 
-### 6. Run it
+Optional `timezone` is an IANA name; omit for the project default.
 
-Call `query_amplitude_data` with the definition and `projectId`. Validation is
-inline — there is no separate verify step. On failure the response carries
-`chartTypeSchema` with params, enums, an example, and coercion rules; fix from
-that and call again.
+**Interval** — a word, not a number: `hour`, `day` (default), `week`, `month`,
+`quarter`. Sub-daily intervals only allow short windows (`hour` caps around
+8 days).
 
-### 7. Show it
+**`count_unique_by`** — the counting entity, `"User"` by default, or a group
+like `"org id"`.
 
-`render_amplitude_chart` with the `chartEditId` returned by the query.
+## Chart kinds
+
+`kind` discriminates the union. All kinds take `group_by`, `segments`,
+`date_range`, `interval`, `count_unique_by`, and `name` (always set a
+descriptive `name` — it becomes the title).
+
+### `segmentation`
+
+Needs `events` (at least one). `measured_as.as` defaults to `unique_users`;
+other values are `event_totals`, `active_pct`, `avg_per_user`, `frequency`,
+`formula`, `histogram`, and the property aggregations `property_sum`,
+`property_avg`, `property_min`, `property_max`, `property_median`,
+`property_count`, `property_count_avg`.
+
+Property aggregations and `histogram` require the aggregated property to also
+appear in that event's `group_by` — omitting it is a common cause of an empty
+or malformed result.
+
+For `formula`, put the expression in `measured_as.formula` using UPPERCASE
+functions (`UNIQUES`, `TOTALS`, `PROPSUM`, `PERCENTILE`, …) and refer to events
+as `A`, `B`, `C` in the order they are listed.
+
+Also available: `rolling_window` (days), `cumulative`, `period_over_period`
+(`period`, `parent`, `grandparent`, `quarter`), and `vis`
+(`line`, `bar`, `area`, `stackedbar`, `pie`, `kpi`).
+
+### `funnel`
+
+Needs `steps` (at least two) and `conversion_window` — `{value, unit}` where
+unit is `second`, `minute`, `hour`, `day`, or `week`.
+
+`mode` is `ordered` (default), `unordered`, or `sequential`. `measured_as.as`
+is `conversion` (default), `conversion_over_time`, `time_to_convert`,
+`time_to_convert_over_time`, or `step_count`.
+
+`constant_properties` forces values to match across steps — this is how you
+build a same-session funnel (hold `session_id`). `excluded_events` takes
+`{event, step_index}`, where `-1` excludes globally across all steps.
+
+### `retention`
+
+Needs `start_event` (use `_new` for new users) and `return_events` (OR-combined;
+use `_active` for any activity). `retention_method` is `rolling` (default; on or
+after day N), `nday` (exactly day N), `bracket` (custom, via
+`retention_brackets` like `[[0,7],[7,14]]`), or `nday_or_before`.
+`measured_as` is `retention` or `usage_interval`.
+
+### `sessions`
+
+`measured_as` is one of `totalSessions` (default), `average`, `length`,
+`peruser`, `totalTime`, `averageTimePerUser`, `averageEventsPerSession`,
+`totalEvents`, `eventCountDistribution`, or `formula`. Use `groups` for multiple
+series; omit it for a single unfiltered series.
+
+### `data_table`
+
+Needs `columns` (at least one), each with a `metric_type` — `UNIQUES`, `TOTALS`,
+`FORMULA`, `SESSIONS`, `CONVERSION`, or the property aggregations `PROPSUM`,
+`PROPAVG`, `PROPMAX`, `PROPMIN`. `rows` are the breakdown dimensions, each
+`kind` either `property` or `time`.
+
+## Worked example
+
+Weekly unique users of a signup event, on iOS, among users in the US, broken out
+by plan:
+
+```jsonc
+{
+  "kind": "segmentation",
+  "name": "iOS signups by plan",
+  "events": [{ "event": "Sign Up", "where": [
+    { "property": "platform", "op": "is", "values": ["iOS"], "scope": "event" }
+  ]}],
+  "measured_as": { "as": "unique_users" },
+  "group_by": [{ "property": "plan", "scope": "user" }],
+  "segments": [{ "where": [
+    { "property": "country", "op": "is", "values": ["United States"], "scope": "user" }
+  ]}],
+  "date_range": { "relative": "Last 12 Weeks" },
+  "interval": "week"
+}
+```
 
 ## When results come back empty
 
-Work through this before concluding the number is really zero:
-
-1. Re-read each event and property name from `get_events` / `get_properties`.
-   Casing and spacing must match exactly.
-2. Widen the date range — the window may predate the event's instrumentation.
-3. Drop segments one at a time to find which one empties the result.
-4. Confirm the event is still arriving with `check_for_recent_event_ingestion`.
+1. Re-read every event and property name from `search` / `get_properties`, and
+   check the `scope` matches what the taxonomy returned.
+2. Widen `date_range` — the window may predate instrumentation.
+3. Drop `segments`, then `where`, to find which filter empties the result.
+4. For property aggregations, confirm the property is in the event's `group_by`.
+5. Confirm the event is still arriving with `check_for_recent_event_ingestion`.
