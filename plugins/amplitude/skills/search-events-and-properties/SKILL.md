@@ -7,6 +7,7 @@ description: >
   a query returned no data and a wrong name is suspected, when checking whether something
   is already tracked before instrumenting it, or whenever an event or property name is
   needed and has not been confirmed against the project.
+x-amp-flags: [mcp-skill-search-events-and-properties]
 ---
 
 # Search Events & Properties

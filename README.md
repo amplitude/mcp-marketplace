@@ -197,6 +197,60 @@ plugins/
 
 ---
 
+## Skill visibility flags
+
+Skills in this repo are also served by the Amplitude MCP server as MCP resources.
+**By default a skill is visible to everyone** — no configuration needed, which is why
+most `SKILL.md` files have nothing beyond `name` and `description`.
+
+To roll a skill out gradually, or to swap one for a replacement, declare an Amplitude
+Experiment flag in the skill's own frontmatter:
+
+| Key | Effect |
+| --- | --- |
+| `x-amp-flags` | Show the skill **only** when every listed flag evaluates to `on` |
+| `x-amp-exclude-when-flags` | **Hide** the skill when any listed flag is `on` |
+
+```yaml
+---
+name: my-new-skill
+description: What it does and when to use it.
+x-amp-flags: [mcp-skill-my-new-skill]
+---
+```
+
+Both YAML list styles work — `[a, b]` or a `-` block.
+
+### Replacing a skill with a new version
+
+Use one flag on both sides. The old skill is hidden by exactly the flag that reveals the
+new one, so the two can never both appear or both vanish:
+
+```yaml
+# skills/analyze-chart/SKILL.md
+x-amp-exclude-when-flags: [mcp-consolidate-charts]
+
+# skills/analyze-chart-consolidated/SKILL.md
+x-amp-flags: [mcp-consolidate-charts]
+```
+
+This is the mechanism for a skill whose instructions reference tools that only exist
+behind a flag — the skill has to ramp together with the tools it names.
+
+### Things to know
+
+- **The flag must already exist** in Amplitude Experiment (local evaluation mode, variant
+  value `on`). A skill gated on a flag that was never created is visible to nobody.
+- **Once the flag exists, changing who sees the skill needs no deploy** — ramp it in
+  Experiment and it applies on the next request.
+- **A typo hides the skill.** Nothing in CI validates this frontmatter, so the MCP server
+  treats an unparseable gate as "hide" rather than publishing the skill ungated.
+- **Gating only applies to the MCP server.** Installing this plugin directly into Claude
+  Code or Cursor copies every skill in the repo — the flag is read server-side, so local
+  plugin installs are unaffected by it.
+
+---
+
 ## Contributing
 
 We welcome contributions! Whether it's a new skill or improvement:
