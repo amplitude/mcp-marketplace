@@ -16,7 +16,7 @@ Surface everything Amplitude's AI agents have found recently. Query **every avai
 - **`Amplitude:get_agent_results`** — Retrieve pre-computed analyses from Amplitude's AI agents. Supports multiple agent types (check the tool's `agent_type` enum for the current list). Each agent type is queried separately. All support filtering by `created_after`, `created_before`, `query`, `agent_params`, and `limit`.
 
 **Supporting tools:**
-- **`Amplitude:get_context`** / **`Amplitude:get_project_context`** — Bootstrap user, org, and project info.
+- **`Amplitude:get_amplitude_context`** / **`Amplitude:get_amplitude_context`** — Bootstrap user, org, and project info.
 - **`Amplitude:get_deployments`** — Check whether fixes have shipped for flagged issues (staleness validation).
 
 ---
@@ -25,8 +25,8 @@ Surface everything Amplitude's AI agents have found recently. Query **every avai
 
 ### Step 1: Bootstrap Context (1-2 calls)
 
-1. Call `Amplitude:get_context` to get the user's org, projects, recent activity, and key dashboards. If multiple projects, ask which to review — or review all if the user wants a broad scan.
-2. Call `Amplitude:get_project_context` for the target project's settings and AI context.
+1. Call `Amplitude:get_amplitude_context` to get the user's org, projects, recent activity, and key dashboards. If multiple projects, ask which to review — or review all if the user wants a broad scan.
+2. Call `Amplitude:get_amplitude_context` for the target project's settings and AI context.
 
 Determine the **review window** from the user's request:
 - Default: **last 7 days** (good balance of recency and coverage).

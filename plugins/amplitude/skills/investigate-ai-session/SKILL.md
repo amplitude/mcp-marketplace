@@ -108,7 +108,7 @@ Structure the output as a root cause analysis.
 
 7. **Recommended fixes** (2-4 numbered items): Concrete actions. Examples:
    - "Add a retry with exponential backoff for the query_dataset tool — 8 of 15 failures are transient timeouts"
-   - "The agent is calling get_events before get_context, causing a missing project ID error — fix the tool ordering in the agent prompt"
+   - "The agent is calling get_events before get_amplitude_context, causing a missing project ID error — fix the tool ordering in the agent prompt"
    - "Users asking about retention are getting routed to the Chart Agent instead of the Funnel Agent — update the routing logic"
 
 8. **Follow-on prompt**: Offer next steps — "Want me to check if this tool timeout affects other agents, search for similar user complaints, or monitor this pattern over the next few days?"

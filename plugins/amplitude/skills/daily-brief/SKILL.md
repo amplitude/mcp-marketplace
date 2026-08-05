@@ -15,15 +15,15 @@ You are a proactive analytics advisor that delivers a concise, actionable daily 
 Before scanning data, build context about who you're talking to and what they care about.
 
 1. **Detect persona.** Ask or infer the user's role: executive, PM, analyst, growth, or engineering. This determines the language, depth, and framing of the entire briefing.
-2. **Bootstrap context (1 call first, then 2 discovery calls in parallel).** Start with `get_context` to get user info, projects, recent activity, and key dashboards. Then run **two searches in parallel** — one for org-wide signal, one for the user's own activity:
+2. **Bootstrap context (1 call first, then 2 discovery calls in parallel).** Start with `get_amplitude_context` to get user info, projects, recent activity, and key dashboards. Then run **two searches in parallel** — one for org-wide signal, one for the user's own activity:
 
    **Search A — Org-wide importance.** `search` with `isOfficial: true`, `sortOrder: "viewCount"`, `limitPerQuery: 10`. Don't filter by `entityTypes` — let it return whatever the org's most-viewed official content is (dashboards, charts, notebooks, experiments, etc.). This surfaces what matters to the broader team regardless of whether this specific user has looked at it.
 
-   **Search B — User-personalized activity.** `search` with no `isOfficial` filter, `sortOrder: "lastModified"`, `limitPerQuery: 10`. Adapt `entityTypes` based on what `get_context` reveals about the user's recent activity: always include `DASHBOARD` and `CHART` as a baseline, then add `EXPERIMENT`/`FLAG` if they recently viewed those, `NOTEBOOK` if they spend time there, `COHORT`/`SAVED_SEGMENT` if they work with segments, `GUIDE`/`SURVEY` if they use those. When in doubt, omit `entityTypes` entirely — the API defaults to `["CHART", "DASHBOARD", "NOTEBOOK", "EXPERIMENT"]` and personalizes results automatically.
+   **Search B — User-personalized activity.** `search` with no `isOfficial` filter, `sortOrder: "lastModified"`, `limitPerQuery: 10`. Adapt `entityTypes` based on what `get_amplitude_context` reveals about the user's recent activity: always include `DASHBOARD` and `CHART` as a baseline, then add `EXPERIMENT`/`FLAG` if they recently viewed those, `NOTEBOOK` if they spend time there, `COHORT`/`SAVED_SEGMENT` if they work with segments, `GUIDE`/`SURVEY` if they use those. When in doubt, omit `entityTypes` entirely — the API defaults to `["CHART", "DASHBOARD", "NOTEBOOK", "EXPERIMENT"]` and personalizes results automatically.
 
    **Merge and deduplicate** the results from both searches. Content that appears in both (high org importance AND high personal relevance) should be weighted most heavily. Content that appears only in Search A surfaces things the user wouldn't find on their own — this is where the briefing adds the most value.
 
-   Also call `get_project_context` if you already know the project ID from a previous conversation; otherwise get it from `get_context` results first.
+   Also call `get_amplitude_context` with `projectId` if you already know the project ID from a previous conversation; otherwise get it from `get_amplitude_context` results first.
 
 3. **Note focus areas.** If the user mentions specific concerns (e.g., "how's the new onboarding flow?"), weight those heavily. Otherwise, use the merged discovery results to balance the user's personal focus areas with what's most active across the org.
 
@@ -35,7 +35,7 @@ Gather data with a tight recency focus. The primary time window is **today (so f
 
 Run these in parallel where possible:
 
-1. **Fetch dashboards (1-2 calls).** Take the dashboard IDs from Phase 1 discovery plus the user's top 2-3 personal dashboards (from `get_context` results). Deduplicate and call `get_dashboard` in batches of 3 (max 2 calls = 6 dashboards). This gives you all the chart IDs you need. If Phase 1 returned fewer than 3 dashboards, run one additional `search` with `entityTypes: ["DASHBOARD"]`, `sortOrder: "viewCount"`, `limitPerQuery: 5` to fill in — otherwise skip this.
+1. **Fetch dashboards (1-2 calls).** Take the dashboard IDs from Phase 1 discovery plus the user's top 2-3 personal dashboards (from `get_amplitude_context` results). Deduplicate and call `get_dashboard` in batches of 3 (max 2 calls = 6 dashboards). This gives you all the chart IDs you need. If Phase 1 returned fewer than 3 dashboards, run one additional `search` with `entityTypes: ["DASHBOARD"]`, `sortOrder: "viewCount"`, `limitPerQuery: 5` to fill in — otherwise skip this.
 2. **Query charts in bulk (2-4 calls).** Collect all unique chart IDs from the dashboards above, plus any standalone chart/metric IDs from Phase 1 discovery. Use `query_charts` (plural) to query them in bulk batches with daily granularity over the last 7 days. Compare today and yesterday against the prior 5 days. Flag any metric where today or yesterday deviates >15% from the recent daily average or falls outside the prior 5-day range. Explicitly note if today's data is partial (e.g., "as of 2pm UTC, today is tracking at X vs. Y full-day yesterday").
 3. **Anomaly scan (no additional calls).** From the chart results already fetched, compute day-over-day deltas for every metric. Rank by absolute magnitude of change. Surface the top 5-10 biggest movers regardless of which dashboard they live on. This is analytical work on data you already have — no new tool calls needed.
 4. **Experiment check (1-2 calls).** Call `get_experiments` once. Only call `query_experiment` for experiments that appear to have changed status recently or that the user owns. Skip querying experiments that are clearly irrelevant.
@@ -103,7 +103,7 @@ Transform your analysis into a concise, narrative briefing the user could forwar
 
 Before delivering, verify your work. Prefer reviewing data you already have over making new tool calls.
 
-1. **Fact-check**: Review the data already fetched for the 2-3 most consequential claims. Only re-query with `query_chart` or `query_dataset` if you're genuinely uncertain about a number — not as a routine step. If the data came from a `query_charts` result, trust it.
+1. **Fact-check**: Review the data already fetched for the 2-3 most consequential claims. Only re-query with `query_charts` or `query_dataset` if you're genuinely uncertain about a number — not as a routine step. If the data came from a `query_charts` result, trust it.
 2. **Recency check**: Verify every finding is anchored to yesterday or today. If a finding is really about a week-long or month-long trend, either reframe it around what changed in the last 1-2 days or move it to brief background context.
 3. **Partial-day check**: If you cited today's data, confirm you noted it as partial and compared pace rather than raw totals.
 4. **Actionability gate**: Every finding MUST have at least one concrete action. If it doesn't, either add one or drop the finding.

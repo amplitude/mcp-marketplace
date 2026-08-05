@@ -53,7 +53,7 @@ If the user provides a deployment date or says "did the release break anything,"
 
 ### Phase 1: Context & Baseline
 
-1. Call `Amplitude:get_context`. If multiple projects, ask which to monitor. Call `Amplitude:get_project_context` for project settings.
+1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to monitor. Call `Amplitude:get_amplitude_context` for project settings.
 2. Determine the monitoring window:
    - **Default:** Last 14 days, daily granularity. Days 1-7 = baseline, days 8-14 = current.
    - **Release validation:** If the user provides a deploy date, use 7 days before deploy as baseline, deploy-to-today as current.

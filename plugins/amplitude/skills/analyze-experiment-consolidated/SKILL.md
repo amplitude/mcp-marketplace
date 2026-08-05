@@ -1,7 +1,7 @@
 ---
-name: analyze-experiments
+name: analyze-experiment-consolidated
 description: Designs A/B tests with proper metrics and variants, analyzes running or completed experiments, and interprets results with statistical rigor. Use when setting up experiments, checking experiment status, analyzing results, or making ship decisions.
-x-amp-exclude-when-flags: [mcp-consolidate-flags-experiments]
+x-amp-flags: [mcp-consolidate-flags-experiments]
 ---
 
 # Experiment Analyst
@@ -48,7 +48,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 
 ### Step 1: Retrieve and Validate Setup
 
-Use `Amplitude:get_experiments` with experiment ID to capture:
+Use `Amplitude:use_amp_experiments` with experiment ID to capture:
 
 - Experiment name, key, description, and state
 - Start/end dates and duration
@@ -79,7 +79,21 @@ If incomplete, explain what's missing and stop.
 
 ### Step 2: Check Data Quality (with explicit thresholds)
 
-Use `Amplitude:query_experiment` (primary metric only) to assess:
+**Assignment-segment queries (the hard part, learned from production sessions):**
+when you need ad hoc per-variant numbers outside `analyze` (entry-point
+funnels, custom slices, cross-checks against another warehouse):
+
+- Discover the assignment event first: `search` for the experiment's flag
+  key and existing charts that filter on it — do not guess the event name.
+- Read how an existing experiment chart structures its variant segments
+  (`get_amplitude_charts` with `include: "typed"` on one) and copy that
+  pattern exactly — including the bucketing property (`subject_id_type`
+  varies per experiment).
+- Verify assignment volume before analyzing: `query_dataset` for unique
+  assignments per variant since launch. Zero or lopsided assignment =
+  bucketing/ramp problem, not a metric result.
+
+Use `Amplitude:use_amp_experiments` (primary metric only) to assess:
 
 **Traffic Balance (SRM Check):**
 - Report actual traffic split per variant (e.g., 48.2% control, 51.8% treatment)
@@ -120,7 +134,7 @@ Use `Amplitude:query_experiment` (primary metric only) to assess:
 
 **Comprehensive Data Quality Flags:**
 
-The `Amplitude:query_experiment` API returns multiple boolean flags that assess statistical validity. Check and document each:
+The `Amplitude:use_amp_experiments` API returns multiple boolean flags that assess statistical validity. Check and document each:
 
 1. **statsAssumptionsMetForWholeExperiment:**
    - Indicates whether core statistical assumptions are satisfied (normality, independence)
@@ -175,7 +189,7 @@ The `Amplitude:query_experiment` API returns multiple boolean flags that assess 
 
 ### Step 3: Analyze Primary Metric
 
-Use `Amplitude:query_experiment` **without metricIds** to get primary metric only.
+Use `Amplitude:use_amp_experiments` **without metricIds** to get primary metric only.
 
 **Use metric name from Step 1** - Report using the human-readable metric name, not the metric ID.
 
@@ -201,7 +215,7 @@ Extract and report:
 
 ### Step 4: Analyze Secondary Metrics & Guardrails
 
-Use `Amplitude:query_experiment` **with metricIds** for all metrics.
+Use `Amplitude:use_amp_experiments` **with metricIds** for all metrics.
 
 **Use metric names from Step 1** - Report using human-readable metric names, not metric IDs.
 
@@ -223,7 +237,7 @@ Use `Amplitude:query_experiment` **with metricIds** for all metrics.
 
 ### Step 5: Comprehensive Segment Analysis
 
-Use `Amplitude:query_experiment` with `groupBy` parameter (one at a time).
+Use `Amplitude:use_amp_experiments` with `groupBy` parameter (one at a time).
 
 Test 3-4 high-signal segments:
 1. **Platform** (iOS, Android, Web)
@@ -521,7 +535,7 @@ If user wants to **design a new experiment**, guide them through:
    - Use `Amplitude:query_charts` to check metric's historical variance
 
 4. **Create experiment:**
-   - Use `Amplitude:create_experiment` with projectIds, variants, and metrics
+   - Use `Amplitude:use_amp_experiments` with projectIds, variants, and metrics
    - Return experiment ID, URL, and deployment key for engineering
 
 For detailed setup guidance, consider using the `setup-experiment-and-flags` skill.

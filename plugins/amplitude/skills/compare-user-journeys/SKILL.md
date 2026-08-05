@@ -20,8 +20,8 @@ Investigate what distinguishes two user groups by pulling session replays and me
 - **`Amplitude:search`** — Search for existing charts, funnels, dashboards, events, and cohorts relevant to the comparison. Always check for existing analysis before building from scratch.
 - **`Amplitude:get_cohorts`** — Discover existing cohorts that define the groups (e.g., "power users", "churned", "converted").
 - **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
-- **`Amplitude:get_event_properties`** — Discover properties available for segmentation.
-- **`Amplitude:query_chart`** / **`Amplitude:query_charts`** — Pull quantitative metrics segmented by the two groups for statistical grounding.
+- **`Amplitude:get_properties`** — Discover properties available for segmentation.
+- **`Amplitude:query_charts`** / **`Amplitude:query_charts`** — Pull quantitative metrics segmented by the two groups for statistical grounding.
 - **`Amplitude:get_feedback_insights`** / **`Amplitude:get_feedback_mentions`** — Check if feedback themes differ between groups.
 
 ---
@@ -49,18 +49,18 @@ If the user's request is ambiguous (e.g., "compare power users"), ask: "What def
 
 ### Step 2: Get Context and Discover Segments
 
-1. Call `Amplitude:get_context`. If multiple projects, ask which to compare within.
+1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to compare within.
 2. Call `Amplitude:get_cohorts` to check if existing cohorts match the requested groups. Existing cohorts encode institutional knowledge — prefer them over ad-hoc definitions.
 3. Call `Amplitude:get_events` to discover events relevant to the comparison (the goal event for conversion comparisons, engagement events for activity comparisons, etc.).
-4. Call `Amplitude:get_event_properties` for the key events to discover available segmentation properties.
+4. Call `Amplitude:get_properties` for the key events to discover available segmentation properties.
 
 ### Step 3: Quantitative Comparison (Metrics)
 
 Before watching replays, establish the statistical picture. Budget: 3-4 chart queries.
 
-**First, search for existing analysis.** Call `Amplitude:search` with keywords related to the comparison (e.g., "onboarding funnel", "agent creation", "checkout conversion"). Existing charts and funnels encode institutional knowledge and save query budget. If you find a relevant funnel or segmented chart, use `Amplitude:query_chart` on it instead of building from scratch.
+**First, search for existing analysis.** Call `Amplitude:search` with keywords related to the comparison (e.g., "onboarding funnel", "agent creation", "checkout conversion"). Existing charts and funnels encode institutional knowledge and save query budget. If you find a relevant funnel or segmented chart, use `Amplitude:query_charts` on it instead of building from scratch.
 
-Use `Amplitude:query_chart` or `Amplitude:query_charts` to compare the two groups on:
+Use `Amplitude:query_charts` or `Amplitude:query_charts` to compare the two groups on:
 
 1. **Volume & composition**: How many users are in each group? What's the ratio?
 2. **Key metrics segmented by group**: Conversion rates, session frequency, feature adoption, retention — whatever metrics are most relevant to the comparison.

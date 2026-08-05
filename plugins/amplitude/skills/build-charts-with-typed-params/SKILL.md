@@ -31,8 +31,8 @@ name that doesn't exist won't error — it returns a well-formed chart with
 
 Resolve names first with `search`, and `get_properties`
 (`propertyType: 'event'` or `'user'`). Use the exact name **and scope** that
-comes back. There is no `get_event_properties` tool — if a description mentions
-it, use `get_properties`.
+comes back. There is no `get_event_properties` tool — server descriptions and
+error messages sometimes mention it; use `get_properties` instead.
 
 ## Two workflows
 
@@ -63,8 +63,10 @@ These are shared across every chart kind.
 ```
 
 `op`: `is`, `is not`, `contains`, `does not contain`, `greater than`,
-`less than`, `set`, `is not null`. Use `contains` for prefix/substring matching
-and `set` / `is not null` for presence. `scope`: `event`, `user`, `group`,
+`less than`, `set`, `is not null`. Use `contains` for prefix/substring matching.
+**For presence checks prefer `set`** — `is not null` is rejected by some chart
+kinds (`data_table` segments) even though error hints suggest it; `set` works
+everywhere. `scope`: `event`, `user`, `group`,
 `session`, or `derivedV2` for computed properties — take the scope from the
 taxonomy lookup rather than guessing. Group-scoped properties also need
 `group_type` (e.g. `"org id"`).
@@ -94,6 +96,11 @@ Omit `segments` entirely for all users. In `performed`, `time_type` defaults to
 ```
 
 Optional `timezone` is an IANA name; omit for the project default.
+
+The relative range's **unit must match the `interval`**: with weekly interval
+write `"Last 12 Weeks"`, monthly `"Last 6 Months"` — `"Last 3 Years"` with a
+weekly interval is rejected. Re-denominate the window in the interval's unit
+or change the interval to match.
 
 **Interval** — a word, not a number: `hour`, `day` (default), `week`, `month`,
 `quarter`. Sub-daily intervals only allow short windows (`hour` caps around
@@ -131,7 +138,9 @@ Also available: `rolling_window` (days), `cumulative`, `period_over_period`
 ### `funnel`
 
 Needs `steps` (at least two) and `conversion_window` — `{value, unit}` where
-unit is `second`, `minute`, `hour`, `day`, or `week`.
+unit is `second`, `minute`, `hour`, `day`, or `week`. **Both fields are
+required** — `{value: 7}` alone fails compile with
+`conversion_window.unit: Field required`.
 
 `mode` is `ordered` (default), `unordered`, or `sequential`. `measured_as.as`
 is `conversion` (default), `conversion_over_time`, `time_to_convert`,
@@ -184,6 +193,21 @@ by plan:
   "interval": "week"
 }
 ```
+
+## Compile errors
+
+`CompileChart` failures come back as a 400 naming the offending field with a
+fix-oriented hint — read the hint, fix that one field, and retry. Do not
+rebuild the whole chart. The three seen most in production:
+
+1. **Range/interval unit mismatch** — `Invalid range format: Last 3 Years …
+   Match the relative range's unit to the interval`. Re-denominate the range
+   in the interval's unit (`Last 30 Days` at weekly interval → `Last 4 Weeks`).
+2. **Missing funnel window field** — `conversion_window.unit: Field required`.
+   Pass both `value` and `unit`.
+3. **Unknown operator** — the valid operator list differs per chart kind; the
+   fix hint in the message is usually right, but for presence checks use `set`
+   (works in every kind) rather than `is not null`.
 
 ## When results come back empty
 

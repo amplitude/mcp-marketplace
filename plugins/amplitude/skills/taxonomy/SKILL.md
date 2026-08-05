@@ -406,10 +406,10 @@ These are the actual Amplitude MCP server tools available for taxonomy work. Too
 
 ## Context
 
-### `get_context`
+### `get_amplitude_context`
 Get information about the current user, organization, and accessible projects. Call this first to discover project IDs.
 
-### `get_project_context`
+### `get_amplitude_context` with `projectId`
 Get project-specific settings: time zone, currency, session definition, AI context. Use to understand project configuration before making changes.
 
 ### `search`

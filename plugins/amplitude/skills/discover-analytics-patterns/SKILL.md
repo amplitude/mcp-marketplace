@@ -53,7 +53,7 @@ project. If its input schema accepts `_client`, every `get_events` call made by
 this skill MUST include the top-level argument
 `"_client": { "type": "skill", "skill_name": "discover-analytics-patterns" }`
 in the tool arguments; otherwise, omit `_client`. Use those results to choose a
-few representative non-system product events, then call `get_event_properties`
+few representative non-system product events, then call `get_properties`
 for those events to inspect real property names. This is your primary naming
 reference.
 
@@ -141,7 +141,7 @@ Use this precedence order:
    inference for whatever it specifies. Only fall through when the file is absent
    or silent on naming.
 2. **Amplitude MCP second.** If the observed `eventType` values and
-   property names returned by `get_event_properties` for a few representative
+   property names returned by `get_properties` for a few representative
    non-system events show a clear dominant convention, use that. Do not use
    bracket-prefixed Amplitude system names as naming evidence.
 3. **Codebase third.** If the MCP evidence is unavailable, sparse, or

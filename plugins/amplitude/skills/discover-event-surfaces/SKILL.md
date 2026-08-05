@@ -97,7 +97,7 @@ avoid duplicates and match the naming convention already in use.
 ### Resolve the project
 
 If the change_brief includes an Amplitude `projectId`, use it directly. Otherwise,
-call `get_context` to resolve the project name or ask the user which project to
+call `get_amplitude_context` to resolve the project name or ask the user which project to
 target. You need a `projectId` for the next call.
 
 ### Pull existing events

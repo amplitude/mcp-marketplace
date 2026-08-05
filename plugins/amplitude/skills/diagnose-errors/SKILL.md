@@ -33,7 +33,7 @@ All three share: `[Amplitude] Page Path`, `[Amplitude] Page URL`, `[Amplitude] S
 
 ### Step 1: Context & Scope
 
-1. Call `Amplitude:get_context`. If multiple projects, ask which to investigate.
+1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to investigate.
 2. Determine the investigation scope from the user's request:
    - **Broad triage**: "What's broken?" → scan all three event types for the biggest problems
    - **Targeted**: "Network errors are up" → start with `[Amplitude] Network Request`, then check if they cascade into JS errors
@@ -86,7 +86,7 @@ This is where the skill adds value beyond looking at each event in isolation.
 For the top 2-3 error patterns from Step 3:
 
 1. **User scope.** Use `Amplitude:query_dataset` to count unique users affected. Compare to total active users for an impact percentage.
-2. **Segment breakdown.** Group by available user properties (platform, browser, country, plan tier, org) to determine if errors concentrate in a specific segment. Call `Amplitude:get_event_properties` if you need to discover available properties.
+2. **Segment breakdown.** Group by available user properties (platform, browser, country, plan tier, org) to determine if errors concentrate in a specific segment. Call `Amplitude:get_properties` if you need to discover available properties.
 3. **Session Replays.** For the most impactful error pattern, call `Amplitude:get_session_replays` filtered to sessions containing the error event. Provide 2-3 replay links so the user can see exactly what happened.
 
 ### Step 5: Root Cause Hypothesis
