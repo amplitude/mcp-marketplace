@@ -14,7 +14,7 @@ Create new team or initiative dashboards, organize scattered charts, build execu
 Before building, understand what you're tracking:
 - Search for existing dashboards/charts related to the topic
 - Search for relevant events: `Amplitude:search` with entityTypes: ["EVENT", "CUSTOM_EVENT"]
-- Use `get_event_properties` to understand available properties for segmentation
+- Use `get_properties` to understand available properties for segmentation
 - Ask user for clarification on primary goals, key segments, or time horizons
 
 ### Step 1: Define Dashboard Purpose

@@ -1,7 +1,7 @@
 ---
-name: monitor-experiments
+name: monitor-experiments-consolidated
 description: Monitors all active and recently completed experiments across Amplitude projects, triages them by importance, then runs deep analysis and reporting on the most impactful ones. Use when the user asks to "check on experiments", "experiment status", "experiment review", "what experiments are running", or wants a periodic experiment health report.
-x-amp-exclude-when-flags: [mcp-consolidate-flags-experiments]
+x-amp-flags: [mcp-consolidate-flags-experiments]
 ---
 
 # Experiment Monitor & Report Generator
@@ -14,8 +14,8 @@ This is a **monitoring** skill — keep output accessible to non-experts. Avoid 
 
 ## CRITICAL: Managing Response Sizes
 
-1. **`get_experiments`: 3-5 IDs max per call.** Filter using `search` results BEFORE fetching.
-2. **`query_experiment` responses are large.** Extract only `summary` objects and validity flags. Ignore `timeseries`, `xValues`, bulk arrays.
+1. **`use_amp_experiments` action `get`: 3-5 IDs max per call.** Filter using `search` results BEFORE fetching.
+2. **`use_amp_experiments` action `analyze` responses are large.** Extract only `summary` objects and validity flags. Ignore `timeseries`, `xValues`, bulk arrays.
 3. **Metric name resolution**: `search` does NOT match metric IDs in `queries`. Search with `entityTypes: ["METRIC"]`, empty `queries`, `limitPerQuery: 50`, scoped to project. Match IDs from results.
 
 ---
@@ -56,11 +56,11 @@ Amplitude:search({
 
 ### Step 2: Fetch Metadata, Metric Names & Primary Results
 
-1. Call `Amplitude:get_experiments` in batches of 3-5 IDs (only the filtered set from Step 1).
+1. Call `Amplitude:use_amp_experiments` with `action: "get"` and `ids` in batches of 3-5 (only the filtered set from Step 1).
 2. Extract: state, dates/duration, variants, metric IDs (primary where recommendation=true), decision, owner.
 3. Apply the filtering rules from Step 1 again using the detailed metadata (some fields like stale status or decision may only be available here).
 4. Resolve metric names via `Amplitude:search({ entityTypes: ["METRIC"], appIds: [projectId], queries: [], limitPerQuery: 50 })`. Build `{ id: name }` mapping.
-5. For experiments that have metrics configured, call `Amplitude:query_experiment({ id: "<id>" })` (no metricIds) to get primary metric results and data quality flags. This data feeds both the summary table and the deep-dives.
+5. For experiments that have metrics configured, call `Amplitude:use_amp_experiments({ action: "analyze", id: "<id>" })` (no metricIds) to get primary metric results and data quality flags. This data feeds both the summary table and the deep-dives.
 
 **CRITICAL: Never show raw metric IDs to the user.** If a metric name can't be resolved, describe it by its role (e.g., "primary metric", "guardrail metric") — do NOT display strings like "rrgtky08" or "Metric gvgb5efj". Metric IDs are internal identifiers that mean nothing to a human reader.
 
@@ -206,7 +206,7 @@ Add one sentence on practical significance only if lift is very small (<2%) or v
 
 **Guardrails & Secondary Metrics:**
 
-Call `Amplitude:query_experiment({ id: "<id>", metricIds: [...] })`.
+Call `Amplitude:use_amp_experiments({ action: "analyze", id: "<id>", metricIds: [...] })`.
 
 Focus on catching regressions, not narrating every metric.
 
@@ -299,7 +299,7 @@ Each experiment appears in exactly one detail section. Do NOT list an experiment
 - **Response too large / saved to disk:** Extract `summary` + validity flags only
 - **No metrics configured:** List in "Needs Setup" section, don't deep-dive
 - **All experiments are stale:** Report that there are no active experiments to monitor
-- **Query error from `query_experiment`:** Report the error clearly with the experiment owner's name. Flag as "Fix config" in the summary. Common causes: broken exposure event property, misconfigured experiment key.
+- **Query error from `use_amp_experiments` action `analyze`:** Report the error clearly with the experiment owner's name. Flag as "Fix config" in the summary. Common causes: broken exposure event property, misconfigured experiment key.
 - **Traffic allocation changed mid-experiment:** Flag in data quality. Compare current weights to cumulative exposure distribution. Note which variants are no longer receiving traffic.
 - **Survey/nudge experiments (NPS, etc.):** Note in summary as N/A. No analysis needed — skip deep-dive.
 - **Severely imbalanced traffic (e.g., 5%/95% or 0%/100%):** Flag as "Fix config" — can't run a valid experiment without a meaningful control group. Note in needs-setup with owner.

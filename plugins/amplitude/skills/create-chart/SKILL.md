@@ -73,7 +73,7 @@ Amplitude:search with entity_types=['EVENT', 'CUSTOM_EVENT']
 
 **Get properties:**
 ```
-Amplitude:get_event_properties for exact property names/values
+Amplitude:get_properties for exact property names/values
 ```
 
 **Find cohorts:**
@@ -224,7 +224,7 @@ Search for cohort, get ID, then:
 
 1. **Get context:**
 ```
-Amplitude:get_context (for projectId)
+Amplitude:get_amplitude_context (for projectId)
 ```
 
 2. **Discover events** (BROAD search first):
@@ -248,7 +248,7 @@ Amplitude:get_charts to see definition structure
 
 5. **Get properties if needed:**
 ```
-Amplitude:get_event_properties
+Amplitude:get_properties
 ```
 
 6. **Build definition** using discovered names
@@ -294,7 +294,7 @@ Amplitude:save_chart_edits with editId from query_dataset
 **Verification:**
 - Always verify event exists before using
 - Check similar charts to understand event usage
-- Confirm properties with get_event_properties
+- Confirm properties with get_properties
 
 **Comparisons:**
 - Use segments for comparing user groups on same chart

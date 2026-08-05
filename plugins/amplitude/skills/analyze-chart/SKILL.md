@@ -18,7 +18,7 @@ x-amp-exclude-when-flags: [mcp-consolidate-charts]
 ### Step 0: Identify the Chart
 
 - Accept a chart **URL or chart ID**
-- If the user provides a URL, use `Amplitude:getting_data_from_url` to extract the chart ID
+- If the user provides a URL, use `Amplitude:get_from_url` to extract the chart ID
 - If no chart identifier is provided, ask explicitly for the chart URL or ID and stop
 
 ---

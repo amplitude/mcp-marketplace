@@ -18,8 +18,8 @@ Watch 5-10 session replays for a specific feature, page, or flow, then synthesiz
 
 **Supporting tools:**
 - **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
-- **`Amplitude:get_event_properties`** — Discover properties for filtering (page path, feature area, etc.).
-- **`Amplitude:query_chart`** — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
+- **`Amplitude:get_properties`** — Discover properties for filtering (page path, feature area, etc.).
+- **`Amplitude:query_charts`** — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
 - **`Amplitude:get_feedback_insights`** / **`Amplitude:get_feedback_mentions`** — Cross-reference replay friction with customer feedback themes.
 
 ---
@@ -41,7 +41,7 @@ Also determine:
 
 ### Step 2: Get Context and Discover Events
 
-1. Call `Amplitude:get_context`. If multiple projects, ask which to audit.
+1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to audit.
 2. Call `Amplitude:get_events` to find events related to the target area. Look for:
    - Page view or navigation events for the target area
    - Key interaction events (clicks, form submissions) within the flow
@@ -52,7 +52,7 @@ Also determine:
 
 Before watching replays, establish context with 1-2 chart queries. Budget: 2 calls max.
 
-- If auditing a **funnel**: Use `Amplitude:query_chart` to get the current conversion rate and identify the worst drop-off step. This tells you where to focus your replay attention.
+- If auditing a **funnel**: Use `Amplitude:query_charts` to get the current conversion rate and identify the worst drop-off step. This tells you where to focus your replay attention.
 - If auditing a **page**: Query the page's traffic volume and any error rates to understand scale.
 - If auditing a **feature**: Query adoption/usage frequency to understand how many users interact with it.
 

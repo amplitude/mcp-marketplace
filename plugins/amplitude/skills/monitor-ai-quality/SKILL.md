@@ -12,7 +12,7 @@ You are a proactive AI operations advisor that delivers a concise, actionable he
 
 ### Phase 1: Get Context and Schema
 
-1. **Get context.** Call `Amplitude:get_context` to identify the user's projects and role.
+1. **Get context.** Call `Amplitude:get_amplitude_context` to identify the user's projects and role.
 2. **Get AI schema.** Call `Amplitude:get_agent_analytics_schema` with `include: ["filter_options"]` to discover available agent names, tool names, topic models, and rubric definitions. This tells you what's in the data before you query it.
 3. **Determine scope.** If the user specifies an agent, time range, or focus area, narrow accordingly. Otherwise default to all agents over the last 7 days.
 

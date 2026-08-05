@@ -17,7 +17,7 @@ description: Deeply analyze Amplitude dashboards by analyzing key charts, surfac
 
 ### Step 0: Identify the Dashboard ID
 
-If the user gives a URL, use `Amplitude:getting_data_from_url` to get the dashboard ID
+If the user gives a URL, use `Amplitude:get_from_url` to get the dashboard ID
 
 ### Step 1: Retrieve the Dashboard
 
