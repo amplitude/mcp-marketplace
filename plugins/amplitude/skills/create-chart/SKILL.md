@@ -191,6 +191,15 @@ Amplitude:get_cohorts to get full definitions
 }]
 ```
 
+> `group_type` here is the **counting entity** ("User", or a group like
+> "org id") — not the scope of the property. To filter on an account-level
+> property, set `subprop_type` to `"group"` and `group_type` to the group type
+> that owns it, using the exact name from
+> `get_properties({propertyType: 'group', groupType: '<type>'})`. Never prefix
+> the property name with `grp:`. If the response is
+> `Invalid group property … for group type …`, that pair is not queryable in
+> this project — do not retry variants; use a user- or event-level equivalent.
+
 **User segments (conditions AND logic):**
 ```json
 "segments": [{
