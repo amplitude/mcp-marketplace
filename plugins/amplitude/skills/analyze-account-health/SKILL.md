@@ -18,6 +18,25 @@ Deep-dive into a B2B account's product usage to prepare for QBRs, assess renewal
 **Search for existing work:**
 Use `Amplitude:search` to find existing dashboards, charts, or notebooks for this account. If found, ask user if they want fresh analysis or to review existing.
 
+**Resolve how accounts are modelled — do this before any query.**
+Every step below breaks down "by account", and there are three different ways a
+project represents one. Check in this order and reuse the answer throughout:
+
+1. `get_group_types` — if the project has a group type (commonly `org id` or
+   `company`), that is the account. Account attributes are **group
+   properties**: `get_properties({propertyType: 'group', groupType: '<type>'})`,
+   referenced with `scope: 'group'` plus `group_type`. To count accounts rather
+   than users, set `count_unique_by` to the group type.
+2. If there is no group type, the account is usually a **user property**
+   (`company`, `org_name`) — `scope: 'user'`.
+3. Failing both, an **event property** carrying the org (`org id`, `org url`).
+
+If a group property comes back as `Invalid group property … for group type …`,
+the query engine's registry is missing it — that is a platform gap, not a
+naming mistake. Do not retry spelling variants. Fall back to the user- or
+event-level equivalent from (2)/(3), and tell the user which representation you
+used, since the numbers are not interchangeable.
+
 ---
 
 ### Step 1: Quick Health Triage
@@ -25,7 +44,7 @@ Use `Amplitude:search` to find existing dashboards, charts, or notebooks for thi
 Use `Amplitude:query_dataset` to run these queries in parallel:
 
 **Usage Trend:**
-- Event: `_active`, Metric: `uniques`, Group by: account property
+- Event: `_active`, Metric: `uniques`, Group by: the account property resolved in Step 0 (with its scope)
 - Time: Last 60 days, daily interval
 - **Shows:** Activity increasing or decreasing?
 
