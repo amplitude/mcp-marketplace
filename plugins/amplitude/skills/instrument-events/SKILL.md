@@ -339,6 +339,6 @@ Before adding to plan, confirm with the user what will be created. List:
 
 Get explicit confirmation, then for each high-confidence event add it to plan in
 **every** project it routes to:
-- use the `create_events` tool to create the event in that project (`app_id`)
+- use the `manage_amp_events` tool to create the event in that project (`app_id`)
 - use the `create_properties` tool to create the properties attached to the
   correct event in that same project

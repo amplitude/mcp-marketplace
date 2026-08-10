@@ -14,9 +14,9 @@ This is a **monitoring** skill — keep output accessible to non-experts. Avoid 
 
 ## CRITICAL: Managing Response Sizes
 
-1. **`use_amp_experiments` action `get`: 3-5 IDs max per call.** Filter using `search` results BEFORE fetching.
+1. **`use_amp_experiments` action `get`: 3-5 IDs max per call.** Filter using `search_amp_entities` results BEFORE fetching.
 2. **`use_amp_experiments` action `analyze` responses are large.** Extract only `summary` objects and validity flags. Ignore `timeseries`, `xValues`, bulk arrays.
-3. **Metric name resolution**: `search` does NOT match metric IDs in `queries`. Search with `entityTypes: ["METRIC"]`, empty `queries`, `limitPerQuery: 50`, scoped to project. Match IDs from results.
+3. **Metric name resolution**: `search_amp_entities` does NOT match metric IDs in `queries`. Search with `entityTypes: ["METRIC"]`, empty `queries`, `limitPerQuery: 50`, scoped to project. Match IDs from results.
 
 ---
 
@@ -226,7 +226,7 @@ Small directional changes that aren't significant should be omitted. If 5+ metri
 
 **Feedback (only if primary is significant):**
 
-Call `Amplitude:get_feedback_insights` with experiment-related keywords. Report 2-3 themes in one line each. If no relevant feedback, skip the section.
+Call `Amplitude:use_amplitude_ai_feedback` with experiment-related keywords. Report 2-3 themes in one line each. If no relevant feedback, skip the section.
 
 **Verdict:**
 

@@ -17,9 +17,9 @@ Before scanning data, build context about who you're talking to and what they ca
 1. **Detect persona.** Ask or infer the user's role: executive, PM, analyst, growth, or engineering. This determines the language, depth, and framing of the entire briefing.
 2. **Bootstrap context (1 call first, then 2 discovery calls in parallel).** Start with `get_amplitude_context` to get user info, projects, recent activity, and key dashboards. Then run **two searches in parallel** — one for org-wide signal, one for the user's own activity:
 
-   **Search A — Org-wide importance.** `search` with `isOfficial: true`, `sortOrder: "viewCount"`, `limitPerQuery: 10`. Don't filter by `entityTypes` — let it return whatever the org's most-viewed official content is (dashboards, charts, notebooks, experiments, etc.). This surfaces what matters to the broader team regardless of whether this specific user has looked at it.
+   **Search A — Org-wide importance.** `search_amp_entities` with `isOfficial: true`, `sortOrder: "viewCount"`, `limitPerQuery: 10`. Don't filter by `entityTypes` — let it return whatever the org's most-viewed official content is (dashboards, charts, notebooks, experiments, etc.). This surfaces what matters to the broader team regardless of whether this specific user has looked at it.
 
-   **Search B — User-personalized activity.** `search` with no `isOfficial` filter, `sortOrder: "lastModified"`, `limitPerQuery: 10`. Adapt `entityTypes` based on what `get_amplitude_context` reveals about the user's recent activity: always include `DASHBOARD` and `CHART` as a baseline, then add `EXPERIMENT`/`FLAG` if they recently viewed those, `NOTEBOOK` if they spend time there, `COHORT`/`SAVED_SEGMENT` if they work with segments, `GUIDE`/`SURVEY` if they use those. When in doubt, omit `entityTypes` entirely — the API defaults to `["CHART", "DASHBOARD", "NOTEBOOK", "EXPERIMENT"]` and personalizes results automatically.
+   **Search B — User-personalized activity.** `search_amp_entities` with no `isOfficial` filter, `sortOrder: "lastModified"`, `limitPerQuery: 10`. Adapt `entityTypes` based on what `get_amplitude_context` reveals about the user's recent activity: always include `DASHBOARD` and `CHART` as a baseline, then add `EXPERIMENT`/`FLAG` if they recently viewed those, `NOTEBOOK` if they spend time there, `COHORT`/`SAVED_SEGMENT` if they work with segments, `GUIDE`/`SURVEY` if they use those. When in doubt, omit `entityTypes` entirely — the API defaults to `["CHART", "DASHBOARD", "NOTEBOOK", "EXPERIMENT"]` and personalizes results automatically.
 
    **Merge and deduplicate** the results from both searches. Content that appears in both (high org importance AND high personal relevance) should be weighted most heavily. Content that appears only in Search A surfaces things the user wouldn't find on their own.
 
@@ -35,12 +35,12 @@ Gather data with a full-week lens. The primary time window is **the last 7 compl
 
 Run these in parallel where possible:
 
-1. **Fetch dashboards (1-2 calls).** Take the dashboard IDs from Phase 1 discovery plus the user's top 2-3 personal dashboards (from `get_amplitude_context` results). Deduplicate and call `get_dashboard` in batches of 3 (max 2 calls = 6 dashboards). This gives you all the chart IDs you need. If Phase 1 returned fewer than 3 dashboards, run one additional `search` with `entityTypes: ["DASHBOARD"]`, `sortOrder: "viewCount"`, `limitPerQuery: 5` to fill in — otherwise skip this.
-2. **Query charts in bulk (2-4 calls).** Collect all unique chart IDs from the dashboards above, plus any standalone chart/metric IDs from Phase 1 discovery. Use `query_charts` (plural) to query them in bulk batches with **weekly granularity over the last 5 weeks**. Compare this week against the prior 4-week average. Flag any metric where this week deviates >10% from the trailing 4-week average or shows a consistent multi-week trend (3+ weeks in the same direction). Note if the current week is partial and adjust comparisons accordingly.
+1. **Fetch dashboards (1-2 calls).** Take the dashboard IDs from Phase 1 discovery plus the user's top 2-3 personal dashboards (from `get_amplitude_context` results). Deduplicate and call `use_amp_dashboards` with `action: "get"` in batches of 3 (max 2 calls = 6 dashboards). This gives you all the chart IDs you need. If Phase 1 returned fewer than 3 dashboards, run one additional `search_amp_entities` with `entityTypes: ["DASHBOARD"]`, `sortOrder: "viewCount"`, `limitPerQuery: 5` to fill in — otherwise skip this.
+2. **Query charts in bulk (2-4 calls).** Collect all unique chart IDs from the dashboards above, plus any standalone chart/metric IDs from Phase 1 discovery. Use `query_amplitude_data` (plural) to query them in bulk batches with **weekly granularity over the last 5 weeks**. Compare this week against the prior 4-week average. Flag any metric where this week deviates >10% from the trailing 4-week average or shows a consistent multi-week trend (3+ weeks in the same direction). Note if the current week is partial and adjust comparisons accordingly.
 3. **Trend detection (no additional calls).** From the chart results already fetched, compute week-over-week deltas for every metric. Identify: (a) **accelerating trends** — metrics that moved >10% WoW for 2+ consecutive weeks, (b) **inflection points** — metrics that reversed direction this week, (c) **new highs/lows** — metrics that hit their best or worst value in the 5-week window. Rank by magnitude and strategic importance.
-4. **Experiment check (1-2 calls).** Call `get_experiments` once. Focus on experiments that concluded this week, hit significance this week, or have been running >14 days without a call. Only call `query_experiment` for the most relevant ones.
-5. **Feedback (2 calls).** Call `get_feedback_sources` once to get sourceIds, then call `get_feedback_insights` once with the most relevant sourceId. Focus on themes that emerged or intensified over the past week — not individual data points.
-6. **Deployment context (1 call).** Call `get_deployments` once. Build a timeline of what shipped this week to explain metric movements and contextualize the findings.
+4. **Experiment check (1-2 calls).** Call `use_amp_experiments` once. Focus on experiments that concluded this week, hit significance this week, or have been running >14 days without a call. Only call `use_amp_experiments` for the most relevant ones.
+5. **Feedback (2 calls).** Call `use_amplitude_ai_feedback` once to get sourceIds, then call `use_amplitude_ai_feedback` once with the most relevant sourceId. Focus on themes that emerged or intensified over the past week — not individual data points.
+6. **Deployment context.** If the user supplies release information, use it to contextualize metric movements; never infer causation from timing alone.
 
 ### Phase 3: Validate and Filter
 
@@ -51,7 +51,7 @@ Be the skeptic. Weekly data smooths out daily noise, but introduces its own arti
    - **Holiday/seasonal effects**: Check if this week or the comparison weeks include holidays, end-of-quarter patterns, or seasonal events that explain the variance.
    - **One-day spikes inflating the week**: If a weekly metric was driven by a single anomalous day, call it out — it's a daily story dressed up as a weekly trend.
    - **Rolling window artifacts**: 30-day active user counts always dip in recent windows.
-   - **Launch phase growth**: Check `get_deployments` for flag ramp-ups that explain expected growth.
+   - **Launch phase growth**: Consider user-supplied release or flag-ramp context as a possible explanation for expected growth.
 2. **Apply confidence scoring.** Rate each finding 0.0–1.0. Drop anything below 0.6.
 3. **Apply the "so what" filter.** Weekly briefings serve strategic decisions. If a finding doesn't inform a decision that matters this week or next, drop it.
 
@@ -60,7 +60,7 @@ Be the skeptic. Weekly data smooths out daily noise, but introduces its own arti
 Investigate WHY the top findings are happening, but be selective — only spend tool calls on the 2-3 most significant findings.
 
 1. **Explain from existing data first.** Before making any new calls, check if deployments, experiments, or feedback already explain the finding. Often they do, and you can skip the segment breakdown entirely.
-2. **Segment discovery (only for top 2-3 findings).** Use `query_dataset` to break the biggest anomalies down by platform, country, plan tier, etc. Find WHERE the change concentrates. Skip this for smaller findings — use reasoning instead.
+2. **Segment discovery (only for top 2-3 findings).** Use `query_amplitude_data` to break the biggest anomalies down by platform, country, plan tier, etc. Find WHERE the change concentrates. Skip this for smaller findings — use reasoning instead.
 3. **Connect the dots across findings.** Weekly briefings should surface narrative threads — if multiple related metrics are all moving in the same direction, that's one story, not three separate findings.
 4. **Cross-check.** Look for shared root causes across findings. If two metrics moved for the same reason, merge them into one narrative.
 
@@ -104,7 +104,7 @@ Transform your analysis into a concise, narrative briefing the user could forwar
 
 Before delivering, verify your work. Prefer reviewing data you already have over making new tool calls.
 
-1. **Fact-check**: Review the data already fetched for the 2-3 most consequential claims. Only re-query with `query_charts` or `query_dataset` if you're genuinely uncertain about a number — not as a routine step. If the data came from a `query_charts` result, trust it.
+1. **Fact-check**: Review the data already fetched for the 2-3 most consequential claims. Only re-query with `query_amplitude_data` or `query_amplitude_data` if you're genuinely uncertain about a number — not as a routine step. If the data came from a `query_amplitude_data` result, trust it.
 2. **Trend check**: Verify every finding is framed as a week-over-week or multi-week trend, not a single-day event. If a finding is really a daily story, either reframe it in weekly context or flag it as a one-day spike within the weekly narrative.
 3. **Partial-week check**: If you cited this week's data and it's incomplete, confirm you compared pace rather than raw totals and noted the partial status.
 4. **Actionability gate**: Every finding MUST have at least one concrete action. If it doesn't, either add one or drop the finding.
@@ -153,11 +153,11 @@ Example output:
 
 ### Error: No dashboards found
 Cause: User may not have created dashboards, or the project has limited setup.
-Solution: Fall back to searching for any charts or events. Use `search` broadly and build context from whatever is available. Let the user know their setup is limited and suggest creating a key metrics dashboard.
+Solution: Fall back to searching for any charts or events. Use `search_amp_entities` broadly and build context from whatever is available. Let the user know their setup is limited and suggest creating a key metrics dashboard.
 
 ### Error: Feedback API returns 400
-Cause: Called `get_feedback_insights` without first calling `get_feedback_sources`, or passed multiple values in the `types` array.
-Solution: ALWAYS call `get_feedback_sources` first. Only pass a single type value per call, or omit the types parameter entirely.
+Cause: Called `use_amplitude_ai_feedback` without first calling `use_amplitude_ai_feedback`, or passed multiple values in the `types` array.
+Solution: ALWAYS call `use_amplitude_ai_feedback` first. Only pass a single type value per call, or omit the types parameter entirely.
 
 ### Error: Metrics look flat / nothing interesting
 Cause: This week looks similar to the prior 4 weeks — stability is a finding worth reporting.

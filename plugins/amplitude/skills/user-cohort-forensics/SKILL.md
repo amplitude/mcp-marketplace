@@ -22,7 +22,7 @@ analysis; hundreds of calls total is fine. Keep each call narrow (event
 types, window) so responses stay small.
 
 **Cohort spot-check:** prefer existing cohorts — `use_amplitude_cohorts`
-`action: 'list'` (backed by `search`) or `action: 'get'` before building ad
+`action: 'list'` (backed by `search_amp_entities`) or `action: 'get'` before building ad
 hoc definitions. `action: 'membership'` verifies specific users. Check a
 member's timeline for the exact markers (purchase, typing, checkout events)
 rather than trusting the cohort definition blindly.
@@ -45,6 +45,6 @@ For bulk exports, batch and note the retry pattern on individual failures.
 ## Legacy surface
 
 If `get_amp_user_data` / `use_amplitude_cohorts` are not in the tool list:
-`get_users` resolves and lists users, `get_user_profile` / `get_user_timeline`
-read one user each, and `get_cohorts` / `check_cohort_membership` cover
+`get_amp_user_data` resolves and lists users, `get_amp_user_data` / `get_amp_user_data`
+read one user each, and `use_amplitude_cohorts` / `check_cohort_membership` cover
 cohorts. The arcs are unchanged.

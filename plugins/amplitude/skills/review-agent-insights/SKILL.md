@@ -17,7 +17,7 @@ Surface everything Amplitude's AI agents have found recently. Query **every avai
 
 **Supporting tools:**
 - **`Amplitude:get_amplitude_context`** / **`Amplitude:get_amplitude_context`** — Bootstrap user, org, and project info.
-- **`Amplitude:get_deployments`** — Check whether fixes have shipped for flagged issues (staleness validation).
+- **User-supplied release context** — Check whether fixes have shipped for flagged issues when that context is available.
 
 ---
 
@@ -64,7 +64,7 @@ Agent insights go stale within days. Before synthesizing, filter out or flag any
    - **7-14 days old**: Lower confidence — include only if no newer findings cover the same area. Label as "may be outdated."
    - **> 14 days old**: Stale — exclude from the main narrative. Mention in passing only if nothing newer exists for that area.
 
-2. **Cross-reference with deployments (1 call).** Call `get_deployments` once. For each AI-detected issue, check if a deployment shipped a fix or change to the affected area after the analysis was run. If so, note the finding as "potentially resolved by [deployment]" rather than presenting it as an active issue.
+2. **Cross-reference with deployments.** If the user supplied release context, check whether a deployment shipped a fix or change to the affected area after the analysis was run. If so, note the finding as "potentially resolved by [deployment]" rather than presenting it as an active issue.
 
 3. **Deduplicate across agent types.** The same problem may surface from multiple agent types. Merge these into a single finding with multi-agent evidence — don't present the same issue multiple times.
 
