@@ -79,7 +79,7 @@ Amplitude:get_properties for exact property names/values
 **Find cohorts:**
 ```
 Amplitude:search with entity_types=['COHORT']
-Amplitude:get_cohorts to get full definitions
+Amplitude:use_amplitude_cohorts to get full definitions
 ```
 
 ## Chart Type Selection
@@ -265,19 +265,19 @@ Amplitude:get_properties
 
 7. **Create chart:**
 ```
-Amplitude:query_dataset with full definition
+Amplitude:query_amplitude_data with full definition
 ```
 
 8. **Verify results** - check data makes sense
 
 9. **Save chart:**
 ```
-Amplitude:save_chart_edits with editId from query_dataset
+Amplitude:render_amplitude_chart with editId from query_amplitude_data
 ```
 
 ## Error Handling
 
-**If query_dataset fails:**
+**If query_amplitude_data fails:**
 - Read error message carefully
 - Common issues: incorrect event names, invalid filters, wrong parameter types
 - Fix definition and retry
@@ -314,6 +314,5 @@ Amplitude:save_chart_edits with editId from query_dataset
 - What the chart shows
 - Key insights from initial data
 - Methodology used
-
 
 

@@ -37,7 +37,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 - If ID: proceed to Step 1
 
 **If user asks about experiments generally:**
-- Use `Amplitude:search` with `entityTypes: ["EXPERIMENT"]` and relevant query terms
+- Use `Amplitude:search_amp_entities` with `entityTypes: ["EXPERIMENT"]` and relevant query terms
 - Present top 3-5 matches with names, IDs, and states
 - Ask user which experiment to analyze
 
@@ -48,7 +48,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 
 ### Step 1: Retrieve and Validate Setup
 
-Use `Amplitude:get_experiments` with experiment ID to capture:
+Use `Amplitude:use_amp_experiments` with `action: "get"` and the experiment ID to capture:
 
 - Experiment name, key, description, and state
 - Start/end dates and duration
@@ -60,8 +60,8 @@ Use `Amplitude:get_experiments` with experiment ID to capture:
 - Extract metric IDs from the experiment response (e.g., "c4pn8fkv")
 - **CRITICAL: Amplitude MCP cannot retrieve metric names by ID directly**
 - Workaround options:
-  1. Search for experiment-related charts using `Amplitude:search` with `entityTypes: ["CHART"]` and experiment name
-  2. Use `Amplitude:get_charts` on related charts to examine their definitions for metric references
+  1. Search for experiment-related charts using `Amplitude:search_amp_entities` with `entityTypes: ["CHART"]` and experiment name
+  2. Use `Amplitude:get_amplitude_charts` on related charts to examine their definitions for metric references
   3. Check if experiment description contains links to metric documentation
 - If metric names cannot be found, report as descriptive placeholders:
   - Primary metric: "Primary Goal Metric (ID: {id})"
@@ -79,7 +79,7 @@ If incomplete, explain what's missing and stop.
 
 ### Step 2: Check Data Quality (with explicit thresholds)
 
-Use `Amplitude:query_experiment` (primary metric only) to assess:
+Use `Amplitude:use_amp_experiments` with `action: "analyze"` (primary metric only) to assess:
 
 **Traffic Balance (SRM Check):**
 - Report actual traffic split per variant (e.g., 48.2% control, 51.8% treatment)
@@ -120,7 +120,7 @@ Use `Amplitude:query_experiment` (primary metric only) to assess:
 
 **Comprehensive Data Quality Flags:**
 
-The `Amplitude:query_experiment` API returns multiple boolean flags that assess statistical validity. Check and document each:
+The `Amplitude:use_amp_experiments` API returns multiple boolean flags that assess statistical validity. Check and document each:
 
 1. **statsAssumptionsMetForWholeExperiment:**
    - Indicates whether core statistical assumptions are satisfied (normality, independence)
@@ -175,7 +175,7 @@ The `Amplitude:query_experiment` API returns multiple boolean flags that assess 
 
 ### Step 3: Analyze Primary Metric
 
-Use `Amplitude:query_experiment` **without metricIds** to get primary metric only.
+Use `Amplitude:use_amp_experiments` with `action: "analyze"` **without metricIds** to get primary metric only.
 
 **Use metric name from Step 1** - Report using the human-readable metric name, not the metric ID.
 
@@ -201,7 +201,7 @@ Extract and report:
 
 ### Step 4: Analyze Secondary Metrics & Guardrails
 
-Use `Amplitude:query_experiment` **with metricIds** for all metrics.
+Use `Amplitude:use_amp_experiments` with `action: "analyze"` **with metricIds** for all metrics.
 
 **Use metric names from Step 1** - Report using human-readable metric names, not metric IDs.
 
@@ -223,7 +223,7 @@ Use `Amplitude:query_experiment` **with metricIds** for all metrics.
 
 ### Step 5: Comprehensive Segment Analysis
 
-Use `Amplitude:query_experiment` with `groupBy` parameter (one at a time).
+Use `Amplitude:use_amp_experiments` with `action: "analyze"` and `groupBy` (one at a time).
 
 Test 3-4 high-signal segments:
 1. **Platform** (iOS, Android, Web)
@@ -287,7 +287,7 @@ Based on the power and precision analysis from Step 2, evaluate if the experimen
 
 **For significant results (positive or negative):**
 
-Use `Amplitude:get_feedback_insights`:
+Use `Amplitude:use_amplitude_ai_feedback`:
 - Filter by experiment date range
 - For wins: look for `["lovedFeature", "mentionedFeature"]`
 - For losses: look for `["bug", "complaint", "painPoint"]`
@@ -386,7 +386,7 @@ Present structured analysis:
 **By Platform:**
 | Segment | Control Rate | Control Exp | Control % | Treatment Rate | Treatment Exp | Treatment % | Lift | Sig? |
 |---------|--------------|-------------|-----------|----------------|---------------|-------------|------|------|
-| [Data from query_experiment with groupBy] |
+| [Data from use_amp_experiments with groupBy] |
 
 **Key Finding:** [Which segments drove results; which showed differential effects]
 
@@ -511,17 +511,17 @@ If user wants to **design a new experiment**, guide them through:
 1. **Define hypothesis:** "We believe [change] will cause [users] to [behavior] because [reason]"
 
 2. **Select metrics:**
-   - Use `Amplitude:search` with `entityTypes: ["METRIC"]` to find candidates
+   - Use `Amplitude:search_amp_entities` with `entityTypes: ["METRIC"]` to find candidates
    - Primary: directly measures hypothesis
    - Guardrails: revenue, retention, core engagement (prevent unintended consequences)
 
 3. **Estimate sample size:**
    - Typical: 1-2 weeks minimum, 1000+ users per variant
    - Higher variance metrics need more data
-   - Use `Amplitude:query_charts` to check metric's historical variance
+   - Use `Amplitude:query_amplitude_data` to check metric's historical variance
 
 4. **Create experiment:**
-   - Use `Amplitude:create_experiment` with projectIds, variants, and metrics
+   - Use `Amplitude:use_amp_experiments` with `action: "create"`, projectIds, variants, and metrics
    - Return experiment ID, URL, and deployment key for engineering
 
 For detailed setup guidance, consider using the `setup-experiment-and-flags` skill.

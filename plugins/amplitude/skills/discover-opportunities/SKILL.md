@@ -18,13 +18,13 @@ Before investigating, build context about the product and what matters.
 
 2. **Discover what exists (2 parallel searches).**
 
-   **Search A — Org-level signal.** `search` with `isOfficial: true`, `sortOrder: "viewCount"`, `limitPerQuery: 15`. Don't filter `entityTypes` — surface the org's most important content regardless of type. Official dashboards and charts reveal what the org tracks and values.
+   **Search A — Org-level signal.** `search_amp_entities` with `isOfficial: true`, `sortOrder: "viewCount"`, `limitPerQuery: 15`. Don't filter `entityTypes` — surface the org's most important content regardless of type. Official dashboards and charts reveal what the org tracks and values.
 
-   **Search B — Recent activity.** `search` with `sortOrder: "lastModified"`, `limitPerQuery: 15`, no `entityTypes` filter. This surfaces what's actively being worked on and investigated.
+   **Search B — Recent activity.** `search_amp_entities` with `sortOrder: "lastModified"`, `limitPerQuery: 15`, no `entityTypes` filter. This surfaces what's actively being worked on and investigated.
 
    Merge and deduplicate. Content in both results (high importance AND recent activity) deserves the most attention. Content only in Search A may reveal blind spots.
 
-3. **Understand existing segments.** Call `get_cohorts` for any cohort IDs surfaced in discovery. Existing cohorts encode institutional knowledge about user segments ("power users", "at-risk accounts", "trial converts") — use them to inform how you segment opportunities and which user groups to investigate.
+3. **Understand existing segments.** Call `use_amplitude_cohorts` for any cohort IDs surfaced in discovery. Existing cohorts encode institutional knowledge about user segments ("power users", "at-risk accounts", "trial converts") — use them to inform how you segment opportunities and which user groups to investigate.
 
 4. **Narrow scope.** If the user specified a product area, feature, or funnel — focus there. Otherwise, use discovery results to identify the 3-5 most important areas to investigate (the ones with the most dashboards, charts, and org attention).
 
@@ -34,8 +34,8 @@ Run these in parallel where possible. Budget: 10-15 tool calls total for this ph
 
 #### 2a. Dashboard and Chart Analysis
 
-1. **Fetch dashboards (1-2 calls).** Use `get_dashboard` for the top dashboards from Phase 1 (batch up to 3 per call). Extract all chart IDs.
-2. **Query charts in bulk (2-4 calls).** Use `query_charts` to fetch data for all discovered chart IDs, 3 at a time. Request 30-day daily granularity. For each metric, compute:
+1. **Fetch dashboards (1-2 calls).** Use `use_amp_dashboards` with `action: "get"` for the top dashboards from Phase 1 (batch up to 3 per call). Extract all chart IDs.
+2. **Query charts in bulk (2-4 calls).** Use `query_amplitude_data` to fetch data for all discovered chart IDs, 3 at a time. Request 30-day daily granularity. For each metric, compute:
    - Week-over-week trend (this week vs. prior 3 weeks)
    - Day-over-day volatility
    - Whether the metric is accelerating, decelerating, or flat
@@ -48,23 +48,23 @@ For each funnel chart discovered, examine:
 - The step with the largest absolute drop-off
 - Whether drop-off is getting worse or better over time
 
-If no funnel charts exist but the user mentioned a flow, use `query_dataset` to build an ad-hoc funnel. Call `get_properties` for the relevant events first to discover which properties are available for segmentation (platform, plan, country, etc.) — don't guess property names.
+If no funnel charts exist but the user mentioned a flow, use `query_amplitude_data` to build an ad-hoc funnel. Call `get_properties` for the relevant events first to discover which properties are available for segmentation (platform, plan, country, etc.) — don't guess property names.
 
 #### 2c. Experiment Insights
 
-1. Call `get_experiments` to list experiments. Prioritize:
+1. Call `use_amp_experiments` to list experiments. Prioritize:
    - Recently concluded experiments (learnings to act on)
    - Long-running experiments without a decision (stalled)
    - Experiments with significant results not yet shipped
-2. Call `query_experiment` for the top 2-3 most relevant experiments.
+2. Call `use_amp_experiments` for the top 2-3 most relevant experiments.
 3. Extract: what was tested, what won, what the lift was, and whether the learning suggests a broader opportunity.
 
 #### 2d. Customer Feedback
 
-1. Call `get_feedback_sources` to discover feedback integrations.
-2. Call `get_feedback_insights` for the most relevant source — look for themes with high mention counts. Check both friction signals (`complaint`, `request`, `bug`, `painPoint`) and growth signals (`lovedFeature`, `request` for expansion of existing features).
-3. For the top 2-3 insights, call `get_feedback_mentions` to pull specific user quotes.
-4. If investigating a specific topic, call `get_feedback_comments` with `search` terms to find raw comments mentioning it. This catches signal that may not yet be grouped into an insight theme.
+1. Call `use_amplitude_ai_feedback` to discover feedback integrations.
+2. Call `use_amplitude_ai_feedback` for the most relevant source — look for themes with high mention counts. Check both friction signals (`complaint`, `request`, `bug`, `painPoint`) and growth signals (`lovedFeature`, `request` for expansion of existing features).
+3. For the top 2-3 insights, call `use_amplitude_ai_feedback` to pull specific user quotes.
+4. If investigating a specific topic, call `use_amplitude_ai_feedback` with `search_amp_entities` terms to find raw comments mentioning it. This catches signal that may not yet be grouped into an insight theme.
 5. Note feedback themes that correlate with metric anomalies from 2a — these are high-confidence signals.
 
 #### 2e. Session Replays
@@ -75,7 +75,7 @@ If investigating a specific flow or drop-off:
 
 #### 2f. Deployment Context
 
-Call `get_deployments` once. Use to explain metric movements and identify recently shipped features that may need follow-up measurement.
+When the user supplies release context, use it to explain metric movements and identify recently shipped features that may need follow-up measurement.
 
 ### Phase 3: Synthesize Opportunities
 
@@ -231,10 +231,10 @@ Actions:
 ## Troubleshooting
 
 ### No dashboards or charts found
-Fall back to `search` with broad queries related to the user's product area. Use `query_dataset` to build ad-hoc charts from raw events. Suggest the user create a key metrics dashboard.
+Fall back to `search_amp_entities` with broad queries related to the user's product area. Use `query_amplitude_data` to build ad-hoc charts from raw events. Suggest the user create a key metrics dashboard.
 
 ### Feedback API returns errors
-Always call `get_feedback_sources` before `get_feedback_insights`. If no sources are configured, skip feedback and note it as a gap in the report — recommend the user connect a feedback source.
+Always call `use_amplitude_ai_feedback` before `use_amplitude_ai_feedback`. If no sources are configured, skip feedback and note it as a gap in the report — recommend the user connect a feedback source.
 
 ### Everything looks healthy — no anomalies
 Stability is a finding. Focus on: stalled experiments that need decisions, features with flat adoption that could grow, feedback themes that haven't been addressed, and conversion rates that are "fine" but benchmarkably low.

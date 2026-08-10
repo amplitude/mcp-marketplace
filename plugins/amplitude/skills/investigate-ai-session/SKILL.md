@@ -20,7 +20,7 @@ The user will provide one of:
 
 #### Step 1b: Find Sessions Matching a Pattern
 
-Call `Amplitude:get_agent_analytics_schema` with `include: ["filter_options"]` to discover valid agent names, tool names, and topic values. Then call `Amplitude:query_agent_analytics_sessions` with appropriate filters:
+Call `Amplitude:get_amplitude_agent_analytics_info` with `include: ["filter_options"]` to discover valid agent names, tool names, and topic values. Then call `Amplitude:get_amplitude_agent_analytics_info` with appropriate filters:
 
 - **Agent failures:** `agentNames: ["<agent>"]`, `hasTaskFailure: true`
 - **Tool errors:** `toolNames: ["<tool>"]`, `hasTaskFailure: true`
@@ -35,17 +35,17 @@ Use `responseFormat: "concise"`, `limit: 20`, and sort by `"-session_start"` to 
 
 #### Step 1c: Find a Specific User's Sessions
 
-Call `Amplitude:query_agent_analytics_sessions` with `searchQuery: "<email or user ID>"` to find their sessions. If they reported a specific timeframe, add `startDate`/`endDate`. Pick the session(s) that match the complaint.
+Call `Amplitude:get_amplitude_agent_analytics_info` with `searchQuery: "<email or user ID>"` to find their sessions. If they reported a specific timeframe, add `startDate`/`endDate`. Pick the session(s) that match the complaint.
 
 ### Step 2: Deep-Dive into Sessions (Budget: 3-6 calls)
 
 For each session being investigated (max 3-5 sessions), run these in parallel per session:
 
-1. **Full session detail.** Call `Amplitude:query_agent_analytics_sessions` with `sessionIds: ["<id>"]`, `responseFormat: "detailed"`. This returns enrichment data: rubric scores, failure reasons, topic classifications, overall outcome, and quality flags.
+1. **Full session detail.** Call `Amplitude:get_amplitude_agent_analytics_info` with `sessionIds: ["<id>"]`, `responseFormat: "detailed"`. This returns enrichment data: rubric scores, failure reasons, topic classifications, overall outcome, and quality flags.
 
-2. **Conversation transcript.** Call `Amplitude:get_agent_analytics_conversation` with `sessionId: "<id>"`, `includeCategories: true`. Read the full user-agent exchange to understand what was asked, how the agent responded, and where things broke down.
+2. **Conversation transcript.** Call `Amplitude:get_amplitude_agent_analytics_info` with `sessionId: "<id>"`, `includeCategories: true`. Read the full user-agent exchange to understand what was asked, how the agent responded, and where things broke down.
 
-3. **Execution trace.** Call `Amplitude:query_agent_analytics_spans` with `sessionId: "<id>"`. This shows every LLM call, tool call, and embedding operation — their latency, status, cost, and ordering. Look for:
+3. **Execution trace.** Call `Amplitude:get_amplitude_agent_analytics_info` with `sessionId: "<id>"`. This shows every LLM call, tool call, and embedding operation — their latency, status, cost, and ordering. Look for:
    - Spans with `status: "ERROR"` — direct failures
    - Tool calls with high latency (>10s) — timeouts or slow dependencies
    - Multiple retries of the same tool — agent struggling
@@ -64,21 +64,21 @@ With conversation + trace + enrichment data, build the diagnosis:
    - **Data/context issue:** The agent had insufficient context — missing schema, wrong project, stale data. Check what context was available.
 
 2. **Determine scope:** Is this a one-off or systemic?
-   - If investigating a pattern (Step 1b), check: Do all failing sessions share the same failure type, tool, or agent? Use `Amplitude:query_agent_analytics_sessions` with `groupBy: ["agent_name"]` or `groupBy: ["primary_topic"]` to see if failures cluster.
-   - If a single session, call `Amplitude:query_agent_analytics_sessions` with the same agent and time window to check if similar failures exist.
+   - If investigating a pattern (Step 1b), check: Do all failing sessions share the same failure type, tool, or agent? Use `Amplitude:get_amplitude_agent_analytics_info` with `groupBy: ["agent_name"]` or `groupBy: ["primary_topic"]` to see if failures cluster.
+   - If a single session, call `Amplitude:get_amplitude_agent_analytics_info` with the same agent and time window to check if similar failures exist.
 
 3. **Find the trigger:** What changed?
    - Check if failures started on a specific date (new deployment, model change, config update)
    - Check if failures correlate with specific topics or user segments
-   - Check if a tool's error rate changed using `Amplitude:query_agent_analytics_spans` with `groupBy: ["tool_name"]`
+   - Check if a tool's error rate changed using `Amplitude:get_amplitude_agent_analytics_info` with `groupBy: ["tool_name"]`
 
 ### Step 4: Search for Related Patterns (Budget: 1-2 calls)
 
 If the root cause isn't clear from the session data alone:
 
-1. **Search conversations.** Call `Amplitude:search_agent_analytics_conversations` with keywords from the error or topic to find other sessions with the same issue. This surfaces patterns the session-level queries might miss.
+1. **Search conversations.** Call `Amplitude:get_amplitude_agent_analytics_info` with keywords from the error or topic to find other sessions with the same issue. This surfaces patterns the session-level queries might miss.
 
-2. **Check tool/model health.** Call `Amplitude:query_agent_analytics_spans` with `groupBy: ["tool_name"]` or `groupBy: ["model_name"]` over the relevant time window. Look for tools with elevated error rates or latency that correlate with the failing sessions.
+2. **Check tool/model health.** Call `Amplitude:get_amplitude_agent_analytics_info` with `groupBy: ["tool_name"]` or `groupBy: ["model_name"]` over the relevant time window. Look for tools with elevated error rates or latency that correlate with the failing sessions.
 
 ### Step 5: Present the Investigation
 
@@ -107,8 +107,8 @@ Structure the output as a root cause analysis.
 6. **Scope assessment:** One-off vs. systemic. How many sessions are affected? Is it getting worse?
 
 7. **Recommended fixes** (2-4 numbered items): Concrete actions. Examples:
-   - "Add a retry with exponential backoff for the query_dataset tool — 8 of 15 failures are transient timeouts"
-   - "The agent is calling get_events before get_amplitude_context, causing a missing project ID error — fix the tool ordering in the agent prompt"
+   - "Add a retry with exponential backoff for the query_amplitude_data tool — 8 of 15 failures are transient timeouts"
+   - "The agent is calling manage_amp_events before get_amplitude_context, causing a missing project ID error — fix the tool ordering in the agent prompt"
    - "Users asking about retention are getting routed to the Chart Agent instead of the Funnel Agent — update the routing logic"
 
 8. **Follow-on prompt**: Offer next steps — "Want me to check if this tool timeout affects other agents, search for similar user complaints, or monitor this pattern over the next few days?"
@@ -159,4 +159,4 @@ The session may be from a different project, or outside the data retention windo
 Span-level data requires OpenTelemetry-compatible tracing in the AI agent. Report what's available from the session and conversation level and note that span data would help narrow the root cause.
 
 ### Too many failing sessions to investigate
-Don't try to investigate more than 5 sessions in detail. Instead, use `groupBy` on `query_agent_analytics_sessions` to find the common pattern, then deep-dive into 2-3 representative examples.
+Don't try to investigate more than 5 sessions in detail. Instead, use `groupBy` on `get_amplitude_agent_analytics_info` to find the common pattern, then deep-dive into 2-3 representative examples.

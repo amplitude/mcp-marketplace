@@ -63,7 +63,7 @@ Instead of broad slicing, use **guided segmentation**:
 3. Re-run **Analyzing chart** with these properties in mind to determine:
    - Which segments contribute most to the change
    - Whether the pattern is localized or broad-based
-   - Only fetch up to 3 charts at a time when using `Amplitude:query_charts`
+   - Only fetch up to 3 charts at a time when using `Amplitude:query_amplitude_data`
 
 Avoid testing more than 9 properties in aggregate unless the user explicitly asks for deeper exploration.
 
@@ -76,8 +76,8 @@ For spikes, drops, or unexpected shifts, gather contextual signals in the same t
 - Use **Getting experiments** to identify active experiments or flags
 - Use **Getting deployments** to identify releases or rollouts
 - Use **Searching for content** to surface annotations or relevant documentation
-- Use `Amplitude:get_feedback_insights` to search customer feedback trends that might explain the change
-- Use `Amplitude:get_feedback_mentions` to pull in specific customer mentions if there's a likely feedback trend tied to what's being explained.
+- Use `Amplitude:use_amplitude_ai_feedback` to search customer feedback trends that might explain the change
+- Use `Amplitude:use_amplitude_ai_feedback` to pull in specific customer mentions if there's a likely feedback trend tied to what's being explained.
 
 Determine whether any contextual changes align temporally with the chart pattern.
 

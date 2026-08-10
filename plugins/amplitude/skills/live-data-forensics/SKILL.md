@@ -63,14 +63,6 @@ follow one arc — follow it too.
 - `read ETIMEDOUT` is a backend timeout — narrow the date range/filters and
   retry once.
 
-## Legacy surface
-
-If `query_amplitude_data` is not in the tool list, the caller is on the
-unramped surface: use `query_dataset` (same job; prototype with
-`get_chart_definition_params` + `verify_chart_definition` first),
-`get_events` for taxonomy, `get_users` for user sets, and
-`get_user_timeline` for timelines. The arc is unchanged.
-
 ## What to report back
 
 - Whether the event fires at all, volume, and since when (first-seen).

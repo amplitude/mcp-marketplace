@@ -48,6 +48,6 @@ understood, refreshed, or adapted.
 
 ## Legacy surface
 
-If `get_amplitude_charts` is not in the tool list: `get_charts` reads
-definitions, `query_charts` (≤3 ids) pulls data, `query_dataset` runs ad
-hoc, and `save_chart_edits` persists edits. The arc is unchanged.
+If `get_amplitude_charts` is not in the tool list: `get_amplitude_charts` reads
+definitions, `query_amplitude_data` (≤3 ids) pulls data, `query_amplitude_data` runs ad
+hoc, and `render_amplitude_chart` shows an edit for the user to save. The arc is unchanged.

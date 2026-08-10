@@ -29,7 +29,7 @@ The compiler validates **structure**, not your taxonomy. An event or property
 name that doesn't exist won't error — it returns a well-formed chart with
 **empty data**, which reads like a real answer of "zero".
 
-Resolve names first with `search`, and `get_properties`
+Resolve names first with `search_amp_entities`, and `get_properties`
 (`propertyType: 'event'`, `'user'`, or `'group'`). Use the exact name **and
 scope** that comes back. There is no `get_event_properties` tool — server
 descriptions and error messages sometimes mention it; use `get_properties`
@@ -37,11 +37,11 @@ instead.
 
 ## Two workflows
 
-**Create:** `search` for the taxonomy → build the typed `chart` → call
+**Create:** `search_amp_entities` for the taxonomy → build the typed `chart` → call
 `query_amplitude_data` → `render_amplitude_chart` with the returned
 `chartEditId` to show it.
 
-**Modify or fork a saved chart:** `search` to find the chart id →
+**Modify or fork a saved chart:** `search_amp_entities` to find the chart id →
 `get_amplitude_charts` with `include: 'typed'` → edit the returned object →
 call `query_amplitude_data` with that `chart` **and** `chartId` set to the saved
 chart id. Passing `chartId` links the edit to its parent, and the parent's
@@ -51,7 +51,7 @@ params is also the fastest way to see how this project spells things.
 `get_amplitude_charts` has five modes on `include`: `link` (default; validates
 ids, returns URLs, doesn't run the chart), `typed`, `definition` (raw), `data`
 (runs it, max 3 ids), and `guide` (schema for the raw fallback). All except
-`guide` need concrete ids — resolve them via `search` or `get_from_url` first.
+`guide` need concrete ids — resolve them via `search_amp_entities` or `get_from_url` first.
 
 ## Building blocks
 
@@ -275,7 +275,7 @@ rather than trying a third spelling.
 
 ## When results come back empty
 
-1. Re-read every event and property name from `search` / `get_properties`, and
+1. Re-read every event and property name from `search_amp_entities` / `get_properties`, and
    check the `scope` matches what the taxonomy returned — including
    `propertyType: 'group'` for account-level properties.
 2. Widen `date_range` — the window may predate instrumentation.
