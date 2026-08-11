@@ -1,0 +1,206 @@
+{
+  "scenarios": [
+    {
+      "id": "queue-natural-language",
+      "prompt": "What Wave opportunities should I work on for onboarding?",
+      "expectedSkill": "wave-queue",
+      "invariants": [
+        "read_only",
+        "bounded_query",
+        "get_before_decide",
+        "product_area_scope"
+      ]
+    },
+    {
+      "id": "real-problem-weak-plan",
+      "prompt": "Evaluate this Wave opportunity against the current codebase.",
+      "expectedSkill": "wave-evaluate",
+      "fixture": {
+        "problemStillExists": true,
+        "planTargetsWrongRepository": true
+      },
+      "expected": {
+        "verdict": "NEEDS_REPLAN",
+        "dismissed": false,
+        "improvedPlanRequired": true
+      }
+    },
+    {
+      "id": "already-fixed-problem",
+      "prompt": "Evaluate this Wave opportunity.",
+      "expectedSkill": "wave-evaluate",
+      "fixture": {
+        "problemStillExists": false,
+        "mergedPrProvesFix": true,
+        "freshEvidenceConfirmsResolution": true
+      },
+      "expected": {
+        "verdict": "DISMISS",
+        "dismissalRequiresConfirmation": true
+      }
+    },
+    {
+      "id": "existing-in-flight-pr",
+      "prompt": "Dispatch this approved Wave opportunity.",
+      "expectedSkill": "wave-dispatch-handoff",
+      "fixture": {
+        "freshLinkedPr": true
+      },
+      "expected": {
+        "newAgentLaunched": false,
+        "newPrCreated": false,
+        "routeTo": "wave-babysit"
+      }
+    },
+    {
+      "id": "experiment-worthy-change",
+      "prompt": "Set up an experiment for this Wave opportunity.",
+      "expectedSkill": "wave-experiment",
+      "fixture": {
+        "behavioralBet": true,
+        "adequateTraffic": true,
+        "reversible": true
+      },
+      "expected": {
+        "disabledSetupPrepared": true,
+        "trafficLaunched": false,
+        "humanGate": "experiment_launch"
+      }
+    },
+    {
+      "id": "direct-ship-correctness",
+      "prompt": "Run Wave autopilot on this correctness bug.",
+      "expectedSkill": "wave-autopilot",
+      "fixture": {
+        "correctnessFix": true
+      },
+      "expected": {
+        "experimentRecommended": false,
+        "mergePerformed": false
+      }
+    },
+    {
+      "id": "interrupted-run-resume",
+      "prompt": "Resume Wave autopilot.",
+      "expectedSkill": "wave-autopilot",
+      "fixture": {
+        "status": "IN_PROGRESS",
+        "existingAgentSession": true,
+        "existingBranch": true
+      },
+      "expected": {
+        "reconciledFirst": true,
+        "newAgentLaunched": false,
+        "newBranchCreated": false
+      }
+    },
+    {
+      "id": "duplicate-write-prevention",
+      "prompt": "Run Wave autopilot again.",
+      "expectedSkill": "wave-autopilot",
+      "fixture": {
+        "existingStructuredComments": true,
+        "existingRelations": true,
+        "existingExperiment": true
+      },
+      "expected": {
+        "duplicateComments": 0,
+        "duplicateRelations": 0,
+        "duplicateExperiments": 0
+      }
+    },
+    {
+      "id": "frontend-verification",
+      "prompt": "Babysit this Wave frontend PR to review-ready.",
+      "expectedSkill": "wave-babysit",
+      "fixture": {
+        "frontendChange": true,
+        "acceptanceCriteriaCount": 2
+      },
+      "expected": {
+        "visualArtifactRequired": true,
+        "mergePerformed": false
+      }
+    },
+    {
+      "id": "intake-deduplication",
+      "prompt": "Submit this product-improvement idea to Wave.",
+      "expectedSkill": "wave-intake",
+      "fixture": {
+        "similarOpportunityExists": true
+      },
+      "expected": {
+        "newIdeaSubmitted": false,
+        "existingOpportunityFetched": true,
+        "contextWriteRequiresConfirmation": true
+      }
+    },
+    {
+      "id": "refine-read-only",
+      "prompt": "Review how the Wave pipeline is performing and improve the skills.",
+      "expectedSkill": "wave-refine",
+      "fixture": {
+        "processedOpportunities": 25
+      },
+      "expected": {
+        "reportProduced": true,
+        "skillFilesEdited": false,
+        "patchRequiresApproval": true
+      }
+    },
+    {
+      "id": "close-out-evidence-gate",
+      "prompt": "Measure this shipped Wave opportunity and close the loop.",
+      "expectedSkill": "wave-close-out",
+      "fixture": {
+        "measurementWindowElapsed": true,
+        "targetMetricAvailable": true,
+        "outcomeEvidenceAvailable": true
+      },
+      "expected": {
+        "status": "MEASURED",
+        "outcomeCommentRequired": true,
+        "artifactRequired": true
+      }
+    },
+    {
+      "id": "unattended-missing-config",
+      "prompt": "Run Wave autopilot unattended with no workspace config.",
+      "expectedSkill": "wave-autopilot",
+      "fixture": {
+        "configPresent": false
+      },
+      "expected": {
+        "readOnlyReconcile": true,
+        "newWorkStarted": false,
+        "setupGapParked": true
+      }
+    },
+    {
+      "id": "evaluate-repository-unavailable",
+      "prompt": "Evaluate this Wave opportunity, but its target repository is unavailable.",
+      "expectedSkill": "wave-evaluate",
+      "fixture": {
+        "repositoryAvailable": false
+      },
+      "expected": {
+        "verdict": "NEEDS_HUMAN_REVIEW",
+        "dismissed": false,
+        "codebaseVerdictFabricated": false
+      }
+    },
+    {
+      "id": "scheduled-human-decision",
+      "prompt": "Run Wave autopilot unattended.",
+      "expectedSkill": "wave-autopilot",
+      "fixture": {
+        "ambiguousProductDecision": true
+      },
+      "expected": {
+        "blocksOnPrompt": false,
+        "parkedAtHumanGate": true,
+        "dismissed": false
+      }
+    }
+  ]
+}
