@@ -14,7 +14,7 @@ problemSummary: <one sentence>
 evidenceSummary: <one sentence>
 repository: <org/repo|null>
 existingWork: <none|agent|branch|pr|blocked>
-recommendedNextSkill: <wave-evaluate|wave-babysit|wave-close-out>
+recommendedNextSkill: <wave-evaluate|wave-experiment|wave-dispatch-handoff|wave-babysit|wave-close-out>
 reason: <one sentence>
 ```
 

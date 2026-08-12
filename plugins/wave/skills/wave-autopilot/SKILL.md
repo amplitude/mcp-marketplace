@@ -1,6 +1,6 @@
 ---
 name: wave-autopilot
-description: Runs the Amplitude Wave opportunity loop autonomously within configured caps: reconcile work, evaluate against code, dispatch coding agents, shepherd PRs to review-ready, prepare experiments, close measurable outcomes, and report human gates. Use when users explicitly ask to run Wave autonomously, work the opportunity backlog end to end, or schedule a self-improving product loop.
+description: Orchestrates the Wave loop within caps: reconcile, evaluate, dispatch, babysit, optional experiment prep, and close-out. Use when the user explicitly asks to run Wave autonomously, work the Wave backlog end to end, or schedule the self-improving product loop. Not for ranking a morning queue or evaluating a single item.
 disable-model-invocation: true
 ---
 

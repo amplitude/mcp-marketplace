@@ -12,6 +12,20 @@
       ]
     },
     {
+      "id": "queue-routes-to-dispatch",
+      "prompt": "What should I do next with this approved Wave opportunity?",
+      "expectedSkill": "wave-queue",
+      "fixture": {
+        "status": "INVESTIGATING",
+        "agentApproved": true,
+        "freshPr": false
+      },
+      "expected": {
+        "recommendedNextSkill": "wave-dispatch-handoff",
+        "mutated": false
+      }
+    },
+    {
       "id": "real-problem-weak-plan",
       "prompt": "Evaluate this Wave opportunity against the current codebase.",
       "expectedSkill": "wave-evaluate",

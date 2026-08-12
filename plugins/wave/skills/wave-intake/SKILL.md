@@ -1,6 +1,6 @@
 ---
 name: wave-intake
-description: Creates or updates Amplitude Wave product areas and submits deduplicated product-improvement ideas for Wave AI investigation. Use when users ask to add an idea to Wave, submit a product opportunity, configure a Wave product area, or replenish an empty Wave backlog. Not for CRM opportunities or directly creating implementation-ready records.
+description: Creates Wave product areas and submits deduplicated ideas into Wave AI investigation. Use when the user asks to submit a Wave idea, add a product area, or replenish an empty Wave backlog. Not for Salesforce/CRM, not for discovering opportunities from analytics, and not for creating implementation-ready records.
 disable-model-invocation: true
 ---
 

@@ -30,6 +30,11 @@ Add `amplitude/mcp-marketplace`, run `/plugins`, select **Amplitude Wave**, and 
 
 Authenticate the bundled Amplitude MCP connection when prompted.
 
+This plugin already includes the Amplitude MCP server. Install **Amplitude Wave** for
+opportunity workflows. Install the separate **Amplitude** plugin only if you also want
+analytics skills (charts, dashboards, instrumentation). Installing both registers the
+same MCP server twice; prefer Wave alone unless you need those extra skills.
+
 ## Safety
 
 - Pull requests are never merged automatically.
@@ -44,11 +49,11 @@ Authenticate the bundled Amplitude MCP connection when prompted.
 
 | Skill | Job | Invocation |
 |---|---|---|
-| `wave-queue` | Read-only ranked queue and next-action routing | Natural language |
+| `wave-queue` | Read-only ranked queue; routes to evaluate, experiment, dispatch, babysit, or close-out | Natural language |
 | `wave-evaluate` | Confirm the problem in current code and improve its plan | Natural language; confirms writes |
 | `wave-dispatch-handoff` | Claim and launch isolated coding work | Explicit |
 | `wave-babysit` | Drive linked PRs through CI, review, and verification | Explicit |
-| `wave-close-out` | Measure shipped outcomes and record learning | Explicit or scheduled |
+| `wave-close-out` | Measure shipped outcomes and record learning | Natural language; confirms writes |
 | `wave-intake` | Configure product areas and submit deduplicated ideas | Explicit |
 | `wave-experiment` | Prepare, link, and monitor opportunity experiments | Explicit |
 | `wave-autopilot` | Orchestrate the complete bounded loop | Explicit or scheduled |
@@ -70,9 +75,10 @@ names, or personal skill dependencies.
 
 ## Configuration
 
-Copy `config/wave-config.example.json` to either:
+Put config in the **product repository** you will change, not in this marketplace
+checkout. Copy `config/wave-config.example.json` to either:
 
-- `wave-config.json` at the target code workspace root, or
+- `wave-config.json` at that workspace root, or
 - `.amplitude/wave-config.json`.
 
 Set the Amplitude project ID, repositories, base branches, and available setup/test/lint/

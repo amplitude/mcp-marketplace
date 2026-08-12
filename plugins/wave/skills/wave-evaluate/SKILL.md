@@ -1,6 +1,6 @@
 ---
 name: wave-evaluate
-description: Validates Amplitude Wave opportunities against the current codebase and fresh product evidence, then improves their execution plans and acceptance criteria. Use when users ask to evaluate, validate, review, sharpen, approve, or replan Wave opportunities. Dismisses only when the underlying problem is demonstrably obsolete or invalid; does not implement code.
+description: Confirms a Wave opportunity still exists in the current codebase and rewrites its plan and acceptance criteria. Use when the user asks to evaluate, validate, sharpen, approve, or replan a Wave opportunity against code. Not for ranking the backlog, implementing, babysitting a PR, or dismissing work because the plan is weak.
 ---
 
 # Wave Evaluate

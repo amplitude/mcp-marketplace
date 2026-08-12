@@ -1,12 +1,13 @@
 ---
 name: wave-dispatch-handoff
-description: Claims approved Amplitude Wave opportunities and launches or prepares isolated coding-agent sessions with a normalized implementation handoff. Use when users ask to dispatch agents, start coding approved Wave work, implement selected opportunities, or hand a Wave opportunity to a coding agent. Not for evaluating unapproved opportunities or shepherding an existing PR.
+description: Claims an approved Wave opportunity and launches isolated coding work with a normalized handoff. Use when the user asks to dispatch, implement, or hand an approved Wave opportunity to a coding agent. Not for evaluating unapproved items or babysitting an existing PR.
 disable-model-invocation: true
 ---
 
 # Wave Dispatch Handoff
 
-Turn approved, codebase-validated opportunities into bounded coding-agent work.
+Turn approved, codebase-validated opportunities into bounded coding-agent work. This
+skill launches work; it does not implement in the orchestrating session.
 
 Read:
 
@@ -30,40 +31,32 @@ If any precondition fails, route to `wave-evaluate` or `wave-babysit`; do not im
 ## Workflow
 
 1. Resolve project and re-fetch the opportunity plus incoming/outgoing relations.
-2. Detect current repository and match it to the approved handoff. For multi-repo work,
-   create one bounded handoff per repository and preserve dependency order.
+2. Match the current repository to the approved handoff. For multi-repo work, create one
+   bounded handoff per repository and preserve dependency order.
 3. Apply the staleness rubric. Resume existing work when possible; never launch a
    duplicate agent for an open/fresh PR.
-4. Determine execution shape:
-   - isolated local subagent/worktree when supported;
-   - cloud coding agent when explicitly requested and available;
-   - inline implementation only when the host lacks isolation and the user approved it.
-5. Create a branch name such as `wave/<short-opportunity-id>-<slug>`.
-6. Launch the coding agent with the `wave_dispatch` block plus:
-   - current codebase findings,
-   - exact acceptance criteria,
-   - target metric and experiment recommendation,
-   - repository test/lint/build commands,
-   - instruction to stop at a review-ready PR and never merge.
+4. Create branch `wave/<short-opportunity-id>-<slug>` in an isolated git worktree.
+5. Launch a **child** coding agent in that worktree with the `wave_dispatch` block plus
+   current codebase findings, acceptance criteria, metric/experiment recommendation,
+   repo test/lint/build commands, and "stop at a review-ready PR; never merge."
+   In Cursor, use an isolated subagent/worktree, or a cloud agent only if the user asked.
+6. Isolation rules:
+   - Unattended: if a worktree/child agent cannot be launched, park with `wave_gate`
+     and do not code inline.
+   - Attended: inline coding only if the user explicitly asks to implement here.
 7. When the host returns a stable agent/session ID, add an idempotent `IMPLEMENTED_BY`
    relation. Use an `INVESTIGATED_BY` lease when supported, pass `leaseTtlSeconds`, then
-   re-read to detect a race. Never fabricate a session ID.
+   re-read to detect a race. Never fabricate a session ID. If there is no stable ID,
+   write attribution in a comment and rely on the branch/PR.
 8. Set `IN_PROGRESS` only after work actually started. Add the dispatch handoff comment
    if an equivalent one is absent.
 
 ## Coding-agent contract
 
-The launched agent must:
-
-- reconcile the opportunity before edits;
-- follow current repository conventions;
-- decide experiment gating before implementing the behavior;
-- keep changes scoped to acceptance criteria;
-- run configured checks;
-- create verification evidence;
-- open or update a PR;
-- return PR URL, commit, check results, and unresolved risks;
-- never merge or enable real-user experiment traffic.
+The launched agent must: reconcile before edits; follow repo conventions; decide
+experiment gating before implementing; stay inside acceptance criteria; run configured
+checks; create verification evidence; open or update a PR; return PR URL, commit, checks,
+and risks; never merge or enable real-user experiment traffic.
 
 ## Failure handling
 

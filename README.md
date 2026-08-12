@@ -12,12 +12,17 @@ Works with **Claude Code**, **Cursor**, **Codex**, **Gemini CLI**, and **Claude*
 
 ```
 claude plugin install amplitude
+claude plugin install wave
 ```
+
+`amplitude` is analytics and instrumentation. `wave` is Opportunity Manager workflows
+and already bundles Amplitude MCP — you do not need both unless you want both skill sets.
 
 Or from inside Claude Code:
 
 ```
 /plugin install amplitude
+/plugin install wave
 /reload-plugins
 ```
 
@@ -56,6 +61,8 @@ To work on the plugin from a local checkout in Claude Code:
 ```bash
 git clone https://github.com/amplitude/mcp-marketplace
 claude --plugin-dir ./mcp-marketplace/plugins/amplitude
+# or, for Wave opportunity workflows:
+claude --plugin-dir ./mcp-marketplace/plugins/wave
 ```
 
 Then run `/mcp` from inside Claude Code, select `plugin:amplitude:amplitude`, and follow the browser prompts to authenticate.

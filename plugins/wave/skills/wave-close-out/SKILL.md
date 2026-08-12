@@ -1,7 +1,6 @@
 ---
 name: wave-close-out
-description: Measures shipped Amplitude Wave opportunities, links outcome evidence, records learnings, and moves ready work from SHIPPED to MEASURED. Use when users ask whether a Wave opportunity worked, request an outcome readout, want to close the product loop, or schedule post-ship measurement. Not for preparing or launching a new experiment.
-disable-model-invocation: true
+description: Measures a shipped Wave opportunity and records the outcome. Use when the user asks if a shipped Wave opportunity worked, wants a post-ship readout, or wants to move work to MEASURED. Not for preparing or launching experiments, and not for ranking new work.
 ---
 
 # Wave Close Out

@@ -1,6 +1,6 @@
 ---
 name: wave-babysit
-description: Shepherds pull requests linked to Amplitude Wave opportunities through CI, review feedback, conflicts, acceptance-criteria verification, and a merge-ready human gate. Use when users ask to babysit Wave PRs, fix CI or review comments, resume opportunity implementation, or get Wave work ready for review. Never merges automatically.
+description: Shepherds an existing Wave-linked pull request through CI, review comments, conflicts, and verification to a merge-ready gate. Use when the user asks to babysit a Wave PR, fix CI on Wave work, or get a linked PR merge-ready. Never merges. Not for evaluating unapproved opportunities or launching new implementation.
 disable-model-invocation: true
 ---
 
@@ -40,12 +40,15 @@ For each active PR:
 5. Review the result against the current opportunity acceptance criteria—not merely the
    PR description.
 6. For frontend behavior, capture a screenshot or GIF. For backend work, attach a test
-   log, trace, or other concise proof. Use the exact upload sequence in the shared
-   contract and bind artifacts to one-based acceptance-criterion indexes.
+   log, trace, or other concise proof. Follow the contract upload sequence
+   (`prepare_upload` → execute the returned curl exactly → `finalize_upload`, or
+   `create_link` for a hosted URL) and bind artifacts to one-based acceptance-criterion
+   indexes. If proof cannot be captured or uploaded, leave the work `IN_PROGRESS` and
+   explain the gap.
 7. Ensure the idempotent `DELIVERED_VIA` relation exists with full PR URL.
 8. Add/update the `wave_pr_ready` comment. Use:
-   - `IN_PROGRESS` while checks or criteria are incomplete;
-   - `FOR_REVIEW` only when the PR is genuinely reviewable.
+   - `IN_PROGRESS` while checks or criteria are incomplete or unverified;
+   - `FOR_REVIEW` only when checks pass and required acceptance criteria have artifacts.
 9. Add `pr-ready` when all checks and criteria pass; remove stale failure/block tags.
 
 ## Human gate
@@ -78,4 +81,5 @@ verified shipped, or explicitly parked.
 - Never open a duplicate PR for an existing branch.
 - Do not resolve ambiguous review feedback by guessing.
 - Verification proves user-visible acceptance criteria, not just compilation.
+- Never mark `FOR_REVIEW` without the required screenshot/GIF or backend proof uploaded.
 - Never merge.

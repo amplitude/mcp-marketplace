@@ -24,7 +24,6 @@ EXPECTED_SKILLS = {
 MANUAL_SKILLS = {
     "wave-autopilot",
     "wave-babysit",
-    "wave-close-out",
     "wave-dispatch-handoff",
     "wave-experiment",
     "wave-intake",
@@ -41,6 +40,7 @@ REQUIRED_SCENARIOS = {
     "intake-deduplication",
     "interrupted-run-resume",
     "queue-natural-language",
+    "queue-routes-to-dispatch",
     "real-problem-weak-plan",
     "refine-read-only",
     "scheduled-human-decision",
@@ -67,6 +67,12 @@ SCENARIO_TEXT_ASSERTIONS = {
         ("skills/wave-queue/SKILL.md", "read-only"),
         ("skills/wave-queue/SKILL.md", "Do not paginate"),
         ("skills/wave-queue/SKILL.md", "call `get`"),
+        ("skills/wave-queue/SKILL.md", "wave-dispatch-handoff"),
+    ],
+    "queue-routes-to-dispatch": [
+        ("skills/wave-queue/SKILL.md", "wave-dispatch-handoff"),
+        ("skills/wave-queue/SKILL.md", "wave-experiment"),
+        ("references/output-contracts.md", "wave-dispatch-handoff"),
     ],
     "real-problem-weak-plan": [
         ("skills/wave-evaluate/SKILL.md", "NEEDS_REPLAN"),
@@ -78,10 +84,13 @@ SCENARIO_TEXT_ASSERTIONS = {
     ],
     "existing-in-flight-pr": [
         ("skills/wave-dispatch-handoff/SKILL.md", "duplicate agent for an open/fresh PR"),
+        ("skills/wave-dispatch-handoff/SKILL.md", "do not code inline"),
     ],
     "experiment-worthy-change": [
         ("skills/wave-experiment/SKILL.md", "disabled"),
         ("skills/wave-experiment/SKILL.md", "Never enable a flag rollout"),
+        ("skills/wave-experiment/SKILL.md", "projectIds"),
+        ("skills/wave-experiment/SKILL.md", "enabled: false"),
     ],
     "direct-ship-correctness": [
         ("references/decision-rubrics.md", "Correctness, security, accessibility"),
@@ -95,6 +104,7 @@ SCENARIO_TEXT_ASSERTIONS = {
     ],
     "frontend-verification": [
         ("skills/wave-babysit/SKILL.md", "screenshot or GIF"),
+        ("skills/wave-babysit/SKILL.md", "Never mark `FOR_REVIEW` without"),
     ],
     "intake-deduplication": [
         ("skills/wave-intake/SKILL.md", "Do not submit a duplicate"),

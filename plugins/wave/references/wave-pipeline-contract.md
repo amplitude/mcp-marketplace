@@ -31,8 +31,8 @@ wrap or duplicate MCP tools.
 | Find events/properties | `search_amp_data_taxonomy` |
 | Read saved charts | `get_amplitude_charts` |
 | Run ad-hoc analytics | `query_amplitude_data` |
-| Flags/deployments | `use_amp_flags` |
-| Experiments | `use_amp_experiments` |
+| Flags/deployments | `use_amp_flags` (`create` takes a `flags` array; prepare with `enabled: false`) |
+| Experiments | `use_amp_experiments` (`create` requires `projectIds` as an array, not `projectId`) |
 | Metric definitions | `use_amplitude_metrics` |
 
 `get_amplitude_context` accepts a numeric project ID. Wave tools accept `projectId` as a
@@ -46,9 +46,10 @@ Resolve product areas through `query_wave_product_areas`.
 
 ## Customer configuration
 
-At the start of every skill, look for `wave-config.json` in the workspace root and then
-`.amplitude/wave-config.json`. Use it when present for project ID, repository mapping,
-commands, measurement window, staleness, and per-run caps.
+At the start of every skill, look for `wave-config.json` in the **application** workspace
+root and then `.amplitude/wave-config.json`. This file belongs in the product repository
+being changed, not in the marketplace checkout. Use it when present for project ID,
+repository mapping, commands, measurement window, staleness, and per-run caps.
 
 - Validate the configured project ID against `get_amplitude_context`; never trust or guess
   an inaccessible ID.

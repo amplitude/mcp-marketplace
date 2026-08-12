@@ -1,6 +1,6 @@
 ---
 name: wave-refine
-description: Audits the Amplitude Wave workflow across opportunity quality, plan improvements, agent/PR success, cycle time, experiment outcomes, measurement coverage, and skill drift. Use when users ask how the Wave pipeline is performing, want to improve Wave autonomy, review opportunity quality, or generate evidence-backed plugin changes. Produces recommendations; never silently self-edits.
+description: Audits Wave pipeline quality across plans, PRs, cycle time, measurement, and skill drift, then proposes reviewable patches. Use when the user asks how the Wave workflow is performing, wants autonomy metrics, or wants evidence-backed skill/contract changes. Not for evaluating one opportunity against code or ranking the morning queue.
 ---
 
 # Wave Refine
