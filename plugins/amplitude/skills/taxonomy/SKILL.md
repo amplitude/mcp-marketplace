@@ -412,31 +412,38 @@ Get information about the current user, organization, and accessible projects. C
 ### `get_amplitude_context` with `projectId`
 Get project-specific settings: time zone, currency, session definition, AI context. Use to understand project configuration before making changes.
 
-### `search`
-Search for charts, dashboards, notebooks, experiments, events, properties, cohorts, and other Amplitude content. Use this before `get_events` to find the event you're looking for.
+### `search_amp_entities` and `search_amp_data_taxonomy`
+Use `search_amp_entities` for charts, dashboards, notebooks, experiments,
+cohorts, and other Amplitude content. Use `search_amp_data_taxonomy` for events
+and properties.
 
-### `get_workspace_settings`
-Get workspace settings including approval workflow status. Check before writing to the default branch — when `approvalWF` is "Required", the user must create a non-default branch first.
+### `manage_amp_data_taxonomy`
+Use `action: "get"` for workspace settings, including approval workflow status.
+Check before writing to the default branch — when `approvalWF` is "Required",
+the user must create a non-default branch first.
 
 ## Event Discovery
 
-### `get_events`
-Retrieve events from a project with filtering by event types, limit, and cursor pagination. Returns full event objects including category and active status.
+### `manage_amp_events`
+Use `action: "get"` and `kind: "event"` to retrieve events from a project with
+filtering by event types, limit, and cursor pagination. Returns full event
+objects including category and active status.
 
-If the connected MCP server's `get_events` input schema accepts `_client`, every
-`get_events` call made by this skill MUST include this top-level caller
+If the connected MCP server's `manage_amp_events` input schema accepts `_client`,
+every `manage_amp_events` call made by this skill MUST include this top-level caller
 attribution exactly. Otherwise, omit `_client`.
 
 ```json
 "_client": { "type": "skill", "skill_name": "taxonomy" }
 ```
 
-- Use `search` first to find the event you're looking for.
-- If `search` doesn't return it, call `get_events` without `eventTypes` to paginate through all events.
+- Use `search_amp_data_taxonomy` first to find the event you're looking for.
+- If search doesn't return it, call `manage_amp_events` with `action: "get"` and
+  `kind: "event"` without `eventTypes` to paginate through all events.
 - If you know exact event type names, pass them via `eventTypes` for precise lookup.
 
-### `get_custom_or_labeled_events`
-Retrieve custom events, labeled (autotrack) events, or both from a project.
+Use `manage_amp_events` with `action: "get"` and `kind: "custom"`, `"labeled"`,
+or `"all"` to retrieve custom events, labeled (autotrack) events, or both.
 
 - `eventKind: "_all"` — both custom and labeled events (default).
 - `eventKind: "custom"` — non-autotrack custom events only.
@@ -465,10 +472,13 @@ All property types except `event` support limit/cursor pagination.
 
 ## Metadata Updates
 
-### `update_event`
-Update event metadata: descriptions, display names, categories, official status, and event names. Operates on the tracking plan.
+Use `manage_amp_events` with `action: "update"` and `kind: "event"` to update
+event metadata: descriptions, display names, categories, official status, and
+event names. It operates on the tracking plan.
 
-- Event type keys must match the event `name` exactly (case-sensitive) — not the `displayName`. Resolve via `get_events` first if needed.
+- Event type keys must match the event `name` exactly (case-sensitive) — not the
+  `displayName`. Resolve via `manage_amp_events` with `action: "get"` and
+  `kind: "event"` first if needed.
 - Supports `branchId` or `branchName` to target non-default branches.
 - Do not overwrite existing descriptions — append additional context instead.
 - Never update bracket-prefixed or vendor-prefixed events (`[Amplitude]`, `[Experiment]`, etc.) unless explicitly requested.
@@ -485,10 +495,12 @@ Update property metadata (description, official status, category, and/or name). 
 - Use `get_properties` first to verify property names and status before updating.
 - Requires "Update Tracking Plan" permission.
 
-### `update_custom_or_labeled_events`
-Update descriptions, categories, names, official status, and/or definitions on custom or labeled events.
+Use `manage_amp_events` with `action: "update"` and `kind: "custom"` or
+`"labeled"` to update descriptions, categories, names, official status, and/or
+definitions on custom or labeled events.
 
-- Only use when the user explicitly asks to update a "custom event" or "labeled event." For regular events, use `update_event`.
+- Only use when the user explicitly asks to update a "custom event" or "labeled
+  event." For regular events, use `kind: "event"`.
 - Definitions are **replaced in full**, not merged — pass the complete new source-event list.
 - Renaming will break chart references — always warn the user.
 

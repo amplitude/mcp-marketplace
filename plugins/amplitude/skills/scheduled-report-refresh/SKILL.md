@@ -20,7 +20,7 @@ scheduled runs re-pulling a known set of charts and summarizing changes.
    the report uses.
 3. **Fill gaps ad hoc.** `query_amplitude_data` (typed `chart`) only for
    numbers no saved chart covers (a new funnel step, a one-off slice).
-4. **Context for movement.** `get_deployments` once — recent deploys are
+4. **Context for movement.** `use_amp_flags` `action: 'list_deployments'` once — recent deploys are
    the first hypothesis for any metric movement.
 5. **Report.** Delta table first (metric, current, baseline, % change),
    then notable movers with hypotheses. State explicitly when the current
@@ -37,9 +37,3 @@ scheduled runs re-pulling a known set of charts and summarizing changes.
 - If a chart errors or returns empty, report it as a broken report item
   rather than silently dropping it — a missing tile in a recurring report
   is itself a finding.
-
-## Legacy surface
-
-If `use_amp_dashboards` / `get_amplitude_charts` are not in the tool list:
-`get_dashboard` reads the chart list, `query_charts` (≤3 ids) pulls data,
-and `query_dataset` fills gaps. The arc is unchanged.

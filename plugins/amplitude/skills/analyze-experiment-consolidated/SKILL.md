@@ -37,7 +37,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 - If ID: proceed to Step 1
 
 **If user asks about experiments generally:**
-- Use `Amplitude:search` with `entityTypes: ["EXPERIMENT"]` and relevant query terms
+- Use `Amplitude:search_amp_entities` with `entityTypes: ["EXPERIMENT"]` and relevant query terms
 - Present top 3-5 matches with names, IDs, and states
 - Ask user which experiment to analyze
 
@@ -60,8 +60,8 @@ Use `Amplitude:use_amp_experiments` with experiment ID to capture:
 - Extract metric IDs from the experiment response (e.g., "c4pn8fkv")
 - **CRITICAL: Amplitude MCP cannot retrieve metric names by ID directly**
 - Workaround options:
-  1. Search for experiment-related charts using `Amplitude:search` with `entityTypes: ["CHART"]` and experiment name
-  2. Use `Amplitude:get_charts` on related charts to examine their definitions for metric references
+  1. Search for experiment-related charts using `Amplitude:search_amp_entities` with `entityTypes: ["CHART"]` and experiment name
+  2. Use `Amplitude:get_amplitude_charts` with `include: "definition"` on related charts to examine their definitions for metric references
   3. Check if experiment description contains links to metric documentation
 - If metric names cannot be found, report as descriptive placeholders:
   - Primary metric: "Primary Goal Metric (ID: {id})"
@@ -83,13 +83,14 @@ If incomplete, explain what's missing and stop.
 when you need ad hoc per-variant numbers outside `analyze` (entry-point
 funnels, custom slices, cross-checks against another warehouse):
 
-- Discover the assignment event first: `search` for the experiment's flag
-  key and existing charts that filter on it — do not guess the event name.
+- Discover the assignment event first: use `search_amp_data_taxonomy` for the
+  experiment's flag key and `search_amp_entities` for existing charts that
+  filter on it — do not guess the event name.
 - Read how an existing experiment chart structures its variant segments
   (`get_amplitude_charts` with `include: "typed"` on one) and copy that
   pattern exactly — including the bucketing property (`subject_id_type`
   varies per experiment).
-- Verify assignment volume before analyzing: `query_dataset` for unique
+- Verify assignment volume before analyzing: `query_amplitude_data` for unique
   assignments per variant since launch. Zero or lopsided assignment =
   bucketing/ramp problem, not a metric result.
 
@@ -301,7 +302,7 @@ Based on the power and precision analysis from Step 2, evaluate if the experimen
 
 **For significant results (positive or negative):**
 
-Use `Amplitude:get_feedback_insights`:
+Use `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"`:
 - Filter by experiment date range
 - For wins: look for `["lovedFeature", "mentionedFeature"]`
 - For losses: look for `["bug", "complaint", "painPoint"]`
@@ -525,14 +526,14 @@ If user wants to **design a new experiment**, guide them through:
 1. **Define hypothesis:** "We believe [change] will cause [users] to [behavior] because [reason]"
 
 2. **Select metrics:**
-   - Use `Amplitude:search` with `entityTypes: ["METRIC"]` to find candidates
+   - Use `Amplitude:search_amp_entities` with `entityTypes: ["METRIC"]` to find candidates
    - Primary: directly measures hypothesis
    - Guardrails: revenue, retention, core engagement (prevent unintended consequences)
 
 3. **Estimate sample size:**
    - Typical: 1-2 weeks minimum, 1000+ users per variant
    - Higher variance metrics need more data
-   - Use `Amplitude:query_charts` to check metric's historical variance
+   - Use `Amplitude:query_amplitude_data` to check the metric's historical variance
 
 4. **Create experiment:**
    - Use `Amplitude:use_amp_experiments` with projectIds, variants, and metrics

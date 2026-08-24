@@ -14,15 +14,15 @@ Investigate bugs by finding session replays where the error occurred, extracting
 
 This skill operates on three Amplitude Session Replay tools. Use them in this order:
 
-1. **`Amplitude:get_session_replays`** — Find sessions matching event filters (errors, specific users, time windows). Returns session metadata and replay links.
-2. **`Amplitude:list_session_replays`** — Simple paginated listing when you already have a user/device ID or just need recent sessions. Returns `replay_id` in `device_id/session_id` format.
-3. **`Amplitude:get_session_replay_events`** — Decode a specific replay into an interaction timeline: navigations, clicks, inputs, scrolls. Requires `replay_id` from the tools above.
+1. **`Amplitude:get_amp_session_replay_info`** with `action: "search"` — Find sessions matching event filters (errors, specific users, time windows). Returns session metadata and replay links.
+2. **`Amplitude:get_amp_session_replay_info`** with `action: "list"` — Simple paginated listing when you already have a user/device ID or just need recent sessions. Returns a session replay ID in `device_id/session_id` format.
+3. **`Amplitude:get_amp_session_replay_info`** with `action: "events"` — Decode a specific replay into an interaction timeline: navigations, clicks, inputs, scrolls. Pass the ID from the tools above as `sessionReplayId`.
 
 Supporting tools used in this skill:
-- **`Amplitude:get_users`** — Look up users by email, user ID, or other identifiers.
-- **`Amplitude:get_events`** — Discover valid event names before filtering. Never guess event names.
+- **`Amplitude:use_amplitude_cohorts`** with `action: "find"` — Look up users by email, user ID, or other identifiers.
+- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names before filtering. Never guess event names.
 - **`Amplitude:get_properties`** — Discover properties available on an event for filtering.
-- **`Amplitude:get_deployments`** — Check if error aligns with a recent deploy.
+- **`Amplitude:use_amp_flags`** with `action: "list_deployments"` — Check if error aligns with a recent deploy.
 
 ---
 
@@ -42,35 +42,23 @@ If the report is vague (e.g., "something is broken in checkout"), ask one clarif
 ### Step 2: Get Context and Find the Error Event
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to investigate.
-2. Call `Amplitude:get_events` to confirm the error event name exists in the project. Common patterns:
+2. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to confirm the error event name exists in the project. Common patterns:
    - `[Amplitude] Error Logged` — auto-captured JS errors
    - `[Amplitude] Network Request` with status code filters — API failures
    - Custom error events specific to the product
-3. If a user identifier was provided, call `Amplitude:get_users` to look up the user and get their user ID and device ID.
+3. If a user identifier was provided, call `Amplitude:use_amplitude_cohorts` with `action: "find"` to look up the user and get their user ID and device ID.
 
 ### Step 3: Find Error Sessions
 
-Use `Amplitude:get_session_replays` to find sessions where the error occurred. Build filters based on what you know:
+Use `Amplitude:get_amp_session_replay_info` with `action: "search"` to find sessions where the error occurred. Build filters based on what you know:
 
 **If you have a specific user:**
 ```json
 {
-  "eventCountFilters": [
-    {
-      "count": "1",
-      "operator": "greater or equal",
-      "event": {
-        "event_type": "_all",
-        "filters": [{"group_type": "User", "subprop_key": "gp:email", "subprop_op": "is", "subprop_type": "user", "subprop_value": ["user@example.com"]}],
-        "group_by": []
-      }
-    },
-    {
-      "count": "1",
-      "operator": "greater or equal",
-      "event": {"event_type": "[Amplitude] Error Logged", "filters": [], "group_by": []}
-    }
-  ],
+  "action": "search",
+  "projectId": "12345",
+  "userProperties": [{"name": "gp:email", "is": "user@example.com"}],
+  "events": [{"name": "[Amplitude] Error Logged"}],
   "limit": 5
 }
 ```
@@ -78,15 +66,12 @@ Use `Amplitude:get_session_replays` to find sessions where the error occurred. B
 **If you have an error message but no specific user:**
 ```json
 {
-  "eventCountFilters": [
+  "action": "search",
+  "projectId": "12345",
+  "events": [
     {
-      "count": "1",
-      "operator": "greater or equal",
-      "event": {
-        "event_type": "[Amplitude] Error Logged",
-        "filters": [{"group_type": "User", "subprop_key": "Error Message", "subprop_op": "contains", "subprop_type": "event", "subprop_value": ["TypeError"]}],
-        "group_by": []
-      }
+      "name": "[Amplitude] Error Logged",
+      "withProperty": {"name": "Error Message", "contains": "TypeError"}
     }
   ],
   "limit": 5
@@ -97,7 +82,7 @@ Request 3-5 sessions. More sessions give better pattern extraction; fewer saves 
 
 ### Step 4: Extract Interaction Timelines
 
-For each session found in Step 3, call `Amplitude:get_session_replay_events` with the `replay_id`.
+For each session found in Step 3, call `Amplitude:get_amp_session_replay_info` with `action: "events"` and the `sessionReplayId`.
 
 - Use `event_limit: 500` for standard sessions
 - Use `event_limit: 200` if analyzing 4+ sessions (to manage context)
@@ -121,7 +106,7 @@ If only 1 session is available, extract the timeline as-is and note that it hasn
 
 ### Step 6: Check Deployment Context
 
-Call `Amplitude:get_deployments` once. If an error spike aligns with a recent deploy, note it — this is critical context for the engineer.
+Call `Amplitude:use_amp_flags` with `action: "list_deployments"` once. If an error spike aligns with a recent deploy, note it — this is critical context for the engineer.
 
 ### Step 7: Present Reproduction Steps
 
@@ -168,12 +153,12 @@ Structure the output as an engineering-ready bug report.
 
 ## Edge Cases
 
-- **No error events found.** The project may not have auto-capture enabled, or the error may be tracked under a custom event name. Call `Amplitude:get_events` and search for error-related events. Report what you find and suggest what to instrument if nothing exists.
-- **User not found.** If `get_users` returns nothing, try searching with alternative identifiers (email domain, partial match). If still nothing, proceed without user filtering and search by error event alone.
+- **No error events found.** The project may not have auto-capture enabled, or the error may be tracked under a custom event name. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` and search for error-related events. Report what you find and suggest what to instrument if nothing exists.
+- **User not found.** If `use_amplitude_cohorts` with `action: "find"` returns nothing, try searching with alternative identifiers (email domain, partial match). If still nothing, proceed without user filtering and search by error event alone.
 - **Sessions found but no replay events.** Some sessions may not have rrweb data (replay disabled, ad blocker, etc.). Skip those sessions and note it. Try the next session.
 - **Only 1 session available.** Present the timeline as "unvalidated reproduction steps" with Low confidence. Suggest the user try to reproduce manually to confirm.
 - **Error is intermittent.** If sessions show different paths to the same error, present them as separate reproduction paths: "Path A (seen in 3/5 sessions)" and "Path B (seen in 2/5 sessions)."
-- **nodeId values can't be resolved.** `get_session_replay_events` returns DOM node IDs, not element names. Describe interactions by position (x, y coordinates), page context, and sequence rather than element identity. Use phrasing like "click in the upper-right area of the form" rather than "click the Submit button" unless you can infer from context.
+- **nodeId values can't be resolved.** `get_amp_session_replay_info` with `action: "events"` returns DOM node IDs, not element names. Describe interactions by position (x, y coordinates), page context, and sequence rather than element identity. Use phrasing like "click in the upper-right area of the form" rather than "click the Submit button" unless you can infer from context.
 
 ## Examples
 
@@ -183,8 +168,8 @@ User says: "Customer jane@acme.com says the export button doesn't work"
 
 Actions:
 1. Get context and confirm project
-2. Look up jane@acme.com via `get_users`
-3. Find her recent sessions with `get_session_replays` filtered to her email + any error events
+2. Look up jane@acme.com via `use_amplitude_cohorts` with `action: "find"`
+3. Find her recent sessions with `get_amp_session_replay_info` `action: "search"` filtered to her email + any error events
 4. Extract interaction timelines from 2-3 sessions
 5. Identify the common path: navigates to reports → clicks export → nothing happens (or error)
 6. Present numbered repro steps with replay links
@@ -195,7 +180,7 @@ User says: "TypeError errors doubled yesterday, can you get repro steps?"
 
 Actions:
 1. Get context, confirm `[Amplitude] Error Logged` exists
-2. Find sessions with TypeError in the last 48 hours via `get_session_replays`
+2. Find sessions with TypeError in the last 48 hours via `get_amp_session_replay_info` `action: "search"`
 3. Extract timelines from 3-5 sessions
 4. Compare timelines to find the common action sequence before the TypeError
 5. Check deployments for what shipped yesterday

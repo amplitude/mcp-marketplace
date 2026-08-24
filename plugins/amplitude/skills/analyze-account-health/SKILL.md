@@ -16,7 +16,7 @@ Deep-dive into a B2B account's product usage to prepare for QBRs, assess renewal
 - Ask user if not provided
 
 **Search for existing work:**
-Use `Amplitude:search` to find existing dashboards, charts, or notebooks for this account. If found, ask user if they want fresh analysis or to review existing.
+Use `Amplitude:search_amp_entities` to find existing dashboards, charts, or notebooks for this account. If found, ask user if they want fresh analysis or to review existing.
 
 **Resolve how accounts are modelled — do this before any query.**
 Every step below breaks down "by account", and there are three different ways a
@@ -41,7 +41,7 @@ used, since the numbers are not interchangeable.
 
 ### Step 1: Quick Health Triage
 
-Use `Amplitude:query_dataset` to run these queries in parallel:
+Use `Amplitude:query_amplitude_data` to run these queries in parallel:
 
 **Usage Trend:**
 - Event: `_active`, Metric: `uniques`, Group by: the account property resolved in Step 0 (with its scope)
@@ -66,7 +66,7 @@ Use `Amplitude:query_dataset` to run these queries in parallel:
 
 ### Step 2: User-Level Analysis
 
-Use `Amplitude:query_dataset` with user-level groupBy:
+Use `Amplitude:query_amplitude_data` with user-level groupBy:
 
 **Power Users:**
 - Top 3-5 users by event volume (champions to leverage)
@@ -81,7 +81,7 @@ Use `Amplitude:query_dataset` with user-level groupBy:
 
 ### Step 3: Feature Usage Analysis
 
-Use `Amplitude:query_dataset` grouped by events/features:
+Use `Amplitude:query_amplitude_data` grouped by events/features:
 
 **Feature Breadth:**
 - Which core features are being used (ask user for 5-10 key features)
@@ -100,16 +100,16 @@ Use `Amplitude:query_dataset` grouped by events/features:
 ### Step 4: Account Feedback Analysis
 
 **Get feedback sources:**
-Use `Amplitude:get_feedback_sources` to see what's available.
+Use `Amplitude:use_amplitude_ai_feedback` with `facet: "sources"` to see what's available.
 
 **Get feedback insights:**
-Use `Amplitude:get_feedback_insights` filtered by:
+Use `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` filtered by:
 - ampId for each user in the account
 - dateStart/dateEnd: Last 90 days
 - types: `bug`, `painPoint`, `complaint`, `request`, `lovedFeature`
 
 **Get specific mentions:**
-For top 3-5 insights, use `Amplitude:get_feedback_mentions` to get quotes.
+For top 3-5 insights, use `Amplitude:use_amplitude_ai_feedback` with `facet: "mentions"` to get quotes.
 
 **Correlate with behavior:**
 - Complaint about Feature X? Query their usage of Feature X
