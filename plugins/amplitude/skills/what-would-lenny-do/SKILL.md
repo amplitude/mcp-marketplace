@@ -42,6 +42,7 @@ From your search results, identify the **2–4 most relevant pieces** using this
 - **Diversity of perspective**: Where possible, include at least one founder/exec voice alongside a PM/operator voice
 
 For each selected piece:
+
 - **Full read** (`lennysdata:read_content`): Use when the piece is central and you need the full context, framework, or narrative arc
 - **Excerpt** (`lennysdata:read_excerpt`): Use when you only need a specific section — saves context and is faster when the piece is long and the relevant part is well-defined
 
@@ -62,7 +63,7 @@ Structure your response as:
 
 **The question, sharpened** (1 sentence): Restate the user's question in its clearest possible form — the real question is often subtly different from what was asked.
 
-**What the archive says** (3–5 paragraphs): Explore the solution space using specific frameworks, quotes, and operator experiences from what you read. Cover 2–3 distinct strategies or angles. Don't just summarize — *apply* the frameworks to the user's specific situation. Each paragraph should represent a distinct perspective, strategy, or tradeoff. Name the source and guest inline naturally: "In his conversation with Lenny, Jason Cohen argues..." or "Molly Graham's framework for rapid scale suggests..."
+**What the archive says** (3–5 paragraphs): Explore the solution space using specific frameworks, quotes, and operator experiences from what you read. Cover 2–3 distinct strategies or angles. Don't just summarize — _apply_ the frameworks to the user's specific situation. Each paragraph should represent a distinct perspective, strategy, or tradeoff. Name the source and guest inline naturally: "In his conversation with Lenny, Jason Cohen argues..." or "Molly Graham's framework for rapid scale suggests..."
 
 **The call** (1–2 paragraphs): Give a concrete, opinionated recommendation. Don't retreat into "it depends" — commit to a direction, explain the reasoning, and note the conditions under which a different path would be right. Lenny always makes a call; so should you.
 
@@ -93,6 +94,7 @@ Format: `— [Title] ([Guest], [Date]) — [what it contributed]`
 User asks: "We're at $2M ARR and growth has plateaued. What should I focus on?"
 
 Actions:
+
 1. Extract: stalled growth, ~$2M ARR, prioritization under uncertainty
 2. Search: "growth plateau stalled" + "5 questions product stops growing"
 3. Read Jason Cohen episode (5-question framework), Elena Verna episode (growth systems)
@@ -104,6 +106,7 @@ Actions:
 User asks: "How do I lead a team through rapid headcount growth without losing culture?"
 
 Actions:
+
 1. Extract: leadership at scale, managing culture through growth, team change management
 2. Search: "scale rapidly chaos leadership culture" + "leading growth change frameworks"
 3. Read Molly Graham episode (leading through chaos), Matt MacInnis episode (contrarian leadership truths)
@@ -115,6 +118,7 @@ Actions:
 User asks: "We're shipping AI features but users aren't adopting them. How do we change that?"
 
 Actions:
+
 1. Extract: AI feature adoption, user trust, behavioral friction
 2. Search: "AI product adoption trust users" + "eval feedback loop AI features"
 3. Read Hamel Husain/Shreya Shankar episode (AI evals), Aishwarya/Kiriti episode (actionable feedback loops)
@@ -126,6 +130,7 @@ Actions:
 User asks: "How should we price our new AI product?"
 
 Actions:
+
 1. Extract: AI product pricing model, value capture, B2B SaaS context
 2. Search: "pricing AI product lessons" + "outcome-based pricing SaaS"
 3. Read Madhavan Ramanujam episode (lessons from 400+ companies), Intercom/Eoghan McCabe episode (betting on AI, pricing shift)
@@ -135,16 +140,21 @@ Actions:
 ## Troubleshooting
 
 ### Search returns no relevant results
+
 Try shorter, more concrete keywords. Try synonyms or reframe around the underlying problem (e.g., "users don't trust AI" → "AI adoption friction" → "feature adoption behavioral"). As a fallback, `list_content` by recency and scan the last 6 months of titles and descriptions manually.
 
 ### Content is tangentially related but not a direct match
+
 Still use it — analogous situations are valuable. Explicitly frame it: "In an analogous situation, [guest] found that..." rather than pretending it's a perfect fit.
 
 ### User question is very broad
+
 Sharpen it before searching. Ask yourself: what specific tension is the user facing? Are they asking about prioritization? Team dynamics? User research? Pick the most likely specific interpretation and search for that. If genuinely ambiguous, ask one clarifying question.
 
 ### Conflicting advice across sources
+
 Surface the tension explicitly: "Lenny's conversation with X suggests doing Y, while Z recommends the opposite because..." Then explain which context determines which path is right — and still make your call.
 
 ### Strong search results but very long articles
+
 Use `read_excerpt` to extract the most relevant sections rather than reading the full piece. This keeps your context focused and your answer sharper.

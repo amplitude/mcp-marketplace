@@ -13,6 +13,7 @@ You investigate specific AI agent sessions or failure patterns to determine root
 ### Step 1: Determine Investigation Scope
 
 The user will provide one of:
+
 - **A specific session ID** → go directly to Step 2
 - **A failure pattern** (e.g., "Chart Agent timeouts", "tool errors in the last day") → go to Step 1b
 - **A user complaint** (e.g., "user X said the agent didn't work") → go to Step 1c
@@ -120,6 +121,7 @@ Structure the output as a root cause analysis.
 User says: "What happened in session abc-123?"
 
 Actions:
+
 1. Get detailed session data, conversation, and spans for abc-123 (3 parallel calls)
 2. Read the conversation to understand what the user wanted
 3. Trace the spans to find where the execution failed
@@ -131,6 +133,7 @@ Actions:
 User says: "Why are Chart Agent sessions failing?"
 
 Actions:
+
 1. Get AI schema to confirm "Chart Agent" is a valid agent name
 2. Query recent Chart Agent failures (hasTaskFailure: true, agentNames: ["Chart Agent"])
 3. Pick the 3 most recent failures and deep-dive into each
@@ -143,6 +146,7 @@ Actions:
 User says: "A customer said our AI gave them wrong data yesterday"
 
 Actions:
+
 1. Ask for the customer's email or user ID
 2. Search for their sessions from yesterday
 3. Deep-dive into the relevant session(s)
@@ -153,10 +157,13 @@ Actions:
 ## Troubleshooting
 
 ### Session ID not found
+
 The session may be from a different project, or outside the data retention window. Ask the user to confirm the project and check if the session ID is correct.
 
 ### Spans not available for a session
+
 Span-level data requires OpenTelemetry-compatible tracing in the AI agent. Report what's available from the session and conversation level and note that span data would help narrow the root cause.
 
 ### Too many failing sessions to investigate
+
 Don't try to investigate more than 5 sessions in detail. Instead, use `groupBy` on `query_agent_analytics_sessions` to find the common pattern, then deep-dive into 2-3 representative examples.

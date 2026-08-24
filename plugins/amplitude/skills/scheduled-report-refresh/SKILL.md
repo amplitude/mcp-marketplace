@@ -5,7 +5,7 @@ description: Refreshes recurring reports (daily briefings, WBRs, experiment brie
 
 # Scheduled Report Refresh
 
-The dominant *automated* job on this MCP server: custom agents and
+The dominant _automated_ job on this MCP server: custom agents and
 scheduled runs re-pulling a known set of charts and summarizing changes.
 
 ## The arc

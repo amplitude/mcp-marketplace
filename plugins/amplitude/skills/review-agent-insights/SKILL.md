@@ -13,9 +13,11 @@ Surface everything Amplitude's AI agents have found recently. Query **every avai
 ## CRITICAL: Tool Reference
 
 **Primary tool:**
+
 - **`Amplitude:get_agent_results`** — Retrieve pre-computed analyses from Amplitude's AI agents. Supports multiple agent types (check the tool's `agent_type` enum for the current list). Each agent type is queried separately. All support filtering by `created_after`, `created_before`, `query`, `agent_params`, and `limit`.
 
 **Supporting tools:**
+
 - **`Amplitude:get_amplitude_context`** / **`Amplitude:get_amplitude_context`** — Bootstrap user, org, and project info.
 - **`Amplitude:get_deployments`** — Check whether fixes have shipped for flagged issues (staleness validation).
 
@@ -29,6 +31,7 @@ Surface everything Amplitude's AI agents have found recently. Query **every avai
 2. Call `Amplitude:get_amplitude_context` for the target project's settings and AI context.
 
 Determine the **review window** from the user's request:
+
 - Default: **last 7 days** (good balance of recency and coverage).
 - "What's new today?" → last 1-2 days.
 - "Catch me up on this month" → last 14-30 days.
@@ -45,6 +48,7 @@ Check the `get_agent_results` tool descriptor to discover every available `agent
 If the user asked about a specific area (e.g., "onboarding insights"), add a `query` matching that area to every call. If an agent type supports additional filtering via `agent_params` (e.g., impact ratings, categories, dashboard IDs), use them to focus results when the user's request suggests a narrower scope — otherwise omit `agent_params` to get the broadest view.
 
 For each result returned, note:
+
 - Which agent type produced it
 - The key findings or summary
 - When the analysis was run (creation date)
@@ -109,6 +113,7 @@ needs fresh validation. Omit this line if the finding is < 3 days old.
 4. **Follow-on prompt**: End with 2-3 specific options for what to dig into next, framed around the findings.
 
 **Writing standards:**
+
 - Narrative over structure. Write findings as paragraphs, not database records.
 - Lead with the insight, use agent type attribution as supporting evidence.
 - Approximate: "~42%" not "42.37%".
@@ -135,6 +140,7 @@ needs fresh validation. Omit this line if the finding is < 3 days old.
 User says: "What has the AI found recently?"
 
 Actions:
+
 1. Get context — identify key project and dashboards
 2. Check `get_agent_results` for all available agent types, query each in parallel with `created_after` set to 7 days ago
 3. Validate freshness — cross-reference against deployments, filter out stale findings
@@ -146,6 +152,7 @@ Actions:
 User says: "Any AI insights about onboarding?"
 
 Actions:
+
 1. Get context
 2. Query all agent types with `query: "onboarding"`, `created_after` set to 7 days ago
 3. Filter to only onboarding-related findings
@@ -156,6 +163,7 @@ Actions:
 User says: "Show me all AI agent insights"
 
 Actions:
+
 1. Get context
 2. All agent type queries return empty within the review window
 3. Present: "No AI agent results found in the last 7 days. Here's how to generate them:" — list each agent type that was queried, what it does, and suggest specific content to analyze

@@ -13,10 +13,12 @@ Watch 5-10 session replays for a specific feature, page, or flow, then synthesiz
 ## CRITICAL: Tool Reference
 
 **Primary tools:**
+
 - **`Amplitude:get_session_replays`** — Find sessions matching event filters, user properties, or time windows. Use this to target sessions for a specific feature or flow.
 - **`Amplitude:get_session_replay_events`** — Decode a replay into an interaction timeline: navigations, clicks, inputs, scrolls. This is what you "watch."
 
 **Supporting tools:**
+
 - **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
 - **`Amplitude:get_properties`** — Discover properties for filtering (page path, feature area, etc.).
 - **`Amplitude:query_charts`** — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
@@ -36,6 +38,7 @@ Determine what to audit from the user's request:
 - **Broad**: "Audit the whole product" — narrow this down. Ask: "Which area would you like me to start with?" Suggest 2-3 areas based on high-traffic pages or known problem areas if you can identify them.
 
 Also determine:
+
 - **Time window**: Default to last 14 days unless specified.
 - **User segment** (optional): Specific plan, platform, cohort, or user type.
 
@@ -79,17 +82,18 @@ For each session, call `Amplitude:get_session_replay_events` with `event_limit: 
 
 **While analyzing each session, track these friction signals:**
 
-| Signal | What to look for in the timeline |
-|---|---|
-| **Rage clicks** | 3+ clicks on the same coordinates within a short time span |
-| **Hesitation** | Long pauses (>10 seconds) between navigation and first interaction on a page |
-| **Back-and-forth** | Navigating to a page, then back, then forward again |
-| **Abandoned inputs** | Starting to type in a field, then navigating away without submitting |
-| **Excessive scrolling** | Large scroll deltas suggesting the user is searching for something |
-| **Dead-end navigation** | Visiting a page and immediately leaving (bounce within seconds) |
-| **Repeat attempts** | Performing the same action multiple times (re-submitting a form, re-clicking a button) |
+| Signal                  | What to look for in the timeline                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| **Rage clicks**         | 3+ clicks on the same coordinates within a short time span                             |
+| **Hesitation**          | Long pauses (>10 seconds) between navigation and first interaction on a page           |
+| **Back-and-forth**      | Navigating to a page, then back, then forward again                                    |
+| **Abandoned inputs**    | Starting to type in a field, then navigating away without submitting                   |
+| **Excessive scrolling** | Large scroll deltas suggesting the user is searching for something                     |
+| **Dead-end navigation** | Visiting a page and immediately leaving (bounce within seconds)                        |
+| **Repeat attempts**     | Performing the same action multiple times (re-submitting a form, re-clicking a button) |
 
 For each session, write a brief summary:
+
 - Pages visited in the target area
 - Key actions taken
 - Friction signals observed (with timestamps)
@@ -103,12 +107,12 @@ This is the core analytical step. Aggregate findings across all watched sessions
 2. **Count frequency.** How many of the watched sessions showed this friction? Express as "seen in X of Y sessions."
 3. **Assess severity.** Use this rubric:
 
-| Severity | Criteria |
-|---|---|
-| **Critical** | Blocks task completion. User gives up or encounters an error. Seen in 50%+ of sessions. |
-| **High** | Causes significant confusion or delay. User eventually succeeds but with visible struggle. Seen in 30%+ of sessions. |
-| **Medium** | Causes minor hesitation or suboptimal paths. User recovers quickly. Seen in 20%+ of sessions. |
-| **Low** | Cosmetic or minor annoyance. Seen in <20% of sessions or only in edge cases. |
+| Severity     | Criteria                                                                                                             |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Critical** | Blocks task completion. User gives up or encounters an error. Seen in 50%+ of sessions.                              |
+| **High**     | Causes significant confusion or delay. User eventually succeeds but with visible struggle. Seen in 30%+ of sessions. |
+| **Medium**   | Causes minor hesitation or suboptimal paths. User recovers quickly. Seen in 20%+ of sessions.                        |
+| **Low**      | Cosmetic or minor annoyance. Seen in <20% of sessions or only in edge cases.                                         |
 
 4. **Identify root cause hypotheses.** For each friction pattern, hypothesize why it happens:
    - Unclear UI labeling or hierarchy
@@ -183,6 +187,7 @@ hesitate, what goes wrong. Be specific about the page and interaction.
 User says: "Audit the onboarding experience for new users"
 
 Actions:
+
 1. Get context, discover onboarding-related events
 2. Query the onboarding funnel for conversion rates and worst drop-off step
 3. Find 8-10 sessions of new users going through onboarding
@@ -195,6 +200,7 @@ Actions:
 User says: "What's the UX like on our pricing page?"
 
 Actions:
+
 1. Get context, find pricing page events (page view, plan selection, CTA clicks)
 2. Query pricing page traffic and click-through rate as baseline
 3. Find 8 sessions that visited the pricing page
@@ -207,6 +213,7 @@ Actions:
 User says: "Are enterprise users having trouble with the report builder?"
 
 Actions:
+
 1. Get context, find report builder events
 2. Filter sessions to enterprise plan users + report builder events
 3. Extract timelines from 6-8 sessions

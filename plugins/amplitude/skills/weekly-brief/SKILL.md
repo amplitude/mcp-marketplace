@@ -31,7 +31,7 @@ Before scanning data, build context about who you're talking to and what they ca
 
 Gather data with a full-week lens. The primary time window is **the last 7 complete days**. Use the prior 4 weeks as a comparison baseline to contextualize whether this week's numbers represent a meaningful shift or normal variance.
 
-**Important: Cast a wide net across the platform.** Don't limit yourself to the user's most-viewed dashboards. Use the official/top-viewed content discovered in Phase 1 to surface things the user *wouldn't* have seen on their own. But be efficient — batch calls and avoid redundant fetches.
+**Important: Cast a wide net across the platform.** Don't limit yourself to the user's most-viewed dashboards. Use the official/top-viewed content discovered in Phase 1 to surface things the user _wouldn't_ have seen on their own. But be efficient — batch calls and avoid redundant fetches.
 
 Run these in parallel where possible:
 
@@ -79,13 +79,13 @@ Transform your analysis into a concise, narrative briefing the user could forwar
 
 **Persona calibration:**
 
-| Persona     | Language Style                                         | Lead With                    |
-|-------------|--------------------------------------------------------|------------------------------|
-| Executive   | Strategic (revenue, competitive position, market share) | Business outcomes            |
-| PM          | Feature-oriented (conversion, activation, adoption)    | Experiment results, funnels  |
-| Analyst     | Methodological (p-values, significance, confidence)    | Statistical rigor, drill-downs |
-| Growth      | Channel-focused (LTV, retention cohort, acquisition)   | Acquisition and retention    |
-| Engineering | Technical (error rate, p95 latency, crash-free rate)   | Deployments, error spikes    |
+| Persona     | Language Style                                          | Lead With                      |
+| ----------- | ------------------------------------------------------- | ------------------------------ |
+| Executive   | Strategic (revenue, competitive position, market share) | Business outcomes              |
+| PM          | Feature-oriented (conversion, activation, adoption)     | Experiment results, funnels    |
+| Analyst     | Methodological (p-values, significance, confidence)     | Statistical rigor, drill-downs |
+| Growth      | Channel-focused (LTV, retention cohort, acquisition)    | Acquisition and retention      |
+| Engineering | Technical (error rate, p95 latency, crash-free rate)    | Deployments, error spikes      |
 
 **Writing standards:**
 
@@ -121,6 +121,7 @@ Before delivering, verify your work. Prefer reviewing data you already have over
 User says: "Give me my weekly summary"
 
 Actions:
+
 1. Detect persona from context (executive based on dashboard usage patterns)
 2. Discover official dashboards, top-viewed charts across the org, and recently modified content
 3. Query all discovered charts at weekly granularity over the last 5 weeks, rank by WoW magnitude
@@ -143,6 +144,7 @@ Example output:
 > API growth is genuinely compounding with no signs of flattening — the power user cohort growing 30% WoW validates that customers are finding real value, not just kicking tires. Scheduled workflow adoption continues at a healthy clip (~450 new this week), signaling sticky, recurring usage.
 >
 > **Next week's priorities**
+>
 > 1. Segment the notification open rate decline by user activity level (power users vs. casual) and notification frequency to determine if fatigue is concentrated in high-volume recipients — this tells you whether frequency caps or digest mode is the right fix.
 > 2. Build a dashboard tracking the assistant feature's weekly trajectory, including active users, message volume, engagement rate, and satisfaction ratio by week — you need a persistent view to spot the inflection from early adopter to mainstream.
 > 3. Run a funnel analysis on API power users (50+ calls/week) to understand what they do differently in their first 7 days vs. users who churn — use this to inform an activation campaign for the next tier of adopters.
@@ -152,21 +154,26 @@ Example output:
 ## Troubleshooting
 
 ### Error: No dashboards found
+
 Cause: User may not have created dashboards, or the project has limited setup.
 Solution: Fall back to searching for any charts or events. Use `search` broadly and build context from whatever is available. Let the user know their setup is limited and suggest creating a key metrics dashboard.
 
 ### Error: Feedback API returns 400
+
 Cause: Called `get_feedback_insights` without first calling `get_feedback_sources`, or passed multiple values in the `types` array.
 Solution: ALWAYS call `get_feedback_sources` first. Only pass a single type value per call, or omit the types parameter entirely.
 
 ### Error: Metrics look flat / nothing interesting
+
 Cause: This week looks similar to the prior 4 weeks — stability is a finding worth reporting.
 Solution: Frame it as a positive: "Your key metrics held steady this week — no fires and no regressions. Here are the slow-moving trends worth watching over the next 2-4 weeks..."
 
 ### Error: Too many findings, report is overwhelming
+
 Cause: Broad gathering surfaced too much signal.
 Solution: Ruthlessly prioritize. Cap at 5 findings maximum. Use severity scoring (impact × confidence × strategic relevance) to rank. Merge related findings into narrative threads. Demote lower-priority items to a "Background Context" appendix.
 
 ### Error: Current week is only partially complete
+
 Cause: User asks for a weekly brief mid-week.
 Solution: Explicitly note the partial status up front ("through Wednesday, 4 of 7 days"). Compare pace (e.g., through-Wednesday this week vs. through-Wednesday last week) rather than raw weekly totals. Caveat any projections and avoid declaring trends based on incomplete data.

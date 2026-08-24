@@ -103,15 +103,16 @@ Structure the output for quick scanning and action.
 
 **Status thresholds:**
 
-| Metric | Good | Warning | Critical |
-|--------|------|---------|----------|
-| Quality Score | >0.7 | 0.4-0.7 | <0.4 |
-| Success Rate | >80% | 60-80% | <60% |
-| Sentiment | >0.6 | 0.5-0.6 | <0.5 |
-| Task Failure Rate | <10% | 10-25% | >25% |
-| P90 Latency | <10s | 10-30s | >30s |
+| Metric            | Good | Warning | Critical |
+| ----------------- | ---- | ------- | -------- |
+| Quality Score     | >0.7 | 0.4-0.7 | <0.4     |
+| Success Rate      | >80% | 60-80%  | <60%     |
+| Sentiment         | >0.6 | 0.5-0.6 | <0.5     |
+| Task Failure Rate | <10% | 10-25%  | >25%     |
+| P90 Latency       | <10s | 10-30s  | >30s     |
 
 **Writing standards:**
+
 - Lead with the insight, not the data point
 - Use approximate numbers ("~85%" not "84.7%")
 - Always state the time window
@@ -125,6 +126,7 @@ Structure the output for quick scanning and action.
 User says: "How are our AI agents doing?"
 
 Actions:
+
 1. Get context and AI schema
 2. Query analytics overview + time series + recent failures + frustrated users (4 parallel calls)
 3. Identify the agent with the worst quality score and the top error category
@@ -136,6 +138,7 @@ Actions:
 User says: "How's the Chart Agent performing this week?"
 
 Actions:
+
 1. Get context, then query analytics with `agentNames: ["Chart Agent"]`
 2. Query time series for that agent specifically
 3. Pull recent failures and low-quality sessions for that agent
@@ -146,6 +149,7 @@ Actions:
 User says: "Our AI costs seem high — what's going on?"
 
 Actions:
+
 1. Get context, query analytics with `metrics: ["cost", "cost_by_model", "agent_stats", "cost_timeseries"]`
 2. Identify which agents and models drive the most cost
 3. Query spans grouped by model to see token usage patterns
@@ -155,10 +159,13 @@ Actions:
 ## Troubleshooting
 
 ### No AI session data
+
 The project may not have AI analytics instrumented. Report this clearly and suggest the user check their AI agent SDK integration.
 
 ### Very few sessions
+
 If <50 sessions in the window, note that sample sizes are small and findings may not be statistically meaningful. Extend the time window if possible.
 
 ### All metrics look healthy
+
 Frame it positively: "Your AI agents are performing well across the board. Here's the summary and a few minor things to watch." Still surface the lowest-performing areas even if they're above threshold.

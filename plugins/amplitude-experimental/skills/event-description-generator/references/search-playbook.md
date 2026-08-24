@@ -13,6 +13,7 @@ grep -r "purchase_completed" --include="*.{ts,tsx,js,jsx,py,java,kt,swift,go,rb}
 ```
 
 Search for both quoted and unquoted forms:
+
 - `"purchase_completed"` (double-quoted)
 - `'purchase_completed'` (single-quoted)
 - `` `purchase_completed` `` (template literal)
@@ -22,11 +23,11 @@ Search for both quoted and unquoted forms:
 
 Convert the event type to alternative casings:
 
-| Original              | PascalCase          | camelCase           | SCREAMING_SNAKE     |
-| --------------------- | ------------------- | ------------------- | ------------------- |
-| `purchase_completed`  | `PurchaseCompleted` | `purchaseCompleted` | `PURCHASE_COMPLETED`|
-| `Button Clicked`      | `ButtonClicked`     | `buttonClicked`     | `BUTTON_CLICKED`    |
-| `page.viewed`         | `PageViewed`        | `pageViewed`        | `PAGE_VIEWED`       |
+| Original             | PascalCase          | camelCase           | SCREAMING_SNAKE      |
+| -------------------- | ------------------- | ------------------- | -------------------- |
+| `purchase_completed` | `PurchaseCompleted` | `purchaseCompleted` | `PURCHASE_COMPLETED` |
+| `Button Clicked`     | `ButtonClicked`     | `buttonClicked`     | `BUTTON_CLICKED`     |
+| `page.viewed`        | `PageViewed`        | `pageViewed`        | `PAGE_VIEWED`        |
 
 ### 3. Constant/Enum Definitions
 
@@ -68,10 +69,10 @@ Exclude these from results to reduce noise:
 
 Most codebases separate event **definitions** (where the event string is declared) from event **call sites** (where the event is actually fired). Both are needed for good descriptions, but they serve different purposes:
 
-| Phase | What you find | Why it matters |
-|---|---|---|
-| Definition | The event string literal, class, or enum member | Confirms the event exists in code and gives you the class/constant name to search for next |
-| Call site | The `track()` / `ampli.` invocation in feature code | Tells you **when**, **where**, and **why** the event fires — this is what the description needs |
+| Phase      | What you find                                       | Why it matters                                                                                  |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Definition | The event string literal, class, or enum member     | Confirms the event exists in code and gives you the class/constant name to search for next      |
+| Call site  | The `track()` / `ampli.` invocation in feature code | Tells you **when**, **where**, and **why** the event fires — this is what the description needs |
 
 ### Phase A: Find the Definition
 
@@ -114,6 +115,7 @@ new EventClass(    ampli.eventName(
 ```
 
 When you find a call site, read ~20-30 lines of surrounding context to understand:
+
 - What triggers the event (user action, lifecycle, API response)
 - What properties are passed and what they represent
 - What component/feature owns it

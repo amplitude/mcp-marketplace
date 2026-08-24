@@ -79,9 +79,23 @@ counts) or `COMPARISON_EVENT` (members compared), plus `members[]`.
 
 ```jsonc
 {
-  "where": [{ "property": "country", "op": "is", "values": ["United States"], "scope": "user" }],
-  "performed": [{ "event": "Purchase", "op": ">=", "count": 1,
-                  "time_type": "rolling", "time_value": 30 }]
+  "where": [
+    {
+      "property": "country",
+      "op": "is",
+      "values": ["United States"],
+      "scope": "user",
+    },
+  ],
+  "performed": [
+    {
+      "event": "Purchase",
+      "op": ">=",
+      "count": 1,
+      "time_type": "rolling",
+      "time_value": 30,
+    },
+  ],
 }
 ```
 
@@ -181,16 +195,35 @@ by plan:
 {
   "kind": "segmentation",
   "name": "iOS signups by plan",
-  "events": [{ "event": "Sign Up", "where": [
-    { "property": "platform", "op": "is", "values": ["iOS"], "scope": "event" }
-  ]}],
+  "events": [
+    {
+      "event": "Sign Up",
+      "where": [
+        {
+          "property": "platform",
+          "op": "is",
+          "values": ["iOS"],
+          "scope": "event",
+        },
+      ],
+    },
+  ],
   "measured_as": { "as": "unique_users" },
   "group_by": [{ "property": "plan", "scope": "user" }],
-  "segments": [{ "where": [
-    { "property": "country", "op": "is", "values": ["United States"], "scope": "user" }
-  ]}],
+  "segments": [
+    {
+      "where": [
+        {
+          "property": "country",
+          "op": "is",
+          "values": ["United States"],
+          "scope": "user",
+        },
+      ],
+    },
+  ],
   "date_range": { "relative": "Last 12 Weeks" },
-  "interval": "week"
+  "interval": "week",
 }
 ```
 
@@ -201,7 +234,7 @@ fix-oriented hint — read the hint, fix that one field, and retry. Do not
 rebuild the whole chart. The three seen most in production:
 
 1. **Range/interval unit mismatch** — `Invalid range format: Last 3 Years …
-   Match the relative range's unit to the interval`. Re-denominate the range
+Match the relative range's unit to the interval`. Re-denominate the range
    in the interval's unit (`Last 30 Days` at weekly interval → `Last 4 Weeks`).
 2. **Missing funnel window field** — `conversion_window.unit: Field required`.
    Pass both `value` and `unit`.

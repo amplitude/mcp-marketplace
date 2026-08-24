@@ -34,14 +34,15 @@ Use `Amplitude:query_charts` to fetch data for up to 3 charts at a time. Priorit
 ### Step 3: Analyze Patterns
 
 When analyzing charts, focus on the most decision-relevant signals for each type:
-  - KPI tiles: Context (timeframe, user type) and % change if shown.
-  - Line / Time series: Trends, slope changes, or notable events (not right-edge noise).
-  - Funnel: Major drop-off steps or unexpected retention. Use conversion framing (solid bars), not dropoff framing, unless explicitly relevant.
-  - Bar / Categorical: Concentrations, gaps, or surprising distributions.
-  - Stacked area: Total volume shifts and changing composition over time.
-  - Retention by interval: Compare segments at key intervals (Day 1, Day 7, Day 30).
-  - Retention over time: Recent cohorts may show incomplete periods (dotted lines) because they haven't completed the retention window yet—this does NOT mean retention is declining.
-  - Tables: Top contributors, dominant players, distribution imbalances.
+
+- KPI tiles: Context (timeframe, user type) and % change if shown.
+- Line / Time series: Trends, slope changes, or notable events (not right-edge noise).
+- Funnel: Major drop-off steps or unexpected retention. Use conversion framing (solid bars), not dropoff framing, unless explicitly relevant.
+- Bar / Categorical: Concentrations, gaps, or surprising distributions.
+- Stacked area: Total volume shifts and changing composition over time.
+- Retention by interval: Compare segments at key intervals (Day 1, Day 7, Day 30).
+- Retention over time: Recent cohorts may show incomplete periods (dotted lines) because they haven't completed the retention window yet—this does NOT mean retention is declining.
+- Tables: Top contributors, dominant players, distribution imbalances.
 
 ### Step 4: Contextualize with User Feedback (Optional)
 
@@ -60,6 +61,7 @@ If significant changes or anomalies are detected, check if user feedback can exp
 3. If a relevant insight is found, use `Amplitude:get_feedback_mentions` with the `insightId` to pull specific user quotes that illustrate the pattern.
 
 **Skip this step if:**
+
 - No feedback sources are configured for the project
 - No insights match the time period or observed changes
 - The dashboard changes are minor or expected
@@ -72,7 +74,6 @@ Present a structured summary:
 2. **Areas of Concern 🚩**: Top 1-3 urgent issues worth investigating or negative metric trends. If no issues are urgent, it's great to concisely acknolwedge there's no urgent areas of concern so that the reader has less noise to sift through.
 3. **Key Takeaways 💡**: Top 1-3 most important or surprising insights from the analysis not included in the areas of concern.
 4. **Recommendations**: Very concise section recapping up to the top 3 specific actionable recommendations (unless prompted otherwise) to follow-up on. Include [p0],[p1],[p2],[p3] in front of each title to help size priority with p0 being most urgent and p3 being least.
-
 
 ## Best Practices
 

@@ -99,12 +99,12 @@ Use `Amplitude:query_dataset` to score individual pages. Budget: 1-2 calls.
 
 2. **Score each page.** Assign a health grade:
 
-| Grade | Criteria |
-|-------|----------|
-| **Healthy** | All three signals below product-wide average |
-| **Degraded** | 1-2 signals above average, or any signal >2x average |
+| Grade         | Criteria                                                   |
+| ------------- | ---------------------------------------------------------- |
+| **Healthy**   | All three signals below product-wide average               |
+| **Degraded**  | 1-2 signals above average, or any signal >2x average       |
 | **Unhealthy** | All three signals above average, or any signal >5x average |
-| **Critical** | Any signal >10x average, or >5% of page visitors affected |
+| **Critical**  | Any signal >10x average, or >5% of page visitors affected  |
 
 3. Rank pages by severity. Surface the worst 5-10 pages.
 
@@ -155,6 +155,7 @@ Date: [Today] | Window: [Start] – [End] | Project: [Name] ([ID])
 ```
 
 Status thresholds:
+
 - 🟢 Stable or improving (change <10% relative)
 - 🟡 Degraded (change 10-50% relative)
 - 🔴 Critical (change >50% relative, or absolute value exceeds acceptable threshold)
@@ -183,6 +184,7 @@ Narrative paragraphs (3-5 max) covering the most important changes. Each paragra
 **[Headline — ≤10 words]** — What changed (with numbers and time context). Why it changed (deployment, experiment, external factor — or "no clear cause yet"). Who's affected (segment, page, user count). What to do about it (specific action).
 
 Prioritize:
+
 1. **New errors** (regressions) over chronic errors (tech debt)
 2. **Worsening trends** over stable-but-bad metrics
 3. **User-facing impact** (error clicks) over silent errors
@@ -228,6 +230,7 @@ Ask what to dig into: "Want me to investigate the chart builder errors in detail
 User says: "Give me a reliability check"
 
 Actions:
+
 1. Get context and project
 2. Query all three error events over 14 days — 7-day baseline vs 7-day current
 3. Compute all KPIs and page health scores
@@ -239,6 +242,7 @@ Actions:
 User says: "We shipped v4.3 yesterday — did it break anything?"
 
 Actions:
+
 1. Get context and deployments — find the v4.3 deploy timestamp
 2. Query all three events with pre-deploy (7d before) and post-deploy windows
 3. Identify new errors that didn't exist before the deploy
@@ -250,6 +254,7 @@ Actions:
 User says: "How's reliability on the experiment pages?"
 
 Actions:
+
 1. Get context
 2. Filter all three events to `[Amplitude] Page Path` containing experiment-related paths
 3. Compute KPIs scoped to those pages

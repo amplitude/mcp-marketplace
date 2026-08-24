@@ -19,6 +19,7 @@ This skill operates on three Amplitude Session Replay tools. Use them in this or
 3. **`Amplitude:get_session_replay_events`** — Decode a specific replay into an interaction timeline: navigations, clicks, inputs, scrolls. Requires `replay_id` from the tools above.
 
 Supporting tools used in this skill:
+
 - **`Amplitude:get_users`** — Look up users by email, user ID, or other identifiers.
 - **`Amplitude:get_events`** — Discover valid event names before filtering. Never guess event names.
 - **`Amplitude:get_properties`** — Discover properties available on an event for filtering.
@@ -53,6 +54,7 @@ If the report is vague (e.g., "something is broken in checkout"), ask one clarif
 Use `Amplitude:get_session_replays` to find sessions where the error occurred. Build filters based on what you know:
 
 **If you have a specific user:**
+
 ```json
 {
   "eventCountFilters": [
@@ -61,14 +63,26 @@ Use `Amplitude:get_session_replays` to find sessions where the error occurred. B
       "operator": "greater or equal",
       "event": {
         "event_type": "_all",
-        "filters": [{"group_type": "User", "subprop_key": "gp:email", "subprop_op": "is", "subprop_type": "user", "subprop_value": ["user@example.com"]}],
+        "filters": [
+          {
+            "group_type": "User",
+            "subprop_key": "gp:email",
+            "subprop_op": "is",
+            "subprop_type": "user",
+            "subprop_value": ["user@example.com"]
+          }
+        ],
         "group_by": []
       }
     },
     {
       "count": "1",
       "operator": "greater or equal",
-      "event": {"event_type": "[Amplitude] Error Logged", "filters": [], "group_by": []}
+      "event": {
+        "event_type": "[Amplitude] Error Logged",
+        "filters": [],
+        "group_by": []
+      }
     }
   ],
   "limit": 5
@@ -76,6 +90,7 @@ Use `Amplitude:get_session_replays` to find sessions where the error occurred. B
 ```
 
 **If you have an error message but no specific user:**
+
 ```json
 {
   "eventCountFilters": [
@@ -84,7 +99,15 @@ Use `Amplitude:get_session_replays` to find sessions where the error occurred. B
       "operator": "greater or equal",
       "event": {
         "event_type": "[Amplitude] Error Logged",
-        "filters": [{"group_type": "User", "subprop_key": "Error Message", "subprop_op": "contains", "subprop_type": "event", "subprop_value": ["TypeError"]}],
+        "filters": [
+          {
+            "group_type": "User",
+            "subprop_key": "Error Message",
+            "subprop_op": "contains",
+            "subprop_type": "event",
+            "subprop_value": ["TypeError"]
+          }
+        ],
         "group_by": []
       }
     }
@@ -103,6 +126,7 @@ For each session found in Step 3, call `Amplitude:get_session_replay_events` wit
 - Use `event_limit: 200` if analyzing 4+ sessions (to manage context)
 
 **What to capture from each timeline:**
+
 - Page navigations (URLs visited)
 - Clicks and inputs leading up to the error point
 - Any unusual patterns: rapid repeated clicks (rage clicks), long pauses, back-and-forth navigation
@@ -182,6 +206,7 @@ Structure the output as an engineering-ready bug report.
 User says: "Customer jane@acme.com says the export button doesn't work"
 
 Actions:
+
 1. Get context and confirm project
 2. Look up jane@acme.com via `get_users`
 3. Find her recent sessions with `get_session_replays` filtered to her email + any error events
@@ -194,6 +219,7 @@ Actions:
 User says: "TypeError errors doubled yesterday, can you get repro steps?"
 
 Actions:
+
 1. Get context, confirm `[Amplitude] Error Logged` exists
 2. Find sessions with TypeError in the last 48 hours via `get_session_replays`
 3. Extract timelines from 3-5 sessions
@@ -206,6 +232,7 @@ Actions:
 User says: "Users are having trouble with checkout"
 
 Actions:
+
 1. Ask one clarifying question: "Do you have a specific error event or user in mind, or should I look for any errors on checkout pages?"
 2. Search for error events on checkout-related pages
 3. Find sessions, extract timelines, identify friction patterns

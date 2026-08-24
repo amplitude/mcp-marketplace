@@ -13,10 +13,12 @@ Investigate what distinguishes two user groups by pulling session replays and me
 ## CRITICAL: Tool Reference
 
 **Primary tools:**
+
 - **`Amplitude:get_session_replays`** — Find sessions for each user group using event count filters and user property filters. Run this twice — once per group.
 - **`Amplitude:get_session_replay_events`** — Decode replays into interaction timelines. Run this for sessions from both groups.
 
 **Supporting tools:**
+
 - **`Amplitude:search`** — Search for existing charts, funnels, dashboards, events, and cohorts relevant to the comparison. Always check for existing analysis before building from scratch.
 - **`Amplitude:get_cohorts`** — Discover existing cohorts that define the groups (e.g., "power users", "churned", "converted").
 - **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
@@ -32,16 +34,17 @@ Investigate what distinguishes two user groups by pulling session replays and me
 
 Parse the user's request to identify Group A and Group B. Common comparison patterns:
 
-| Comparison | Group A | Group B |
-|---|---|---|
-| Conversion | Users who completed the goal | Users who didn't |
-| Engagement | Power users / high-frequency | Casual / low-frequency |
-| Retention | Retained users | Churned users |
-| Plan tier | Enterprise / paid | Free / trial |
-| Outcome | Successful (e.g., activated) | Failed (e.g., dropped off) |
-| A/B test | Variant A | Variant B |
+| Comparison | Group A                      | Group B                    |
+| ---------- | ---------------------------- | -------------------------- |
+| Conversion | Users who completed the goal | Users who didn't           |
+| Engagement | Power users / high-frequency | Casual / low-frequency     |
+| Retention  | Retained users               | Churned users              |
+| Plan tier  | Enterprise / paid            | Free / trial               |
+| Outcome    | Successful (e.g., activated) | Failed (e.g., dropped off) |
+| A/B test   | Variant A                    | Variant B                  |
 
 For each group, determine:
+
 - **Defining criteria**: What makes a user belong to this group? (cohort, event, property)
 - **Labels**: Clear names for the report (e.g., "Converters" vs. "Drop-offs", not "Group A" vs "Group B")
 
@@ -67,6 +70,7 @@ Use `Amplitude:query_charts` or `Amplitude:query_charts` to compare the two grou
 3. **Feature usage differences**: Which events does Group A fire significantly more than Group B? Use event totals or unique user counts segmented by group.
 
 **What to look for:**
+
 - Large percentage differences in specific event frequencies
 - Features used exclusively or predominantly by one group
 - Timing differences (Group A does X on day 1, Group B waits until day 7)
@@ -85,10 +89,12 @@ Run `Amplitude:get_session_replays` **twice** — once for each group. Request `
 If groups are defined by a **cohort**, filter on the cohort's defining user property or event.
 
 If groups are defined by an **event outcome** (e.g., completed checkout vs. didn't):
+
 - **Group A (converters)**: Filter for sessions containing the conversion event (use `eventCountFilters` with `operator: "greater or equal"`, `count: "1"`).
 - **Group B (drop-offs)**: Filter for sessions containing the entry event but NOT the conversion event. Since `get_session_replays` doesn't support "did not do" filters directly, filter for the entry event only, then when watching replays in Step 5, check the interaction timeline for absence of the conversion event. Discard sessions where the user actually converted and replace with additional sessions until you have 4-6 confirmed drop-offs.
 
 If groups are defined by a **user property** (plan, segment):
+
 - Use user property filters with `event_type: "_all"`.
 
 ### Step 5: Watch Sessions — Extract Interaction Timelines
@@ -98,19 +104,20 @@ For each group, call `Amplitude:get_session_replay_events` for 4-6 sessions. Use
 **Budget: 8-12 total sessions (4-6 per group).**
 
 **Rate limiting and large responses:**
+
 - Call `get_session_replay_events` in batches of 3-4 at a time, not all at once. The Session Replay API enforces concurrency limits and will return 429 errors if overwhelmed. If you hit a 429, wait briefly and retry.
 - Some sessions have extremely high interaction counts (100K+ raw events). If a response is too large and gets saved to a file, read the key portions from the saved file path. For sessions with very high `total_raw_events`, consider using a lower `event_limit` (e.g., 150) to stay within response size limits.
 
 **While analyzing, track these behavioral dimensions for each session:**
 
-| Dimension | What to capture |
-|---|---|
-| **Navigation path** | Sequence of pages visited. Note the order and any pages unique to this session. |
-| **Feature engagement** | Which features/areas the user interacted with. Note depth (quick glance vs. extended use). |
-| **Pace & hesitation** | Fast and confident vs. slow with pauses. Note long gaps between actions. |
-| **Exploration vs. focus** | Did the user go straight to their goal or browse around? |
-| **Friction encountered** | Errors, rage clicks, back-navigation, abandoned inputs. |
-| **Session outcome** | Did they accomplish something? What was the last action before leaving? |
+| Dimension                 | What to capture                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| **Navigation path**       | Sequence of pages visited. Note the order and any pages unique to this session.            |
+| **Feature engagement**    | Which features/areas the user interacted with. Note depth (quick glance vs. extended use). |
+| **Pace & hesitation**     | Fast and confident vs. slow with pauses. Note long gaps between actions.                   |
+| **Exploration vs. focus** | Did the user go straight to their goal or browse around?                                   |
+| **Friction encountered**  | Errors, rage clicks, back-navigation, abandoned inputs.                                    |
+| **Session outcome**       | Did they accomplish something? What was the last action before leaving?                    |
 
 For each session, write a 2-3 sentence behavioral summary capturing the overall pattern.
 
@@ -203,6 +210,7 @@ For each differentiating behavior:
 User says: "What do users who complete onboarding do differently from those who drop off?"
 
 Actions:
+
 1. Get context, discover onboarding events (signup, each onboarding step, activation event)
 2. Query onboarding funnel conversion rate and identify the biggest drop-off step
 3. Find sessions: Group A = completed activation event; Group B = started onboarding but didn't activate
@@ -215,6 +223,7 @@ Actions:
 User says: "How do our most active users use the product differently?"
 
 Actions:
+
 1. Get context, check for existing "power user" cohort
 2. Define groups: top 10% by session frequency vs. bottom 50%
 3. Query feature usage segmented by group — which features show the biggest usage gap
@@ -227,6 +236,7 @@ Actions:
 User says: "Why are some users churning after the first week?"
 
 Actions:
+
 1. Get context, define groups: users active in week 2+ vs. users who never returned after week 1
 2. Query retention curve and week-1 engagement metrics by group
 3. Find sessions from each group's first week

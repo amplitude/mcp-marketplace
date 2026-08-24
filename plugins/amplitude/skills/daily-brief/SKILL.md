@@ -31,7 +31,7 @@ Before scanning data, build context about who you're talking to and what they ca
 
 Gather data with a tight recency focus. The primary time window is **today (so far) and yesterday**. Use the trailing 7 days only as a comparison baseline to contextualize whether today's numbers are normal or unusual.
 
-**Important: Cast a wide net across the platform.** Don't limit yourself to the user's most-viewed dashboards. Use the official/top-viewed content discovered in Phase 1 to surface things the user *wouldn't* have seen on their own. But be efficient — batch calls and avoid redundant fetches.
+**Important: Cast a wide net across the platform.** Don't limit yourself to the user's most-viewed dashboards. Use the official/top-viewed content discovered in Phase 1 to surface things the user _wouldn't_ have seen on their own. But be efficient — batch calls and avoid redundant fetches.
 
 Run these in parallel where possible:
 
@@ -79,13 +79,13 @@ Transform your analysis into a concise, narrative briefing the user could forwar
 
 **Persona calibration:**
 
-| Persona     | Language Style                                         | Lead With                    |
-|-------------|--------------------------------------------------------|------------------------------|
-| Executive   | Strategic (revenue, competitive position, market share) | Business outcomes            |
-| PM          | Feature-oriented (conversion, activation, adoption)    | Experiment results, funnels  |
-| Analyst     | Methodological (p-values, significance, confidence)    | Statistical rigor, drill-downs |
-| Growth      | Channel-focused (LTV, retention cohort, acquisition)   | Acquisition and retention    |
-| Engineering | Technical (error rate, p95 latency, crash-free rate)   | Deployments, error spikes    |
+| Persona     | Language Style                                          | Lead With                      |
+| ----------- | ------------------------------------------------------- | ------------------------------ |
+| Executive   | Strategic (revenue, competitive position, market share) | Business outcomes              |
+| PM          | Feature-oriented (conversion, activation, adoption)     | Experiment results, funnels    |
+| Analyst     | Methodological (p-values, significance, confidence)     | Statistical rigor, drill-downs |
+| Growth      | Channel-focused (LTV, retention cohort, acquisition)    | Acquisition and retention      |
+| Engineering | Technical (error rate, p95 latency, crash-free rate)    | Deployments, error spikes      |
 
 **Writing standards:**
 
@@ -119,6 +119,7 @@ Before delivering, verify your work. Prefer reviewing data you already have over
 User says: "Give me my daily download"
 
 Actions:
+
 1. Detect persona from context (executive based on dashboard usage patterns)
 2. Discover official dashboards, top-viewed charts across the org, and recently modified content
 3. Query all discovered charts at daily granularity, rank by day-over-day magnitude of change
@@ -136,6 +137,7 @@ Example output (showing the narrative finding format):
 > **Enterprise trials jumped ~22% — the new landing page is converting.** Marketing's refreshed enterprise landing page went live Wednesday and trial starts hit ~480 yesterday, up from the ~390 trailing average. This is your strongest self-serve acquisition signal this quarter. Share with leadership and ask marketing to increase paid spend on this page while momentum holds. [chart](https://app.amplitude.com/...)
 >
 > **Today's priorities**
+>
 > 1. Break down the EMEA activation drop by device type and OS version to isolate whether the v4.2 onboarding regression is browser-specific or platform-wide.
 > 2. Set up an A/B test comparing the current v4.2 onboarding flow against a variant that removes the extra email verification step, targeting EMEA mobile users, with activation rate as the primary metric.
 >
@@ -146,6 +148,7 @@ Example output (showing the narrative finding format):
 User says: "Anything I should know about my product metrics today?"
 
 Actions:
+
 1. Identify PM persona and their key feature areas
 2. Scan org-wide charts and official dashboards alongside the user's own dashboards
 3. Query experiment results for changes in the last 48 hours
@@ -161,6 +164,7 @@ Example output (showing the narrative finding format):
 > **Search adoption stalled — the empty state is losing users.** Daily active search users dropped ~15% yesterday vs. the 5-day average, and the empty state page has a 60% bounce rate. Users who get zero results abandon the feature entirely. Add a fallback suggestions tooltip to the empty state this sprint. [chart](https://app.amplitude.com/...)
 >
 > **Today's priorities**
+>
 > 1. Ship Variant B of the checkout redesign to 100% — end the experiment and coordinate with eng to remove the feature flag.
 > 2. Build a cohort of users who hit zero search results this week and compare their 7-day retention against users who got results — quantify the business impact of the empty state before prioritizing the fix.
 >
@@ -171,6 +175,7 @@ Example output (showing the narrative finding format):
 User says: "How's the new onboarding flow performing?"
 
 Actions:
+
 1. Narrow the scan to onboarding-related metrics from the last 1-2 days
 2. Pull yesterday's activation funnel completion rates and compare to the prior 5 days
 3. Check feedback from the last 48 hours for onboarding-related themes
@@ -184,6 +189,7 @@ Example output:
 > **Onboarding completion slipped to 62% — email verification is the bottleneck.** Yesterday's completion rate dropped from the 68% trailing average, and today is pacing at ~60% through the first 6 hours. Step 3 (email verification) saw 18% abandonment vs. the 12% baseline — three user feedback submissions in the last 24 hours mention verification emails arriving late. Investigate the email delivery pipeline with eng today and consider adding a "resend" prompt at the 30-second mark. [chart](https://app.amplitude.com/...)
 >
 > **Today's priorities**
+>
 > 1. Segment the step 3 abandonment by email provider (Gmail, Outlook, corporate domains) to determine if verification delays are concentrated in a specific delivery path.
 > 2. Check if a recent deployment correlates with the timing of the drop — pull the deployment log from the last 72 hours and overlay it against the hourly abandonment rate at step 3.
 >
@@ -192,17 +198,21 @@ Example output:
 ## Troubleshooting
 
 ### Error: No dashboards found
+
 Cause: User may not have created dashboards, or the project has limited setup.
 Solution: Fall back to searching for any charts or events. Use `search` broadly and build context from whatever is available. Let the user know their setup is limited and suggest creating a key metrics dashboard.
 
 ### Error: Feedback API returns 400
+
 Cause: Called `get_feedback_insights` without first calling `get_feedback_sources`, or passed multiple values in the `types` array.
 Solution: ALWAYS call `get_feedback_sources` first. Only pass a single type value per call, or omit the types parameter entirely.
 
 ### Error: Metrics look flat / nothing interesting
+
 Cause: Yesterday and today look similar to the prior days — stability is a finding.
 Solution: Frame it positively: "Yesterday's metrics were in line with the prior 5 days — no fires to fight. Here's what shifted slightly that may be worth watching tomorrow..."
 
 ### Error: Too many findings, report is overwhelming
+
 Cause: Broad gathering surfaced too much signal.
 Solution: Ruthlessly prioritize. Cap at 5 findings maximum. Use severity scoring (impact × confidence × urgency) to rank. Demote lower-priority items to a "Background Context" appendix.

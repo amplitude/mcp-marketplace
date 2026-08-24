@@ -32,14 +32,15 @@ Run these in parallel:
 
 Score each topic on a 2x2 of **volume x quality**:
 
-| | High Quality (>0.7) | Low Quality (<0.7) |
-|---|---|---|
-| **High Volume** | Well-served (maintain) | **Underserved (fix now)** |
-| **Low Volume** | Niche but working (monitor) | **Gap or emerging (investigate)** |
+|                 | High Quality (>0.7)         | Low Quality (<0.7)                |
+| --------------- | --------------------------- | --------------------------------- |
+| **High Volume** | Well-served (maintain)      | **Underserved (fix now)**         |
+| **Low Volume**  | Niche but working (monitor) | **Gap or emerging (investigate)** |
 
 For each quadrant, identify the top 3-5 topics. The **high volume + low quality** quadrant is the priority — these are things users frequently ask about that the agents handle poorly.
 
 Also flag:
+
 - **Growing topics:** Topics with increasing volume over the time window. These may need better coverage soon even if quality is currently acceptable.
 - **Sentiment outliers:** Topics where sentiment is notably lower than quality score. This means the agent technically completes the task but users aren't happy with the experience.
 - **Agent routing issues:** Topics where one agent handles them well but another handles them poorly — suggesting a routing improvement.
@@ -92,6 +93,7 @@ Sort by priority: Fix items first, then Monitor, then Good. Limit to top 15-20 t
 8. **Follow-on prompt**: "Want me to deep-dive into a specific topic, investigate the failing sessions for [top underserved topic], or build a monitoring dashboard for AI topic quality?"
 
 **Writing standards:**
+
 - Lead with the user impact, not the data
 - Use conversation excerpts to make abstract topics concrete
 - Quantify everything — "340 sessions/week" not "many sessions"
@@ -105,6 +107,7 @@ Sort by priority: Fix items first, then Monitor, then Good. Limit to top 15-20 t
 User says: "What are people asking our AI about?"
 
 Actions:
+
 1. Get context and AI schema
 2. Query topic breakdown, agent-by-topic matrix, volume trends, and failures by topic (4 parallel calls)
 3. Score topics on the volume x quality matrix
@@ -116,6 +119,7 @@ Actions:
 User says: "Where is our AI falling short?"
 
 Actions:
+
 1. Get context and schema
 2. Query topics and failures — focus on low quality and high failure rate topics
 3. For each underserved topic, search conversations to understand the failure mode
@@ -126,6 +130,7 @@ Actions:
 User says: "What topics does the Chart Agent handle, and how well?"
 
 Actions:
+
 1. Get context, then query sessions grouped by topic for that agent specifically
 2. Compare the agent's topic quality scores against the fleet average
 3. Deep-dive into the agent's worst topics
@@ -134,10 +139,13 @@ Actions:
 ## Troubleshooting
 
 ### No topic enrichment data
+
 Topics require session enrichment to be enabled. If topics are empty, fall back to `search_agent_analytics_conversations` with broad keyword searches to manually categorize common themes. Note the limitation and suggest enabling enrichment.
 
 ### Too many topics (>50)
+
 Group similar topics and present the top 20 by volume. Offer to drill into specific clusters on request.
 
 ### Topics are too generic
+
 If topic labels are broad (e.g., "data question", "help request"), the enrichment model may need tuning. Note this and use conversation search to identify more specific sub-topics manually.

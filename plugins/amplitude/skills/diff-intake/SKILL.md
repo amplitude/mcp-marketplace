@@ -23,16 +23,19 @@ precise — no prose around the YAML block.
 Fetch the list of changed files from the source, then categorize each one.
 
 ### Fetching changes
+
 - **PR URL**
-`gh pr view <number-or-url>`
-`gh pr view <pr-number> --json files --jq '.files[] | "\(.path)\t+\(.additions) -\(.deletions)\t"'`
+  `gh pr view <number-or-url>`
+  `gh pr view <pr-number> --json files --jq '.files[] | "\(.path)\t+\(.additions) -\(.deletions)\t"'`
 - **Branch comparison**
-`git log <main|master>..<branch>`
-`git diff --stat <main|master>..<branch>`
+  `git log <main|master>..<branch>`
+  `git diff --stat <main|master>..<branch>`
 - **Ambiguous mention** (PR number, branch name): infer the right form and fetch without asking unless auth fails.
 
 ### Categorize files
+
 Assign each file to a category based on its path:
+
 - **Core Logic**: application source (e.g. src/auth/login.py, database/models.ts)
 - **Generated**: anything with `generated` in its path
 - **Testing**: test files
@@ -43,18 +46,21 @@ Assign each file to a category based on its path:
 For each file, record: path, category, change type (Added / Modified / Deleted), and analytics likelihood (1–5).
 
 ## Step 2: Build the file summary map
+
 Read every single **Core Logic** file and create the file summary map.
 Only process and include **Core Logic** files.
 
 ### Fetching detailed diffs
+
 - **PR**
-`gh pr view <number-or-url> --json baseRefOid,headRefOid`
-Using the response, get a detailed diff
-`git diff <baseRefOid>...<headRefOid> -- <file1> <file2> <file_n>`
+  `gh pr view <number-or-url> --json baseRefOid,headRefOid`
+  Using the response, get a detailed diff
+  `git diff <baseRefOid>...<headRefOid> -- <file1> <file2> <file_n>`
 - **Branch comparison**
-`git diff main..feature/foo  -- <file1> <file2> <file_n>`
+  `git diff main..feature/foo  -- <file1> <file2> <file_n>`
 
 ### For each file, record
+
 - `summary` — 2-line summary of what changed
 - `stack` — frontend, backend, or shared
 
@@ -71,6 +77,7 @@ signals that downstream event discovery needs:
   likely instrumentation points over low-level helpers.
 
 For each surface, record:
+
 - `name` — component, route, page, hook, or surface name
 - `file` — repo-relative path
 - `change` — `added`, `modified`, or `deleted`
@@ -92,6 +99,7 @@ Infer the change type and analytics scope:
 | style / docs / test / build / ci / chore | None — skip analytics analysis                    |
 
 `analytics_scope` = highest implication present:
+
 - `none` — only no-impact types
 - `low` — only perf/refactor
 - `medium` — fix
@@ -100,29 +108,30 @@ Infer the change type and analytics scope:
 If `analytics_scope` is `none`, emit the brief and note that downstream skills are not needed.
 
 ## Step 4: Emit the YAML brief
+
 Output only the YAML block — no prose before or after. Follow the format exactly.
 List each file individually in file_summary_map (no globs).
 
 ```yaml
 change_brief:
   classification:
-    primary: feat           # dominant conventional commit type
-    types: [feat, fix]      # all types detected
-    analytics_scope: high   # none | low | medium | high
-    stack: frontend         # frontend | backend | fullstack
-  summary: "One sentence describing the overall change"
+    primary: feat # dominant conventional commit type
+    types: [feat, fix] # all types detected
+    analytics_scope: high # none | low | medium | high
+    stack: frontend # frontend | backend | fullstack
+  summary: 'One sentence describing the overall change'
   user_facing_changes:
-    - "Users can now upload an avatar with drag-and-drop and preview it before saving."
+    - 'Users can now upload an avatar with drag-and-drop and preview it before saving.'
   surfaces:
     components:
-      - name: "AvatarUpload"
-        file: "src/components/AvatarUpload.tsx"
+      - name: 'AvatarUpload'
+        file: 'src/components/AvatarUpload.tsx'
         change: modified
-  file_summary_map:         # each entry includes a layer field
-    - file: "src/components/AvatarUpload.tsx"
-      summary: "New component for avatar upload with drag-and-drop and preview"
-      layer: frontend       # frontend | backend | shared
-    - file: "src/api/upload.ts"
-      summary: "Upload endpoint handler, validates file type and persists to S3"
+  file_summary_map: # each entry includes a layer field
+    - file: 'src/components/AvatarUpload.tsx'
+      summary: 'New component for avatar upload with drag-and-drop and preview'
+      layer: frontend # frontend | backend | shared
+    - file: 'src/api/upload.ts'
+      summary: 'Upload endpoint handler, validates file type and persists to S3'
       layer: backend
 ```

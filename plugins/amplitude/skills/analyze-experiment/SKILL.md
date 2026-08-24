@@ -20,6 +20,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 ## Analysis Philosophy
 
 **Be comprehensive, not brief:**
+
 - Include specific numbers, percentages, and data points
 - Explain statistical meaning AND business implications in plain language
 - Cover all metrics (primary, secondary, guardrails) with actual values
@@ -32,16 +33,19 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 ### Step 0: Identify Experiment
 
 **If user provides a specific experiment:**
+
 - Accept experiment **URL or experiment ID**
 - If URL: use `Amplitude:get_from_url` to extract details
 - If ID: proceed to Step 1
 
 **If user asks about experiments generally:**
+
 - Use `Amplitude:search` with `entityTypes: ["EXPERIMENT"]` and relevant query terms
 - Present top 3-5 matches with names, IDs, and states
 - Ask user which experiment to analyze
 
 **If no experiment specified:**
+
 - Ask explicitly for experiment URL, ID, or search terms and stop
 
 ---
@@ -57,6 +61,7 @@ Use `Amplitude:get_experiments` with experiment ID to capture:
 - Bucketing strategy
 
 **Get metric names:**
+
 - Extract metric IDs from the experiment response (e.g., "c4pn8fkv")
 - **CRITICAL: Amplitude MCP cannot retrieve metric names by ID directly**
 - Workaround options:
@@ -69,6 +74,7 @@ Use `Amplitude:get_experiments` with experiment ID to capture:
   - Include metric IDs so users can look them up in Amplitude UI
 
 **Validation:**
+
 - Is experiment running or completed? (not draft)
 - Has it run for 1+ weeks?
 - Are variants and metrics clearly defined?
@@ -82,6 +88,7 @@ If incomplete, explain what's missing and stop.
 Use `Amplitude:query_experiment` (primary metric only) to assess:
 
 **Traffic Balance (SRM Check):**
+
 - Report actual traffic split per variant (e.g., 48.2% control, 51.8% treatment)
 - **Use `srmDetected` field from API:** Flag if `srmDetected: true`
 - SRM (Sample Ratio Mismatch) indicates the observed traffic split deviates significantly from the expected allocation
@@ -91,12 +98,14 @@ Use `Amplitude:query_experiment` (primary metric only) to assess:
 **Sample Size Analysis:**
 
 **A. Current Sample Assessment:**
+
 - Report total users per variant with specific numbers
 - **Flag if <100 users per variant** (insufficient for any conclusion)
 - **Flag if 100-1000 users** (directional signals only, not confident decision)
 - Need 1000+ per variant for confident decisions
 
 **B. Statistical Power Analysis:**
+
 - **Target effect size:** What minimum lift would be meaningful for the business? (typically 2-5% for conversion metrics)
 - **Achieved power:** Given current sample size and observed variance, what's the probability of detecting the target effect if it exists?
 - **Power interpretation:**
@@ -108,6 +117,7 @@ Use `Amplitude:query_experiment` (primary metric only) to assess:
 - **Recommendation:** If power <70% and results are inconclusive, extend duration rather than making premature decision
 
 **C. Precision Analysis (Confidence Interval Width):**
+
 - **CI width for primary metric:** Report the width of the 95% confidence interval as percentage of baseline
 - **Precision assessment:**
   - CI width >10% of baseline: Low precision - effect size uncertainty too high for confident decisions
@@ -158,6 +168,7 @@ The `Amplitude:query_experiment` API returns multiple boolean flags that assess 
    - Impact: Critical - cannot analyze if mean is invalid
 
 **For each flag that fails (returns false or true for suspicious uplift), document:**
+
 - Which flag failed
 - What it means in plain language
 - Specific impact on result reliability
@@ -166,6 +177,7 @@ The `Amplitude:query_experiment` API returns multiple boolean flags that assess 
 **If all flags pass:** Note this explicitly as strong data quality signal
 
 **Temporal Stability:**
+
 - Check if primary metric is stable day-over-day
 - Note ramp period (first 24-48hrs) or day-of-week effects
 
@@ -180,6 +192,7 @@ Use `Amplitude:query_experiment` **without metricIds** to get primary metric onl
 **Use metric name from Step 1** - Report using the human-readable metric name, not the metric ID.
 
 Extract and report:
+
 - **Control baseline:** metric value and sample size
 - **Treatment performance:** metric value and sample size
 - **Absolute lift:** treatment - control
@@ -188,11 +201,13 @@ Extract and report:
 - **Confidence interval:** report 95% CI bounds
 
 **Interpret:**
+
 - ✅ **Statistically significant:** p < 0.05 and CI doesn't include 0
 - ⚠️ **Trending:** 0.05 < p < 0.15 (suggestive but inconclusive)
 - ❌ **No effect:** p ≥ 0.15 or CI includes 0
 
 **Practical significance:**
+
 - Is the lift magnitude meaningful for the business?
 - Small lifts (<2-3%) may not be worth complexity even if significant
 - Consider metric's business impact (revenue vs. low-value engagement)
@@ -206,11 +221,13 @@ Use `Amplitude:query_experiment` **with metricIds** for all metrics.
 **Use metric names from Step 1** - Report using human-readable metric names, not metric IDs.
 
 **For each secondary metric:**
+
 - Report metric name (from Step 1 mapping), variant performance, and statistical significance
 - Note which moved and which didn't (with specific numbers)
 - **Identify unintended consequences:** Flag any negative impacts with specific values
 
 **For each guardrail:**
+
 - ✅ No regression: neutral or positive (p > 0.05)
 - ⚠️ Marginal concern: small negative lift (1-5%) with p < 0.10
 - 🚩 **Significant regression:** negative lift with p < 0.05 - report actual numbers
@@ -226,6 +243,7 @@ Use `Amplitude:query_experiment` **with metricIds** for all metrics.
 Use `Amplitude:query_experiment` with `groupBy` parameter (one at a time).
 
 Test 3-4 high-signal segments:
+
 1. **Platform** (iOS, Android, Web)
 2. **User tenure** (new vs. established users)
 3. **Plan type** (free vs. paid)
@@ -236,17 +254,19 @@ Test 3-4 high-signal segments:
 For each segment analysis, present results in this exact format:
 
 | Segment | Control Rate | Control Exposures | Control % of Total | Treatment Rate | Treatment Exposures | Treatment % of Total | Relative Lift | Significant? |
-|---------|--------------|-------------------|-------------------|----------------|---------------------|---------------------|---------------|--------------|
-| iOS | 48.7% | 1,234 | 45.2% | 55.4% | 1,456 | 54.8% | **+13.6%** | Yes (p=0.02) |
-| Android | 63.9% | 567 | 20.8% | 65.1% | 589 | 22.2% | +1.9% | No (p=0.45) |
-| Web | 51.2% | 928 | 34.0% | 50.8% | 611 | 23.0% | -0.8% | No (p=0.89) |
+| ------- | ------------ | ----------------- | ------------------ | -------------- | ------------------- | -------------------- | ------------- | ------------ |
+| iOS     | 48.7%        | 1,234             | 45.2%              | 55.4%          | 1,456               | 54.8%                | **+13.6%**    | Yes (p=0.02) |
+| Android | 63.9%        | 567               | 20.8%              | 65.1%          | 589                 | 22.2%                | +1.9%         | No (p=0.45)  |
+| Web     | 51.2%        | 928               | 34.0%              | 50.8%          | 611                 | 23.0%                | -0.8%         | No (p=0.89)  |
 
 **Calculate % of Total:**
+
 - Sum all exposures across segments to get total
 - Show each segment's share: (segment exposures / total exposures) × 100%
 - This reveals which segments drive overall results
 
 **Key insights:**
+
 - Identify segments where treatment performs **best** (targeted rollout opportunity)
 - Identify segments where treatment **hurts** (consider exclusions)
 - Explain why different segments show different performance
@@ -262,18 +282,21 @@ Use `groupByLimit: 10` to avoid overwhelming output.
 Based on the power and precision analysis from Step 2, evaluate if the experiment has run long enough:
 
 **Runtime factors:**
+
 - **Minimum duration:** Has experiment run at least 1-2 weeks to capture full user lifecycle?
 - **Learning effects:** For feature changes, have users had time to adapt? (typically 3-7 days)
 - **Weekly seasonality:** Has experiment captured at least one complete week to account for day-of-week patterns?
 - **Business cycles:** For B2B products, has it run through full business week patterns?
 
 **Integration with Step 2 power analysis:**
+
 - **If Step 2 showed adequate power (>80%) AND p < 0.05:** Experiment has sufficient data, duration is adequate
 - **If Step 2 showed low power (<70%) AND p > 0.05:** Inconclusive due to insufficient data, extend duration
 - **If Step 2 showed adequate power (>80%) AND p > 0.15:** Sufficient data to accept null result (no effect)
 - **If Step 2 showed adequate power but CI width too wide:** Need more data for precision, extend duration
 
 **Velocity projection (only if extending recommended):**
+
 - **Current daily enrollment:** Calculate users per day per variant
 - **Days to target sample:** Based on Step 2 power calculation, how many more days needed?
 - **Days to target precision:** Based on Step 2 CI width calculation, how many more days to reach desired precision?
@@ -288,12 +311,14 @@ Based on the power and precision analysis from Step 2, evaluate if the experimen
 **For significant results (positive or negative):**
 
 Use `Amplitude:get_feedback_insights`:
+
 - Filter by experiment date range
 - For wins: look for `["lovedFeature", "mentionedFeature"]`
 - For losses: look for `["bug", "complaint", "painPoint"]`
 - Check if themes align with experiment hypothesis
 
 **Connect quantitative to qualitative:**
+
 - Explain the lift with user quotes or feedback themes
 - Present 2-3 representative examples with specific details
 
@@ -302,6 +327,7 @@ Use `Amplitude:get_feedback_insights`:
 ### Step 8: Synthesize Findings and Make Recommendation
 
 **Before finalizing, verify you have included:**
+
 - ✓ All primary metric data (lift, CI, p-value, interpretation)
 - ✓ All data quality findings (SRM, sample size, power, precision, all 7 validity flags with actual values)
 - ✓ All secondary metrics and guardrails (with actual values and significance)
@@ -316,6 +342,7 @@ Present structured analysis:
 ## Experiment Analysis: [Experiment Name]
 
 **Overview:**
+
 - **Hypothesis:** [What was tested and expected impact]
 - **Duration:** [Start] to [End] ([X days])
 - **Sample Size:** Control: [N] | Treatment: [N]
@@ -326,10 +353,12 @@ Present structured analysis:
 **Data Quality Assessment:**
 
 **Traffic & SRM:**
+
 - **Traffic Balance:** Control [X%] | Treatment [Y%] (Expected: [X%] | [Y%])
 - **SRM Detected:** [Yes/No] [If yes, explain deviation severity]
 
 **Sample Size & Power:**
+
 - **Sample Size:** Control: [N] | Treatment: [N]
 - **Sample Adequacy:** [Adequate (>1000) / Moderate (100-1000) / Low (<100)]
 - **Statistical Power:** [X%] to detect [Y%] lift (Target: 80%+)
@@ -337,6 +366,7 @@ Present structured analysis:
 
 **Statistical Validity Flags:**
 [Only include flags that failed - if all pass, state "All statistical validity checks passed"]
+
 - ❌ **statsAssumptionsMetForWholeExperiment:** Statistical assumptions not met - [brief impact]
 - ❌ **hasSuspiciousUplift:** Unusually large effect detected - [brief recommendation]
 - ❌ **isVariancePositive:** Invalid variance - [critical issue description]
@@ -346,6 +376,7 @@ Present structured analysis:
 - ❌ **isMeanValid:** Invalid mean value - [data quality issue]
 
 **Duration:**
+
 - **Runtime:** [X days] (Started: [date])
 - **Sufficiency:** [Adequate - captured full user lifecycle / Need more time - [reason]]
 - **Recommendation:** [Continue running for X more days / Sufficient data to conclude]
@@ -357,10 +388,10 @@ Present structured analysis:
 
 **Primary Metric: [Metric Name]**
 
-| Variant | Value | Lift | 95% CI | P-value | Status |
-|---------|-------|------|--------|---------|--------|
-| Control | [X] | — | — | — | — |
-| Treatment | [Y] | **[+Z%]** | [[A, B]] | [P] | ✅ Significant |
+| Variant   | Value | Lift      | 95% CI   | P-value | Status         |
+| --------- | ----- | --------- | -------- | ------- | -------------- |
+| Control   | [X]   | —         | —        | —       | —              |
+| Treatment | [Y]   | **[+Z%]** | [[A, B]] | [P]     | ✅ Significant |
 
 **Interpretation:** [1-2 sentences on statistical AND practical significance]
 
@@ -369,11 +400,13 @@ Present structured analysis:
 **Secondary Metrics & Guardrails:**
 
 **Guardrails:**
+
 - ✅ **Revenue per user:** No regression ([+X%], p=[P])
 - ✅ **Retention D7:** Slight positive ([+X%], p=[P])
 - 🚩 **Bounce rate:** Regression detected ([+X%], p=[P]) ⚠️
 
 **Secondary Metrics:**
+
 - **[Metric]:** [+X% lift, p=[P]] - [brief interpretation]
 - **[Metric]:** No significant change (p=[P])
 
@@ -396,6 +429,7 @@ Present structured analysis:
 ---
 
 **Statistical Power:**
+
 - **Current Power:** [X%] - [Adequate/Underpowered]
 - **Required Sample:** Need [X] more users per variant for 80% power
 - **Estimated Duration:** [X] more days at current traffic to reach significance
@@ -403,6 +437,7 @@ Present structured analysis:
 ---
 
 **Why This Result:**
+
 - **[Feedback theme]** ([X mentions])
   - "[Quote]" - [Source] ([Date])
 
@@ -411,6 +446,7 @@ Present structured analysis:
 **Recommendation: ✅ SHIP** / **⚠️ ITERATE** / **❌ ABANDON** / **🔄 NEED MORE DATA**
 
 **Rationale:**
+
 1. [Primary metric result with statistical and practical significance]
 2. [Guardrail status and any unintended consequences]
 3. [Segment insights - opportunities or concerns]
@@ -418,16 +454,19 @@ Present structured analysis:
 5. [Qualitative validation]
 
 **Known Risks:**
+
 - [Risk 1 with mitigation if shipping]
 - [Risk 2 with mitigation if shipping]
 
 **Next Steps:**
+
 1. [Specific action based on recommendation]
 2. [Follow-up or monitoring action]
 
 ---
 
 **Key Takeaways (3-5 actionable insights):**
+
 1. [Most important finding]
 2. [Second most important finding]
 3. [Third most important finding]
@@ -442,11 +481,13 @@ Present structured analysis:
 ### Inconclusive Results (p > 0.05)
 
 **Diagnose:**
+
 - Check statistical power: Is sample size adequate? Report current power percentage
 - Check confidence interval: Very wide = high variance, need more data
 - Check segments: Effect may exist in specific subgroup
 
 **Action:**
+
 - If power <60%: Extend duration or increase traffic allocation
 - If power >80% but p >0.15: Accept null result (no effect detected)
 - Check segment tables: Look for subgroups with significant effects
@@ -456,11 +497,13 @@ Present structured analysis:
 ### Guardrail Regressed
 
 **Diagnose:**
+
 - Quantify trade-off with specific numbers: +10% conversion but -2% retention
 - Which segments drove the regression? Check segment tables
 - Is regression statistically significant or just noise?
 
 **Action:**
+
 - Small regression + large primary win + not significant = ship with monitoring
 - Significant regression on critical metric = iterate to fix or abandon
 - Segment-specific regression = consider targeted rollout excluding affected segments
@@ -470,10 +513,12 @@ Present structured analysis:
 ### Segment Tables Show Opposite Effects
 
 **Simpson's Paradox detected:**
+
 - Overall result may be misleading if segments show opposite directions
 - Example: Overall +5% lift, but iOS -10%, Android +15%
 
 **Action:**
+
 - Report the paradox clearly with specific segment numbers
 - Consider targeted rollout to segments that benefit
 - Exclude or iterate for segments that are harmed
@@ -483,6 +528,7 @@ Present structured analysis:
 ## Best Practices
 
 **Comprehensive analysis:**
+
 - ✅ Include ALL data from tool calls with specific numbers
 - ✅ Format segment analysis as breakdown tables with % of total
 - ✅ Check statistical power and duration adequacy
@@ -490,12 +536,14 @@ Present structured analysis:
 - ✅ Connect quantitative results to qualitative insights
 
 **Statistical rigor:**
+
 - ✅ Report confidence intervals, not just p-values
 - ✅ Distinguish statistical vs. practical significance
 - ✅ Apply multiple testing correction for 5+ metrics
 - ✅ Check for Simpson's Paradox in segment analysis
 
 **Avoid:**
+
 - ❌ Don't provide brief summaries - be comprehensive
 - ❌ Don't omit data quality issues or negative secondary metrics
 - ❌ Don't ignore segments - they reveal critical insights

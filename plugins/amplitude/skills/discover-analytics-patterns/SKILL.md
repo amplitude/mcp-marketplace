@@ -23,6 +23,7 @@ rest of the codebase. It should also tell downstream skills how event names and
 property names are typically written in code here.
 
 When determining naming conventions in this skill, use the following sources in strict order of preference:
+
 1. Customer directives in `.amplitude/instrumentation-agent-context.md` (and any files it references), if present — explicit conventions the customer wants followed, so they override everything below.
 2. Events and properties observed from the Amplitude MCP server
 3. Real tracking call sites in the codebase
@@ -85,35 +86,38 @@ raw SDK in a utility like `trackEvent()`, `track()`, or a React hook like
 that call into Amplitude internally. **Treat each wrapper as its own pattern,
 separate from the underlying SDK call**, even if it ultimately calls
 `amplitude.track()` underneath. Engineers who encounter the wrapper will use
-*it*, not the raw SDK — so it's the more important pattern to document.
+_it_, not the raw SDK — so it's the more important pattern to document.
 
 To find wrappers: search for files that import the Amplitude SDK, then check
 whether any of those files export a function or hook that other parts of the
 codebase import and use for tracking.
 
 Exclude test files (`.test.`, `.spec.`, `__tests__`) and mock files unless they
-are the *only* place a pattern appears.
+are the _only_ place a pattern appears.
 
 ---
 
 ## Step 2: Group by pattern
 
 Two call sites use the **same pattern** if they share the same:
+
 - Library/SDK/function being called
 - Method name
 - Argument structure (even if the event name or properties differ)
 
 For example, these are the **same** pattern:
+
 ```ts
-amplitude.track('Page Viewed', { page: '/home' })
-amplitude.track('Button Clicked', { label: 'signup' })
+amplitude.track('Page Viewed', { page: '/home' });
+amplitude.track('Button Clicked', { label: 'signup' });
 ```
 
 But these are **different** patterns — always keep them separate:
+
 ```ts
-amplitude.track('Page Viewed', { page: '/home' })   // direct SDK — one pattern
-ampli.pageViewed({ page: '/home' })                  // Ampli typed method — different pattern
-trackEvent('Page Viewed', { page: '/home' })         // custom wrapper — also a separate pattern
+amplitude.track('Page Viewed', { page: '/home' }); // direct SDK — one pattern
+ampli.pageViewed({ page: '/home' }); // Ampli typed method — different pattern
+trackEvent('Page Viewed', { page: '/home' }); // custom wrapper — also a separate pattern
 ```
 
 A custom wrapper is always its own pattern, even if it delegates to the SDK
@@ -175,6 +179,7 @@ Then, for each unique pattern, output a section in this format:
 codebase (e.g., "Used throughout the React frontend for user action tracking").
 
 **Example** (generalized):
+
 ```<language>
 // show the import(s) needed
 import { amplitude } from '@/lib/analytics'
@@ -187,6 +192,7 @@ amplitude.track('Event Name', {
 ```
 
 **Relevant paths**:
+
 - `src/path/to/file.ts`
 - `src/another/file.tsx`
 

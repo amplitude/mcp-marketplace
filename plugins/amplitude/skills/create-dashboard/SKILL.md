@@ -12,6 +12,7 @@ Create new team or initiative dashboards, organize scattered charts, build execu
 ### Step 0: Discovery (if unfamiliar with the feature)
 
 Before building, understand what you're tracking:
+
 - Search for existing dashboards/charts related to the topic
 - Search for relevant events: `Amplitude:search` with entityTypes: ["EVENT", "CUSTOM_EVENT"]
 - Use `get_properties` to understand available properties for segmentation
@@ -29,17 +30,20 @@ Clarify:
 ### Step 2: Gather or Create Charts
 
 **If existing charts found (>5 relevant):**
+
 - Use `Amplitude:search` to find relevant existing charts
 - Use `Amplitude:get_charts` to retrieve their definitions
 - Identify gaps that need new charts
 
 **If few/no charts exist (<5 relevant):**
+
 - Switch to "greenfield build" mode
 - Use `Amplitude:query_dataset` to create needed charts
 - Save all charts with `Amplitude:save_chart_edits` before building dashboard
 - Consider searching for relevant events first with entityTypes: ["EVENT", "CUSTOM_EVENT"]
 
 **Creating new charts:**
+
 - Prototype with `query_dataset` to verify data
 - Save in batches using `save_chart_edits` (more efficient)
 - Collect all chart IDs before creating dashboard
@@ -79,7 +83,7 @@ Include rich text blocks for:
 ## Layout Guidelines
 
 | Content Type     | Suggested Width | Suggested Height |
-|------------------|-----------------|------------------|
+| ---------------- | --------------- | ---------------- |
 | Headline metric  | 3-4 columns     | 375px            |
 | Trend chart      | 6-12 columns    | 500px            |
 | Comparison chart | 6 columns       | 500px            |
@@ -98,14 +102,13 @@ Include rich text blocks for:
 ## Common Issues
 
 **Query errors (500/400):**
+
 - Simplify: remove complex groupBy, reduce date ranges, avoid nested properties
 - Verify events/properties exist using search first
 - Use eventsSegmentation with groupBy instead of dataTableV2 for top N lists
 
 **No data returned:**
+
 - Check event names are exact matches (case-sensitive)
 - Verify date range covers when events were tracked
 - Confirm user segments aren't too restrictive
-
-
-

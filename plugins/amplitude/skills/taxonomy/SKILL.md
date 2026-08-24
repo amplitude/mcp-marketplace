@@ -55,24 +55,27 @@ These are **different problems** requiring **different solutions**:
 - **Taxonomy type counts** = number of distinct names across all schema dimensions (event types, event property types, user property types, group types, group property types). Each has its own limit.
 
 **Billing models — know which applies before advising:**
+
 - **Event volume billing**: customer has a contracted allocation of events per period. Exceeding it triggers overage costs. Flag significant event volume changes to these customers.
 - **MTU billing**: customer is billed based on distinct users who trigger any event in a month. Per-user event counts matter less; total unique user count matters more.
 
 **What customers usually mean:**
+
 - "I need to reduce my event volume" → worried about billing (volume-billed customers)
 - "I need to reduce my event types / schema count" → worried about hitting type limits (new types won't be queryable)
 
 **What actually reduces each:**
 
-| Goal | Action | Reduces Volume? | Reduces Type Count? |
-|------|--------|:---:|:---:|
-| Reduce volume | Block event | Yes | No |
-| Reduce volume | Delete event | Yes | Yes |
-| Reduce type count | Delete event/property/group type | — | Yes |
-| Reduce type count | Block event | No | **No** |
-| Reduce type count | Hide event | No | **No** |
+| Goal              | Action                           | Reduces Volume? | Reduces Type Count? |
+| ----------------- | -------------------------------- | :-------------: | :-----------------: |
+| Reduce volume     | Block event                      |       Yes       |         No          |
+| Reduce volume     | Delete event                     |       Yes       |         Yes         |
+| Reduce type count | Delete event/property/group type |        —        |         Yes         |
+| Reduce type count | Block event                      |       No        |       **No**        |
+| Reduce type count | Hide event                       |       No        |       **No**        |
 
 **Key rules:**
+
 - Blocking and hiding do NOT reduce type count. A quota-constrained customer must delete, not block.
 - **Never recommend sampling.** Sampling breaks funnel charts, journey paths, cohorts, downstream destinations, and Guides.
 - Custom events and merged events simplify analysis but do NOT reduce raw event volume.
@@ -80,15 +83,16 @@ These are **different problems** requiring **different solutions**:
 
 ## Event States and Metadata Permissions
 
-| Status | Meaning | Can Edit Metadata? |
-|--------|---------|:---:|
-| Planned | In tracking plan; not yet instrumented | Yes |
-| Live | Actively receiving data | Yes |
-| Blocked | Stops new ingestion; historical data accessible | Yes |
-| Unexpected | Receiving data but NOT in tracking plan | **No** — must add to tracking plan first |
-| Deleted | Stops ingestion; removed from new-chart dropdowns | **No** — must restore first |
+| Status     | Meaning                                           |            Can Edit Metadata?            |
+| ---------- | ------------------------------------------------- | :--------------------------------------: |
+| Planned    | In tracking plan; not yet instrumented            |                   Yes                    |
+| Live       | Actively receiving data                           |                   Yes                    |
+| Blocked    | Stops new ingestion; historical data accessible   |                   Yes                    |
+| Unexpected | Receiving data but NOT in tracking plan           | **No** — must add to tracking plan first |
+| Deleted    | Stops ingestion; removed from new-chart dropdowns |       **No** — must restore first        |
 
 **Unexpected events have special restrictions.** No metadata can be updated until the event is added to the tracking plan. When you encounter Unexpected events:
+
 - If they appear legitimate (real product actions, consistent volume): recommend adding to the tracking plan first, then apply metadata.
 - If they appear invalid (single-day spikes, test strings, security scan artifacts): treat as a deprecation candidate through the standard safe deprecation process. Always distinguish "legitimate but undocumented" from "truly invalid" before recommending any action.
 
@@ -96,10 +100,10 @@ These are **different problems** requiring **different solutions**:
 
 **Actual deprecation signals:**
 
-| Signal | Interpretation |
-|--------|----------------|
-| No recent volume | Event has gone stale |
-| No recent queries | Event is unused |
+| Signal            | Interpretation                   |
+| ----------------- | -------------------------------- |
+| No recent volume  | Event has gone stale             |
+| No recent queries | Event is unused                  |
 | **Both together** | **Strong deprecation candidate** |
 
 **Planned events:** Zero volume and queries are expected — evaluate by age, name collisions with Live events, and test-like names instead.
@@ -128,11 +132,11 @@ None reduce event volume. Each has distinct behavior:
 
 **Three key patterns:**
 
-| Pattern | Definition | Action |
-|---------|------------|--------|
-| Stale event | Has ingested before, but volume stopped | Confirm with customer before deprecating |
-| Test event | first seen = last seen, single day | Strong deprecation candidate; confirm first |
-| Firing but unqueried | Has volume, zero queries | Flag for review, not immediate removal |
+| Pattern              | Definition                              | Action                                      |
+| -------------------- | --------------------------------------- | ------------------------------------------- |
+| Stale event          | Has ingested before, but volume stopped | Confirm with customer before deprecating    |
+| Test event           | first seen = last seen, single day      | Strong deprecation candidate; confirm first |
+| Firing but unqueried | Has volume, zero queries                | Flag for review, not immediate removal      |
 
 **Safe to act on:** No volume for 6-12 months. Even if query activity exists, those queries return zero results.
 
@@ -141,12 +145,14 @@ None reduce event volume. Each has distinct behavior:
 Frame metadata and cleanup work as AI readiness improvements. Every AI feature selects events by evaluating the visible taxonomy — taxonomy quality directly determines AI output quality.
 
 **Flag these as AI quality issues:**
+
 - Cryptic event names with no description — AI cannot interpret them
 - Clusters of duplicate/near-duplicate names — AI will guess incorrectly between them
 - Implementation-focused descriptions (e.g., "fires when POST /purchase returns 200") — users ask behavioral questions, not backend questions
 - Large numbers of deprecated events still visible — noise that increases wrong AI selection
 
 **Event description structure (in order):**
+
 1. Non-technical behavior definition — what the user did, in plain language
 2. Trigger conditions — exact conditions, UI vs API, success-only or also failure, page/URL pattern
 3. Disambiguation — how this differs from similarly-named events
@@ -154,14 +160,16 @@ Frame metadata and cleanup work as AI readiness improvements. Every AI feature s
 5. Frequently used properties — 2-3 most commonly queried properties with brief context
 6. Technical details (optional) — implementation notes, source system, endpoint
 
-**Property descriptions:** Start with a clear definition, then include example values. Example: *"The category of the product the user viewed. Examples: 'electronics', 'apparel', 'home & garden'."*
+**Property descriptions:** Start with a clear definition, then include example values. Example: _"The category of the product the user viewed. Examples: 'electronics', 'apparel', 'home & garden'."_
 
 **AI readiness at instrumentation time:**
+
 - Choose clear, descriptive event and property names that don't require a display name to be interpretable. Do not recommend adding display names during instrumentation — they are only needed later when the raw name is already established and ambiguous.
 - Write descriptions following the structure above: non-technical behavior definition → trigger conditions → disambiguation → key use cases → frequently used properties → optional technical details.
 - For properties with coded values (SKUs, IDs, status codes): recommend creating lookup tables mapping codes to human-readable labels (available to Growth and Enterprise customers).
 
 **AI Controls recommendations:**
+
 - **Organization context** (10,000 char): company-wide standards, KPI definitions, standard terminology, global filters, fiscal calendar
 - **Project context** (10,000 char): product-specific events/funnels, project-specific metrics, segment definitions
 - Use audit findings to populate these recommendations. Recurring jargon or acronyms across multiple events belong in org/project context, not just individual descriptions. Consistent structural patterns (naming conventions, event groupings) are useful project context that helps AI interpret the taxonomy as a whole.
@@ -180,16 +188,19 @@ strategy and step-by-step procedures, see the Data Quality Audit procedure in th
 **Before/after confirmation required for all writes.** Never auto-apply. Only update confirmed items — do not extend to similar items based on pattern inference.
 
 **Per-field defaults:**
+
 - **Descriptions:** Do not remove existing content unless clearly erroneous. Append to or incorporate existing detail.
 - **Categories:** Only set when empty. Suggest changing only if clearly incorrect or user requests it.
 - **Tags:** Add only; never remove without explicit request.
 - **Display names:** Follow the project's existing naming conventions.
 
 **Restrictions:**
+
 - Do not write to bracket-prefixed or vendor-prefixed events unless explicitly requested.
 - Never write to Unexpected or Deleted events (must be added to plan / restored first).
 
 **When writes fail due to permissions:**
+
 - Explain that the user lacks write access.
 - Provide read-only guidance on what could be done and why.
 - Offer an "Ask an Admin to apply this" summary the user can share.
@@ -199,6 +210,7 @@ strategy and step-by-step procedures, see the Data Quality Audit procedure in th
 Deprecation must always follow a phased process. For the step-by-step procedure, see the governance skill's Deprecation Workflow.
 
 **Never:**
+
 - Present delete/hide/block as immediate one-step solutions
 - Recommend sampling, TTLs, automatic deletion rules, or moving events between projects
 - Recommend reconfiguring upstream integrations for volume control
@@ -210,19 +222,21 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 **Format: `[Object] [Past-Tense Verb]` in Title Case**
 
-| Good | Bad | Why |
-|------|-----|-----|
-| `Song Played` | `Play Song` | Past tense = completed action |
-| `Form Submitted` | `Submit Form` | Noun-first = scannable, sortable |
-| `Product Added` | `product added`, `product_added`, `productAdded` | Amplitude treats different casings as separate events — always use Title Case, not snake_case or camelCase |
+| Good             | Bad                                              | Why                                                                                                        |
+| ---------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `Song Played`    | `Play Song`                                      | Past tense = completed action                                                                              |
+| `Form Submitted` | `Submit Form`                                    | Noun-first = scannable, sortable                                                                           |
+| `Product Added`  | `product added`, `product_added`, `productAdded` | Amplitude treats different casings as separate events — always use Title Case, not snake_case or camelCase |
 
 **Consistency is the top priority.** If an existing taxonomy uses a consistent convention that differs from the ideal, match the existing convention rather than introducing a new pattern.
 
 **User perspective, not system perspective:**
+
 - `Message Sent` (user sent) not `Message Delivered` (system delivered)
 - `Purchase Completed` (user completed) not `Payment Processed` (system processed)
 
 **Specificity balance — one event + properties, not many events:**
+
 - **Good**: `Order Completed` with property `payment_method`
 - **Bad**: `Credit Card Order Completed`, `Apple Pay Order Completed`
 
@@ -244,14 +258,14 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 ### Property Type Standards
 
-| Type | Format | Example |
-|------|--------|---------|
-| IDs | Always string | `"user_id": "12345"` not `12345` |
-| Counts/amounts | Number | `"order_total": 59.99` |
-| Flags | Boolean | `"is_premium": true` |
-| Timestamps | ISO 8601 string | `"2024-03-10T14:30:00Z"` |
-| Enums/status | String | `"status": "In Progress"` |
-| Null handling | Pick one approach per property | Omit, `null`, or sentinel string like `"Unknown"` — never mix. Using an explicit sentinel string lets you distinguish intentionally unavailable values from instrumentation bugs. Inconsistent null handling is one of the most common causes of incorrect property filters and broken funnels. |
+| Type           | Format                         | Example                                                                                                                                                                                                                                                                                         |
+| -------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IDs            | Always string                  | `"user_id": "12345"` not `12345`                                                                                                                                                                                                                                                                |
+| Counts/amounts | Number                         | `"order_total": 59.99`                                                                                                                                                                                                                                                                          |
+| Flags          | Boolean                        | `"is_premium": true`                                                                                                                                                                                                                                                                            |
+| Timestamps     | ISO 8601 string                | `"2024-03-10T14:30:00Z"`                                                                                                                                                                                                                                                                        |
+| Enums/status   | String                         | `"status": "In Progress"`                                                                                                                                                                                                                                                                       |
+| Null handling  | Pick one approach per property | Omit, `null`, or sentinel string like `"Unknown"` — never mix. Using an explicit sentinel string lets you distinguish intentionally unavailable values from instrumentation bugs. Inconsistent null handling is one of the most common causes of incorrect property filters and broken funnels. |
 
 ### User Identification Standards
 
@@ -272,16 +286,17 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 
 Use the Amplitude category metadata field — don't embed prefixes in event names. Common categories:
 
-| Category | Purpose | Examples |
-|----------|---------|---------|
-| Lifecycle | User journey milestones | Signup Completed, Trial Started, Subscription Cancelled |
-| Feature | Core product functionality | Task Created, Document Edited, Report Generated |
-| Engagement | Navigation and UI interaction | Page Viewed, Button Clicked, Search Performed |
-| Transaction | Revenue events | Purchase Completed, Checkout Started, Refund Requested |
-| System | Technical health | Error Occurred, API Request Completed, Timeout Occurred |
-| Growth | Acquisition and referral | Invite Sent, Share Completed, Referral Reward Earned |
+| Category    | Purpose                       | Examples                                                |
+| ----------- | ----------------------------- | ------------------------------------------------------- |
+| Lifecycle   | User journey milestones       | Signup Completed, Trial Started, Subscription Cancelled |
+| Feature     | Core product functionality    | Task Created, Document Edited, Report Generated         |
+| Engagement  | Navigation and UI interaction | Page Viewed, Button Clicked, Search Performed           |
+| Transaction | Revenue events                | Purchase Completed, Checkout Started, Refund Requested  |
+| System      | Technical health              | Error Occurred, API Request Completed, Timeout Occurred |
+| Growth      | Acquisition and referral      | Invite Sent, Share Completed, Referral Reward Earned    |
 
 **Assignment heuristics:**
+
 - If an event represents a first-time or milestone user action (signup, first purchase, first invite), prefer **Lifecycle** over Feature or Transaction.
 - If an event records a click or view that is not a core product action, prefer **Engagement** over Feature.
 - Integration-sourced events (`[Appboy]`, `[Adjust]`, etc.) may not fit neatly — assign System or Growth based on the integration's purpose, or leave unassigned.
@@ -293,11 +308,11 @@ Three dimensions:
 
 ### 1. Issue Impact
 
-| Level | Points | Definition | Examples |
-|-------|--------|------------|---------|
-| HIGH | 3 | Name is ambiguous — analyst cannot reliably interpret it | Jargon, acronyms, blob words, confusable names |
-| MEDIUM | 2 | Name is interpretable but taxonomy is messier for it | Convention outliers, unexpected events not on plan |
-| LOW | 1 | Name is clear; issue is missing polish | Missing description when name is self-explanatory |
+| Level  | Points | Definition                                               | Examples                                           |
+| ------ | ------ | -------------------------------------------------------- | -------------------------------------------------- |
+| HIGH   | 3      | Name is ambiguous — analyst cannot reliably interpret it | Jargon, acronyms, blob words, confusable names     |
+| MEDIUM | 2      | Name is interpretable but taxonomy is messier for it     | Convention outliers, unexpected events not on plan |
+| LOW    | 1      | Name is clear; issue is missing polish                   | Missing description when name is self-explanatory  |
 
 ### 2. Event Importance
 
@@ -315,6 +330,7 @@ Three dimensions:
 **Prioritization:** Lead with high-impact issues on high-importance events. Stale/test events are quick wins — surface them below real data quality problems.
 
 **Health grade:** (Total Points Earned / Total Points Possible) x 100%
+
 - 0-49%: Needs Improvement
 - 50-79%: Meets Expectations
 - 80-100%: Exceeds Expectations
@@ -322,6 +338,7 @@ Three dimensions:
 ## Authority Boundaries (Metadata-Only)
 
 **Allowed (non-destructive, metadata-only, with user approval):**
+
 - Update display names, descriptions, categories, tags
 - Set official status
 - Hide events (NOT block or delete)
@@ -329,6 +346,7 @@ Three dimensions:
 - Add AI Context to project settings
 
 **Not allowed:**
+
 - Blocking, deleting, merging, or transforming events
 - Block/Drop filters
 - Modifying ingestion pipelines or upstream integrations
@@ -342,61 +360,61 @@ Three dimensions:
 
 Default lookback: **180 days**.
 
-| Signal | Priority | Action |
-|--------|----------|--------|
-| Semantically unclear name | HIGH | Add display name + description |
-| Missing description (unclear name) | HIGH | Add description following AI readiness formula |
-| Semantic duplicate (true — same meaning, different casing) | HIGH | Merge or disambiguate |
-| Semantic duplicate (similar — different names, same action) | HIGH | Investigate; merge or disambiguate |
-| Zero volume (180 days) | MEDIUM | Investigate before acting |
-| Zero queries (180 days) | MEDIUM | Check asset dependencies first |
-| Duplicate property across event + user scope | MEDIUM | Clarify correct source of truth |
-| Missing description (clear name) | LOW | Add description; deprioritize |
-| Missing category | LOW | Add category |
-| Naming convention outlier | LOW | Flag for future realignment |
-| Unexpected event/property | LOW | Add to plan or block after review |
-| Stale (last seen beyond lookback) | LOW | Quick win — schedule for deprecation |
-| Single-day (first seen = last seen) | LOW | Quick win — likely test; verify first |
-| Test/QA artifact (`test_`, `debug_`, `tmp_`, `_qa`) | LOW | Quick win — standard deprecation process |
+| Signal                                                      | Priority | Action                                         |
+| ----------------------------------------------------------- | -------- | ---------------------------------------------- |
+| Semantically unclear name                                   | HIGH     | Add display name + description                 |
+| Missing description (unclear name)                          | HIGH     | Add description following AI readiness formula |
+| Semantic duplicate (true — same meaning, different casing)  | HIGH     | Merge or disambiguate                          |
+| Semantic duplicate (similar — different names, same action) | HIGH     | Investigate; merge or disambiguate             |
+| Zero volume (180 days)                                      | MEDIUM   | Investigate before acting                      |
+| Zero queries (180 days)                                     | MEDIUM   | Check asset dependencies first                 |
+| Duplicate property across event + user scope                | MEDIUM   | Clarify correct source of truth                |
+| Missing description (clear name)                            | LOW      | Add description; deprioritize                  |
+| Missing category                                            | LOW      | Add category                                   |
+| Naming convention outlier                                   | LOW      | Flag for future realignment                    |
+| Unexpected event/property                                   | LOW      | Add to plan or block after review              |
+| Stale (last seen beyond lookback)                           | LOW      | Quick win — schedule for deprecation           |
+| Single-day (first seen = last seen)                         | LOW      | Quick win — likely test; verify first          |
+| Test/QA artifact (`test_`, `debug_`, `tmp_`, `_qa`)         | LOW      | Quick win — standard deprecation process       |
 
 **Exception:** When customer is near quota, Stale/Single-day/Test signals become elevated priority.
 
 ## Key Audit Metrics
 
-| Metric | Impact |
-|--------|--------|
-| % of types at quota limit | HIGH when >90% |
-| New types added in last 7 days (spike = possible dynamic value leak) | HIGH if spike |
-| Total event volume change in last 7 days | HIGH if unexpected |
-| Number of duplicate types by name | HIGH |
-| Group types not instrumented (B2B products) | HIGH |
-| A/B experiments tracked as events instead of user properties | MEDIUM |
-| Events with zero queries in 180 days | MEDIUM |
-| Events with zero volume in 180 days | MEDIUM |
-| Single-day events | MEDIUM |
-| % of live events with descriptions | LOW |
-| % of live events with categories | LOW |
-| Number of Unexpected events/properties | LOW |
-| Naming convention inconsistencies | LOW |
+| Metric                                                               | Impact             |
+| -------------------------------------------------------------------- | ------------------ |
+| % of types at quota limit                                            | HIGH when >90%     |
+| New types added in last 7 days (spike = possible dynamic value leak) | HIGH if spike      |
+| Total event volume change in last 7 days                             | HIGH if unexpected |
+| Number of duplicate types by name                                    | HIGH               |
+| Group types not instrumented (B2B products)                          | HIGH               |
+| A/B experiments tracked as events instead of user properties         | MEDIUM             |
+| Events with zero queries in 180 days                                 | MEDIUM             |
+| Events with zero volume in 180 days                                  | MEDIUM             |
+| Single-day events                                                    | MEDIUM             |
+| % of live events with descriptions                                   | LOW                |
+| % of live events with categories                                     | LOW                |
+| Number of Unexpected events/properties                               | LOW                |
+| Naming convention inconsistencies                                    | LOW                |
 
 ## Good vs. Bad Metadata Examples
 
 **Display names:**
 
-| Before | After |
-|--------|-------|
-| `catSelectClick` | `Category Selected` |
-| `pgVw` | `Page Viewed` |
-| `ord_compl_v2` | `Order Completed` |
-| `usr_prop_acct_tier` | `Account Tier` |
+| Before               | After               |
+| -------------------- | ------------------- |
+| `catSelectClick`     | `Category Selected` |
+| `pgVw`               | `Page Viewed`       |
+| `ord_compl_v2`       | `Order Completed`   |
+| `usr_prop_acct_tier` | `Account Tier`      |
 
 **Descriptions:**
 
-| Bad (implementation-focused) | Good (intent + context) |
-|------------------------------|------------------------|
-| "Fired on click handler for nav component" | "Triggered when a customer selects a product category from the navigation menu. Example categories: Electronics, Apparel, Home." |
-| "Event fired on submit" | "Triggered when a user completes checkout and confirms their order. Includes all line items, discounts applied, and final order total." |
-| "See tracking plan" | "Fired the first time a new user completes onboarding by verifying their email. Fires once per user lifetime only." |
+| Bad (implementation-focused)               | Good (intent + context)                                                                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| "Fired on click handler for nav component" | "Triggered when a customer selects a product category from the navigation menu. Example categories: Electronics, Apparel, Home."        |
+| "Event fired on submit"                    | "Triggered when a user completes checkout and confirms their order. Includes all line items, discounts applied, and final order total." |
+| "See tracking plan"                        | "Fired the first time a new user completes onboarding by verifying their email. Fires once per user lifetime only."                     |
 
 ---
 
@@ -407,20 +425,25 @@ These are the actual Amplitude MCP server tools available for taxonomy work. Too
 ## Context
 
 ### `get_amplitude_context`
+
 Get information about the current user, organization, and accessible projects. Call this first to discover project IDs.
 
 ### `get_amplitude_context` with `projectId`
+
 Get project-specific settings: time zone, currency, session definition, AI context. Use to understand project configuration before making changes.
 
 ### `search`
+
 Search for charts, dashboards, notebooks, experiments, events, properties, cohorts, and other Amplitude content. Use this before `get_events` to find the event you're looking for.
 
 ### `get_workspace_settings`
+
 Get workspace settings including approval workflow status. Check before writing to the default branch — when `approvalWF` is "Required", the user must create a non-default branch first.
 
 ## Event Discovery
 
 ### `get_events`
+
 Retrieve events from a project with filtering by event types, limit, and cursor pagination. Returns full event objects including category and active status.
 
 If the connected MCP server's `get_events` input schema accepts `_client`, every
@@ -436,6 +459,7 @@ attribution exactly. Otherwise, omit `_client`.
 - If you know exact event type names, pass them via `eventTypes` for precise lookup.
 
 ### `get_custom_or_labeled_events`
+
 Retrieve custom events, labeled (autotrack) events, or both from a project.
 
 - `eventKind: "_all"` — both custom and labeled events (default).
@@ -444,28 +468,31 @@ Retrieve custom events, labeled (autotrack) events, or both from a project.
 - Returns `isAutotrack` flag, definition, and `flattenedDefinition` (source event lists).
 
 ### `get_transformations`
+
 Retrieve data transformations (merge events, merge properties, map property values) from a project. Use to audit data cleaning rules.
 
 ## Property Discovery
 
 ### `get_properties`
+
 Retrieve properties from a project's taxonomy. Use `propertyType` to select which kind:
 
-| `propertyType` | What it returns | Key params |
-|---|---|---|
-| `event` | Properties for a specific event type | `eventType` (required) |
-| `user` | User-level properties | `sources`, `name` |
-| `derived` | Computed/formula properties | `derivedPropertyType`, `names` |
-| `group` | Group properties (e.g., company_name, plan_tier) | `groupTypes` |
-| `lookup` | CSV lookup table properties | `configurationFilter`, `lookupTableName` |
-| `channel` | Traffic source channel properties | `names` |
-| `persisted` | Event-to-user persisted properties | `names` |
+| `propertyType` | What it returns                                  | Key params                               |
+| -------------- | ------------------------------------------------ | ---------------------------------------- |
+| `event`        | Properties for a specific event type             | `eventType` (required)                   |
+| `user`         | User-level properties                            | `sources`, `name`                        |
+| `derived`      | Computed/formula properties                      | `derivedPropertyType`, `names`           |
+| `group`        | Group properties (e.g., company_name, plan_tier) | `groupTypes`                             |
+| `lookup`       | CSV lookup table properties                      | `configurationFilter`, `lookupTableName` |
+| `channel`      | Traffic source channel properties                | `names`                                  |
+| `persisted`    | Event-to-user persisted properties               | `names`                                  |
 
 All property types except `event` support limit/cursor pagination.
 
 ## Metadata Updates
 
 ### `update_event`
+
 Update event metadata: descriptions, display names, categories, official status, and event names. Operates on the tracking plan.
 
 - Event type keys must match the event `name` exactly (case-sensitive) — not the `displayName`. Resolve via `get_events` first if needed.
@@ -475,17 +502,19 @@ Update event metadata: descriptions, display names, categories, official status,
 - Requires "Update Tracking Plan" permission.
 
 ### `update_properties`
+
 Update property metadata (description, official status, category, and/or name). Use `propertyType` to select which kind:
 
-| `propertyType` | What it updates | Key params |
-|---|---|---|
-| `event` | Event property metadata (global or event-scoped) | `metadataScope`, `eventType` (when scope is `"event"`) |
-| `user` | User property metadata | `descriptions`, `isOfficial`, `categories`, `newNames` |
+| `propertyType` | What it updates                                  | Key params                                             |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `event`        | Event property metadata (global or event-scoped) | `metadataScope`, `eventType` (when scope is `"event"`) |
+| `user`         | User property metadata                           | `descriptions`, `isOfficial`, `categories`, `newNames` |
 
 - Use `get_properties` first to verify property names and status before updating.
 - Requires "Update Tracking Plan" permission.
 
 ### `update_custom_or_labeled_events`
+
 Update descriptions, categories, names, official status, and/or definitions on custom or labeled events.
 
 - Only use when the user explicitly asks to update a "custom event" or "labeled event." For regular events, use `update_event`.

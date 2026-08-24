@@ -37,6 +37,7 @@ Do NOT duplicate information between the summary table and the details. The summ
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to monitor.
 2. Search for experiments:
+
 ```
 Amplitude:search({
   entityTypes: ["EXPERIMENT"],
@@ -47,6 +48,7 @@ Amplitude:search({
   limitPerQuery: 50
 })
 ```
+
 3. **Filtering rules — include experiments that are:**
    - **Running and not stale:** Any experiment in a running state that is NOT marked as stale. Stale experiments have gone idle and should be excluded.
    - **Recently decided:** Completed experiments that have a decision recorded AND were modified within the last 14 days. These are worth reviewing to confirm the decision or share learnings.
@@ -81,6 +83,7 @@ Date: [Today] | Project: [Name] ([ID])
 ```
 
 **Column definitions:**
+
 - **Experiment** — Human-readable name (NOT a URL, NOT an ID)
 - **State** — Running or Completed
 - **Duration** — Days since experiment started
@@ -89,17 +92,17 @@ Date: [Today] | Project: [Name] ([ID])
 
 **Verdict vocabulary:**
 
-| Verdict | When to use |
-|---------|-------------|
-| **Ship** | Significant positive primary, guardrails clean, data quality good |
-| **Iterate** | Positive signal but guardrail regression or quality concern |
-| **Monitor** | Running, not yet significant, nothing to act on |
-| **Abandon** | Significant negative primary, or critical data quality issues |
-| **Decided: Ship** | Recently completed, team decided to ship |
-| **Decided: Don't ship** | Recently completed, team decided not to ship |
-| **Fix config** | Query error, broken exposure event, or severely imbalanced traffic |
-| **Needs metrics** | Running without metrics — can't evaluate |
-| **N/A** | Survey/nudge deployment, not a feature experiment |
+| Verdict                 | When to use                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| **Ship**                | Significant positive primary, guardrails clean, data quality good  |
+| **Iterate**             | Positive signal but guardrail regression or quality concern        |
+| **Monitor**             | Running, not yet significant, nothing to act on                    |
+| **Abandon**             | Significant negative primary, or critical data quality issues      |
+| **Decided: Ship**       | Recently completed, team decided to ship                           |
+| **Decided: Don't ship** | Recently completed, team decided not to ship                       |
+| **Fix config**          | Query error, broken exposure event, or severely imbalanced traffic |
+| **Needs metrics**       | Running without metrics — can't evaluate                           |
+| **N/A**                 | Survey/nudge deployment, not a feature experiment                  |
 
 #### Action items (immediately after the table)
 
@@ -147,33 +150,37 @@ If issues found, report before the primary metric:
 ```
 
 **SRM (Sample Ratio Mismatch):**
+
 - Use the `srmDetected` field from the API response
 - If `srmDetected: true`: **always report first and prominently**
 - Report: actual split vs. expected split with specific percentages
 
 **Traffic allocation changes:**
+
 - Compare the current variant weights against the cumulative exposure distribution
 - If they don't match (e.g., current weights are 100/0/0 but cumulative is 15/70/15), the allocation was changed mid-experiment
 - Flag this prominently — it means some variants may no longer be receiving new traffic
 
 **Sample size:**
+
 - <100 per variant: Flag as insufficient — too early for any conclusions
 - 100–1,000 per variant: Directional signals only, not enough for confident decisions
 - 1,000+: Adequate for analysis
 
 **Validity flags — only report failures:**
 
-| Flag | What it means when it fails | Severity |
-|------|----------------------------|----------|
-| `isVariancePositive` = false | Metric data is invalid — statistical tests can't run | Critical |
-| `isConfidenceIntervalNotFlipped` = false | Calculation error in results — don't trust the numbers | Critical |
-| `isMeanValid` = false | Metric values are broken (NaN/infinite) — can't analyze | Critical |
-| `statsAssumptionsMetForWholeExperiment` = false | Statistical assumptions aren't met — results may be unreliable | High |
-| `hasSuspiciousUplift` = true | Unusually large effect — may be a measurement error, not a real change | High |
-| `isPointEstimateInsideConfidenceInterval` = false | Internal math inconsistency — results may be wrong | High |
-| `isStandardErrorLargeEnough` = false | Too much noise to get reliable estimates | Medium |
+| Flag                                              | What it means when it fails                                            | Severity |
+| ------------------------------------------------- | ---------------------------------------------------------------------- | -------- |
+| `isVariancePositive` = false                      | Metric data is invalid — statistical tests can't run                   | Critical |
+| `isConfidenceIntervalNotFlipped` = false          | Calculation error in results — don't trust the numbers                 | Critical |
+| `isMeanValid` = false                             | Metric values are broken (NaN/infinite) — can't analyze                | Critical |
+| `statsAssumptionsMetForWholeExperiment` = false   | Statistical assumptions aren't met — results may be unreliable         | High     |
+| `hasSuspiciousUplift` = true                      | Unusually large effect — may be a measurement error, not a real change | High     |
+| `isPointEstimateInsideConfidenceInterval` = false | Internal math inconsistency — results may be wrong                     | High     |
+| `isStandardErrorLargeEnough` = false              | Too much noise to get reliable estimates                               | Medium   |
 
 If SRM is detected or a Critical flag fails:
+
 ```
 ⚠️ Results below should be interpreted with caution due to [issue].
 ```
@@ -192,11 +199,13 @@ If SRM is detected or a Critical flag fails:
 ```
 
 **Framing rules:**
+
 - **Do NOT include p-values.** Non-experts don't know what they mean.
 - Use "not significant" instead of "no effect." There may be an effect — the experiment just can't detect it at this sample size.
 - Lead with what happened in plain language.
 
 **Verdict words:**
+
 - **Significant positive** — CI entirely above zero, positive lift
 - **Significant negative** — CI entirely below zero, negative lift
 - **Not significant** — CI includes zero; we can't confidently say there's a real difference yet
@@ -213,11 +222,13 @@ Focus on catching regressions, not narrating every metric.
 If no significant regressions: "All guardrails and secondary metrics are clean — no significant regressions detected."
 
 If significant regressions found:
+
 ```
 - **[Metric Name]:** Significant regression ([−X%], CI: [A% to B%]) — [one sentence on impact]
 ```
 
 If large directional regressions (>20% relative lift) that aren't yet significant:
+
 ```
 - **[Metric Name]:** Not significant, but directionally negative ([−X%]) — worth watching
 ```
@@ -239,12 +250,12 @@ Call `Amplitude:get_feedback_insights` with experiment-related keywords. Report 
 
 **Decision matrix (internal reference, don't output):**
 
-| Signal | Ship | Iterate | Monitor | Abandon |
-|--------|------|---------|---------|---------|
-| Primary | Significant positive + practical | Significant positive but guardrail regression | Not yet significant, still running | Significant negative |
-| Quality | All pass | Minor flags | All pass or insufficient data | SRM or critical flags |
-| Guardrails | Clean | 1 regression needs fixing | Clean or not enough data | Significant regression on critical metric |
-| Experiment state | Completed | Completed | Running | Completed or running |
+| Signal           | Ship                             | Iterate                                       | Monitor                            | Abandon                                   |
+| ---------------- | -------------------------------- | --------------------------------------------- | ---------------------------------- | ----------------------------------------- |
+| Primary          | Significant positive + practical | Significant positive but guardrail regression | Not yet significant, still running | Significant negative                      |
+| Quality          | All pass                         | Minor flags                                   | All pass or insufficient data      | SRM or critical flags                     |
+| Guardrails       | Clean                            | 1 regression needs fixing                     | Clean or not enough data           | Significant regression on critical metric |
+| Experiment state | Completed                        | Completed                                     | Running                            | Completed or running                      |
 
 #### 4b: Running Experiments (monitoring, no action needed)
 

@@ -44,6 +44,7 @@ Run these in parallel where possible. Budget: 10-15 tool calls total for this ph
 #### 2b. Funnel Analysis
 
 For each funnel chart discovered, examine:
+
 - Overall conversion rate and trend
 - The step with the largest absolute drop-off
 - Whether drop-off is getting worse or better over time
@@ -70,6 +71,7 @@ If no funnel charts exist but the user mentioned a flow, use `query_dataset` to 
 #### 2e. Session Replays
 
 If investigating a specific flow or drop-off:
+
 1. Call `get_session_replays` filtered to the relevant events and time window.
 2. Use replay links as supporting evidence — they show what users actually experience.
 
@@ -115,21 +117,23 @@ enhancement → before vs. after; new feature → user journey.
 
 #### RICE Scoring
 
-| Dimension      | Definition                                              | Scale          |
-|----------------|---------------------------------------------------------|----------------|
-| **Reach**      | Number of users/events affected per quarter             | Absolute count |
-| **Impact**     | Expected effect per user on the target metric           | 0.25–3         |
-| **Confidence** | How confident you are in the estimates                  | 0–100%         |
-| **Effort**     | Implementation effort                                   | Person-months  |
+| Dimension      | Definition                                    | Scale          |
+| -------------- | --------------------------------------------- | -------------- |
+| **Reach**      | Number of users/events affected per quarter   | Absolute count |
+| **Impact**     | Expected effect per user on the target metric | 0.25–3         |
+| **Confidence** | How confident you are in the estimates        | 0–100%         |
+| **Effort**     | Implementation effort                         | Person-months  |
 
 **Score = (Reach x Impact x Confidence%) / Effort** — higher = better ROI.
 
 Reach guidelines:
+
 - Estimate the number of users or events affected per quarter.
 - Use analytics data to ground this: DAU/WAU/MAU counts, funnel volumes, segment sizes from existing cohorts.
 - State the source: "~12,000 users/quarter hit this flow based on [chart]."
 
 Impact anchors (expected effect per user):
+
 - 0.25 (Minimal): Cosmetic polish, barely noticeable change
 - 0.5 (Low): Minor friction reduction, small quality-of-life improvement
 - 1 (Medium): Measurable lift on a key metric
@@ -137,12 +141,14 @@ Impact anchors (expected effect per user):
 - 3 (Massive): Removes a blocking failure, unlocks a workflow entirely
 
 Confidence anchors:
+
 - 100%: Strong multi-source evidence — quantified funnel data, A/B results, corroborating feedback
 - 80%: Analytics + feedback + replays all pointing the same direction
 - 50%: Analytics OR validated feedback, not both — reasonable hypothesis
 - 20%: Anecdotal signal only — gut feel backed by a few data points
 
 Effort guidelines:
+
 - Estimate in person-months, accounting for coding agents handling implementation.
   Agents compress pure coding time but don't eliminate review, testing, rollout,
   or cross-team coordination. Discount the coding portion, keep the rest.
@@ -182,6 +188,7 @@ Structure the final output as:
 6. **Follow-on prompt**: End with a question about what to dig into next.
 
 **Writing standards:**
+
 - Narrative over structure. Write like a product memo, not a database record.
 - Numbers are evidence, not the story. Lead with the insight.
 - Approximate: "~42%" not "42.37%".
@@ -197,6 +204,7 @@ Structure the final output as:
 User says: "Find me the biggest product opportunities right now"
 
 Actions:
+
 1. Get context and discover the org's most important dashboards, charts, and experiments
 2. Query all discovered charts at daily granularity over 30 days, rank by trend magnitude
 3. Analyze funnels for conversion drop-offs
@@ -209,6 +217,7 @@ Actions:
 User says: "Where are we losing users in onboarding?"
 
 Actions:
+
 1. Search for onboarding-related charts, dashboards, and cohorts
 2. Query the onboarding funnel and break down by segment (platform, plan, new vs. returning)
 3. Pull feedback filtered to onboarding-related complaints and pain points
@@ -221,6 +230,7 @@ Actions:
 User says: "We launched feature X last week — what opportunities do you see?"
 
 Actions:
+
 1. Search for charts and dashboards tracking feature X
 2. Query adoption metrics (daily active users, activation rate, retention)
 3. Compare pre-launch vs. post-launch baselines
@@ -231,13 +241,17 @@ Actions:
 ## Troubleshooting
 
 ### No dashboards or charts found
+
 Fall back to `search` with broad queries related to the user's product area. Use `query_dataset` to build ad-hoc charts from raw events. Suggest the user create a key metrics dashboard.
 
 ### Feedback API returns errors
+
 Always call `get_feedback_sources` before `get_feedback_insights`. If no sources are configured, skip feedback and note it as a gap in the report — recommend the user connect a feedback source.
 
 ### Everything looks healthy — no anomalies
+
 Stability is a finding. Focus on: stalled experiments that need decisions, features with flat adoption that could grow, feedback themes that haven't been addressed, and conversion rates that are "fine" but benchmarkably low.
 
 ### Too many findings
+
 Cap at 7 full opportunities. Rank by RICE score and demote everything below the cutoff to "Emerging Signals." Merge findings that share a root cause.

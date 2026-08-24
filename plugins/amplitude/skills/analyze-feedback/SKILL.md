@@ -45,15 +45,16 @@ Structure as:
 6. **Prioritized Recommendations**: Very concise section recapping the top 3-7 specific actionable recommendations (unless prompted otherwise) to follow-up on. Inlcude [p0],[p1],[p2],[p3] in front of each title to help size priority with p0 being most urgent and p3 being least.
 
 ## Best Practices
-- Be comprehensive in your investigation and analysis but concise and actionable in your response. 
+
+- Be comprehensive in your investigation and analysis but concise and actionable in your response.
 - Do not repeat duplicate sections or the same takeaway multiple times.
 - Include 1-2 representative quotes for each theme. Prioritize the best quotes that explains the theme. Include when it was received and what source it came from. If the quote is long, only quote the relevant section tied to the theme.
 - When describing a theme, include the mention volumes, key sources, and recency in a concise manner.
 - Each theme should have consistent formatting like:
-    Concise But Descriptive Theme Name (X mentions)
-    Actionable one-line description or multiple concise bullet-points explaining what the specific issue or request or praise is, what time period the feedback was relevant for, and key sources the theme came from
-    - "Customer quote backing the theme" - Source name (Received date)
-    - "Customer quote backing the theme" - Source name (Received date)
+  Concise But Descriptive Theme Name (X mentions)
+  Actionable one-line description or multiple concise bullet-points explaining what the specific issue or request or praise is, what time period the feedback was relevant for, and key sources the theme came from
+  - "Customer quote backing the theme" - Source name (Received date)
+  - "Customer quote backing the theme" - Source name (Received date)
 - For the Prioritized Recommendations section, each recommendation should just be 1 concise but actionable bullet-point instead of a long theme overview.
 - Do not recap what you did at the very end and just end after the concise prioritized recommendations.
 - Connect feedback to behavioral data when possible.

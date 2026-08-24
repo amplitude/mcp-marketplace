@@ -37,6 +37,7 @@ the conversation. Only ask if it's genuinely ambiguous.
 | **Feature**          | A natural-language description of functionality, not a specific code reference | `instrument the onboarding flow`, `add tracking to the checkout experience` |
 
 **Inference rules:**
+
 - If the user provided a URL or `#number` → **PR**
 - If the user provided something that looks like a branch name (contains `/`, no file extension, matches a git branch) → **Branch**
 - If the user provided a path that exists on disk (file or directory) → **File / Directory**
@@ -46,6 +47,7 @@ the conversation. Only ask if it's genuinely ambiguous.
 **If ambiguous**, ask the user:
 
 > What would you like to instrument?
+>
 > 1. A specific file or directory
 > 2. A PR
 > 3. A branch

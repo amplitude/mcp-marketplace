@@ -73,9 +73,13 @@ and what it's for, so they can improve this and future runs:
 >
 > ```markdown
 > # Instrumentation context
+>
 > ## Conventions
+>
 > - Event names: Title Case, object-action ("Checkout Completed")
+>
 > ## Reference files
+>
 > - docs/analytics/taxonomy.md
 > ```
 >
@@ -111,9 +115,9 @@ step 7 depends on it.
   >
   > ```yaml
   > rules:
-  >   - pattern: "**"          # default project, all paths
+  >   - pattern: '**' # default project, all paths
   >     app_ids: [YOUR_APP_ID]
-  >   - pattern: "src/web/**"  # override a sub-tree
+  >   - pattern: 'src/web/**' # override a sub-tree
   >     app_ids: [YOUR_WEB_APP_ID]
   > ```
 
@@ -128,17 +132,18 @@ step 7 depends on it.
   If they pick **single-app (3)**: infer `appId` from what they gave you, set
   `appIdConfidence: "low"`, and carry that flag — steps 6 and 7 depend on it.
   Skip the rest of this section.
+
 - **If it exists:** parse its `rules`. Each rule maps a path pattern to one or
   more app-ids:
 
 ```yaml
 rules:
-  - pattern: "**"              # catch-all (also `*` or `/`) → the default app_id
+  - pattern: '**' # catch-all (also `*` or `/`) → the default app_id
     app_ids: [4567]
-  - pattern: "src/web/**"      # this directory and everything under it
+  - pattern: 'src/web/**' # this directory and everything under it
     app_ids: [1234]
-  - pattern: "packages/shared/**"
-    app_ids: [1234, 4567]      # shared code → event added to plan in BOTH projects
+  - pattern: 'packages/shared/**'
+    app_ids: [1234, 4567] # shared code → event added to plan in BOTH projects
 ```
 
 The **default app_id** is the one matched by the catch-all rule (`**`, `*`, or `/`).
@@ -171,7 +176,7 @@ Work through each priority-3 event one at a time:
 
 The event candidate has a `file` field pointing to where instrumentation likely
 belongs. Read that file completely. Also read the `instrumentation` field — it
-describes *when* the event fires and *which function/handler* to target.
+describes _when_ the event fires and _which function/handler_ to target.
 
 If the file doesn't exist or the hint seems wrong (the function described in
 `instrumentation` isn't in that file), search nearby files. The hint is a
@@ -307,6 +312,7 @@ too:
 
 > ⚠️ **X event(s) won't be added to Amplitude yet** because their app ID
 > couldn't be confirmed. To fix this:
+>
 > - Add `.amplitude/instrumentation-agent.yaml` mapping the relevant paths to
 >   app IDs (see step 3 — I can scan the repo and propose one for you), **or**
 > - Tell me the app ID for these paths directly.
@@ -325,7 +331,6 @@ Ask if they want to adjust anything before an engineer implements it.
 - **Scope is sacred.** Only use variables available at the insertion point. Don't propose refactors to thread data through — that's a separate PR.
 - **Critical means critical.** This skill only handles priority 3. If the user wants priority 2 events, they should say so explicitly and you can include them.
 
-
 ## 7. Update Tracking plan in Amplitude through MCP
 
 Add to plan **only** `appIdConfidence: "high"` events. Never write back a `med` or
@@ -333,12 +338,14 @@ Add to plan **only** `appIdConfidence: "high"` events. Never write back a `med` 
 first.
 
 Before adding to plan, confirm with the user what will be created. List:
+
 - Each event with `appIdConfidence: "high"` and the project(s) it will be
   added to plan in
 - Any events being skipped due to `med`/`low` confidence, and why
 
 Get explicit confirmation, then for each high-confidence event add it to plan in
 **every** project it routes to:
+
 - use the `create_events` tool to create the event in that project (`app_id`)
 - use the `create_properties` tool to create the properties attached to the
   correct event in that same project

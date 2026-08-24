@@ -31,6 +31,7 @@ x-amp-exclude-when-flags: [mcp-consolidate-charts]
   - Ask the user to correct the chart or provide a valid chart
 
 Capture and restate:
+
 - Metric being measured
 - Time range and granularity
 - Chart type (e.g. time series, funnel, retention)
@@ -48,6 +49,7 @@ Use **Analyzing chart** to characterize what’s happening:
 - **Anomaly**: Deviation from recent baseline or historical behavior
 
 Explicitly identify:
+
 - The **window of change** (start/end)
 - Direction and magnitude of the change
 - Baseline period used for comparison (default: previous equal-length period)
@@ -96,7 +98,7 @@ Present a structured, decision-ready analysis:
 3. **Primary Hypothesis**  
    Most likely explanation based on chart data and contextual signals
 
-4. **Supporting Evidence**  
+4. **Supporting Evidence**
    - Key metrics
    - Segment contributions
    - Relevant experiments, deployments, or annotations
@@ -111,6 +113,7 @@ Present a structured, decision-ready analysis:
    One clear follow-up action (e.g. deeper segment, experiment review, instrumentation check)
 
 Always include:
+
 - Chart name
 - Chart ID
 - Link back to the chart

@@ -127,12 +127,12 @@ Structure the output as a triage report. Lead with what's most broken and action
 
 **Severity classification:**
 
-| Severity | Criteria |
-|----------|----------|
+| Severity     | Criteria                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------- |
 | **Critical** | >5% of users affected, full causal chain (network → error → frustration), or blocking a core flow |
-| **High** | 1-5% of users, JS errors on key pages, or a clear regression from a deploy |
-| **Medium** | <1% of users, chronic errors, or errors on non-critical pages |
-| **Low** | Silent errors with no user-facing impact, or errors isolated to a single edge-case segment |
+| **High**     | 1-5% of users, JS errors on key pages, or a clear regression from a deploy                        |
+| **Medium**   | <1% of users, chronic errors, or errors on non-critical pages                                     |
+| **Low**      | Silent errors with no user-facing impact, or errors isolated to a single edge-case segment        |
 
 ---
 
@@ -152,6 +152,7 @@ Structure the output as a triage report. Lead with what's most broken and action
 User says: "What's broken right now?"
 
 Actions:
+
 1. Get context and project
 2. Query all three error events for the last 7 days — volume, trend, top sources
 3. Cross-reference by page to find causal chains
@@ -164,6 +165,7 @@ Actions:
 User says: "Errors seem up since yesterday's deploy"
 
 Actions:
+
 1. Get context and check `get_deployments` for what shipped
 2. Query `[Amplitude] Error Logged` comparing pre-deploy (7d before) vs post-deploy (last 24h)
 3. Identify new error messages that didn't exist before the deploy
@@ -176,6 +178,7 @@ Actions:
 User says: "We're seeing a lot of TypeErrors in the chart builder"
 
 Actions:
+
 1. Filter `[Amplitude] Error Logged` to `Error Type = TypeError` and `[Amplitude] Page Path` containing the chart builder
 2. Group by `Error Message` and `File Name` to find the specific errors
 3. Check `[Amplitude] Network Request` on the same pages for failing API calls

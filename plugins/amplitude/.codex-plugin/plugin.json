@@ -34,10 +34,7 @@
     "longDescription": "Bundle Amplitude analysis, experimentation, session replay, and instrumentation skills with the Amplitude MCP server configuration for use in Codex.",
     "developerName": "Amplitude",
     "category": "Productivity",
-    "capabilities": [
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Read", "Write"],
     "websiteURL": "https://amplitude.com",
     "privacyPolicyURL": "https://amplitude.com/privacy",
     "termsOfServiceURL": "https://amplitude.com/terms",

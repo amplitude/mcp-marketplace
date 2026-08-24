@@ -124,7 +124,7 @@ Start from the funnel hypothesis. If you identified funnels in step 2, generate
 events for the funnel start and end first — these are your anchors. Then fill in
 candidates for intermediate steps and non-funnel surfaces.
 
-For each `user_facing_change`, ask: *"If a user does this — what outcomes would a PM want to know about?"*
+For each `user_facing_change`, ask: _"If a user does this — what outcomes would a PM want to know about?"_
 
 Generate from four categories (ordered by priority):
 
@@ -157,7 +157,7 @@ If you drop a candidate because it already exists, note it in a
 Every candidate must pass all three:
 
 1. **Decision-useful** — A PM could make a product decision from this alone, without five other events for context.
-2. **Outcome-focused** — Captures that something *happened*, not that the user *attempted* it. `Property Extracted` > `Extract Button Clicked`. Prefer confirmed outcomes; form submissions are acceptable when no server confirmation exists.
+2. **Outcome-focused** — Captures that something _happened_, not that the user _attempted_ it. `Property Extracted` > `Extract Button Clicked`. Prefer confirmed outcomes; form submissions are acceptable when no server confirmation exists.
 3. **Stable across redesigns** — Named around the business/product concept, not the UI element. If renaming a modal would make the event name stale, it's too coupled.
 
 **Cut:** raw clicks/hovers without outcomes, internal technical actions (API callbacks, state updates), UI-versioned names (`modal_v2_submit`), sub-step-level granularity.
@@ -187,20 +187,20 @@ names (PropertyItem, ActionStore).
 For each candidate, use `file_summary_map` and `surfaces.components` to identify:
 
 - **`file`** — the source file where the tracking call belongs. Prefer the file closest to where the outcome is confirmed (not where the user initiates the action). Usually a component file from `surfaces.components` or a hook where an async operation resolves.
-- **`instrumentation`** — 1-2 sentences: *when* it fires (after what condition/callback/state transition) and *how* it's wired (which function/handler to place it in). Reference actual function names from file summaries so an engineer can find the right line.
+- **`instrumentation`** — 1-2 sentences: _when_ it fires (after what condition/callback/state transition) and _how_ it's wired (which function/handler to place it in). Reference actual function names from file summaries so an engineer can find the right line.
 
 ## 8. Deepen understanding, then prioritize
 
 For each candidate, first work through these two fields — they force you to think concretely about the event's value before scoring it:
 
-- **`analysis_recipe`** — Describe the specific chart, funnel, or query an analyst would build with this event. Be concrete: mention the visualization type, segmentation dimensions, and any other events to combine with. e.g., *"Weekly funnel: Panel Opened → Extract Type Selected → Property Extracted, segmented by extractType. Alert if completion rate drops below 50%."*
-- **`stakeholder_narrative`** — Write a sentence that a PM could drop into a quarterly review or board deck, using this event's data. Imagine the metric already exists and write the story it tells. e.g., *"68% of users who try extraction complete it on the first attempt, up from 45% last quarter."* If you can't imagine a compelling slide sentence, the event probably isn't worth instrumenting.
+- **`analysis_recipe`** — Describe the specific chart, funnel, or query an analyst would build with this event. Be concrete: mention the visualization type, segmentation dimensions, and any other events to combine with. e.g., _"Weekly funnel: Panel Opened → Extract Type Selected → Property Extracted, segmented by extractType. Alert if completion rate drops below 50%."_
+- **`stakeholder_narrative`** — Write a sentence that a PM could drop into a quarterly review or board deck, using this event's data. Imagine the metric already exists and write the story it tells. e.g., _"68% of users who try extraction complete it on the first attempt, up from 45% last quarter."_ If you can't imagine a compelling slide sentence, the event probably isn't worth instrumenting.
 
 Now, with that context fresh, assign a **priority**:
 
 | Priority         | Meaning                                                                                                            | Guidance                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| **3** (critical) | You would block a release if this event were missing. It answers a question the team *will* ask in the first week. | Reserve for events that directly measure whether the feature succeeded or failed. Most changes produce only 1-2 critical events. |
+| **3** (critical) | You would block a release if this event were missing. It answers a question the team _will_ ask in the first week. | Reserve for events that directly measure whether the feature succeeded or failed. Most changes produce only 1-2 critical events. |
 | **2** (useful)   | Adds real analytical value but the feature can ship without it. Worth adding if instrumentation cost is low.       | Segmentation dimensions, secondary workflows, configuration choices.                                                             |
 | **1** (optional) | Nice-to-have. Only instrument if the team has bandwidth and a specific hypothesis to test.                         | Edge-case failures, exploratory engagement signals, discoverability metrics.                                                     |
 
@@ -208,7 +208,7 @@ Now, with that context fresh, assign a **priority**:
 
 **Funnel start and funnel end events are always critical (priority 3).** Without the bookends, you can't measure conversion rate — the single most important metric for any funnel. These two events are non-negotiable regardless of funnel length or complexity.
 
-To decide how many *intermediate* funnel events to mark critical, gauge the length and complexity of the funnel:
+To decide how many _intermediate_ funnel events to mark critical, gauge the length and complexity of the funnel:
 
 - **Short process (2-3 steps, single page):** The start and end events are enough. Don't instrument every micro-step in a simple flow.
 - **Medium process (3-5 steps, possibly spanning pages):** Add one intermediate event at the most likely drop-off point — typically where the user commits effort (fills a form, makes a key selection, uploads a file).
@@ -224,54 +224,54 @@ Output only the YAML block — no surrounding prose.
 
 ```yaml
 event_candidates:
-  source_summary: "<from change_brief.summary>"
-  analytics_scope: "<from change_brief.classification.analytics_scope>"
-  event_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>"
-  property_naming_convention: "<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>"
+  source_summary: '<from change_brief.summary>'
+  analytics_scope: '<from change_brief.classification.analytics_scope>'
+  event_naming_convention: '<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>'
+  property_naming_convention: '<from MCP if clear, otherwise codebase instrumentation, otherwise taxonomy skill>'
 
-  already_tracked:                         # omit if no duplicates found
-    - existing_event: "Subscription Upgraded"
-      candidate_dropped: "Plan Upgraded"
-      reason: "Same action — existing event already tracks plan/subscription upgrades."
+  already_tracked: # omit if no duplicates found
+    - existing_event: 'Subscription Upgraded'
+      candidate_dropped: 'Plan Upgraded'
+      reason: 'Same action — existing event already tracks plan/subscription upgrades.'
 
-  funnels:                                 # omit if no multi-step flows found
-    - name: "Descriptive funnel name"
+  funnels: # omit if no multi-step flows found
+    - name: 'Descriptive funnel name'
       steps:
-        - step: "Step description"
-          file: "src/components/Foo.tsx"
-          function: "handleOpen"
-          role: start                      # start | intermediate | end
-        - step: "Next step"
-          file: "src/components/Bar.tsx"
-          function: "onSubmit"
+        - step: 'Step description'
+          file: 'src/components/Foo.tsx'
+          function: 'handleOpen'
+          role: start # start | intermediate | end
+        - step: 'Next step'
+          file: 'src/components/Bar.tsx'
+          function: 'onSubmit'
           role: intermediate
-        - step: "Final step"
-          file: "src/hooks/useSave.ts"
-          function: "onSuccess"
+        - step: 'Final step'
+          file: 'src/hooks/useSave.ts'
+          function: 'onSuccess'
           role: end
 
   candidates:
-    - name: "Event Name Here"
-      category: feature_success          # business_outcome | user_journey | feature_success | friction_failure
-      rationale: "What PM question this answers."
-      analysis_recipe: "Weekly trend of completions; funnel from Panel Opened → Extract Type Selected → Event Name, segmented by extract type."
-      stakeholder_narrative: "Feature X adoption reached 40% of active users within two weeks of launch, exceeding our 25% target."
-      priority: 3                        # 3 = critical, 2 = useful, 1 = optional
-      funnel: "Funnel name"             # which funnel this belongs to, if any
-      funnel_role: start                 # start | intermediate | end — omit if not part of a funnel
-      surface: "ComponentName"           # from surfaces.components
-      file: "src/components/Foo/Bar.tsx"
-      instrumentation: "Fire after the async save resolves, inside onSuccess of useExtract(). Pass result status."
+    - name: 'Event Name Here'
+      category: feature_success # business_outcome | user_journey | feature_success | friction_failure
+      rationale: 'What PM question this answers.'
+      analysis_recipe: 'Weekly trend of completions; funnel from Panel Opened → Extract Type Selected → Event Name, segmented by extract type.'
+      stakeholder_narrative: 'Feature X adoption reached 40% of active users within two weeks of launch, exceeding our 25% target.'
+      priority: 3 # 3 = critical, 2 = useful, 1 = optional
+      funnel: 'Funnel name' # which funnel this belongs to, if any
+      funnel_role: start # start | intermediate | end — omit if not part of a funnel
+      surface: 'ComponentName' # from surfaces.components
+      file: 'src/components/Foo/Bar.tsx'
+      instrumentation: 'Fire after the async save resolves, inside onSuccess of useExtract(). Pass result status.'
 
-    - name: "Another Event"
+    - name: 'Another Event'
       category: user_journey
-      rationale: "..."
-      analysis_recipe: "..."
-      stakeholder_narrative: "..."
+      rationale: '...'
+      analysis_recipe: '...'
+      stakeholder_narrative: '...'
       priority: 2
-      surface: "..."
-      file: "..."
-      instrumentation: "..."
+      surface: '...'
+      file: '...'
+      instrumentation: '...'
 ```
 
 Order: higher categories first, most impactful within each category first.
@@ -281,9 +281,10 @@ Order: higher categories first, most impactful within each category first.
 ## Example
 
 **Input excerpt:**
+
 ```yaml
 user_facing_changes:
-  - "Users can now select Extract Type (Text or Attribute) in the PropertyItem panel"
+  - 'Users can now select Extract Type (Text or Attribute) in the PropertyItem panel'
 surfaces:
   components:
     - name: PropertyItem
@@ -291,36 +292,37 @@ surfaces:
 ```
 
 **Good candidates:**
+
 ```yaml
-- name: "Property Extracted"
+- name: 'Property Extracted'
   category: feature_success
-  rationale: "Core adoption signal — tells PMs whether the extract workflow completes."
-  analysis_recipe: "Weekly funnel: Panel Opened → Extract Type Selected → Property Extracted, segmented by extractType. Alert if completion rate drops below 50%."
-  stakeholder_narrative: "72% of users who open a property panel complete an extraction, up from 0% before this release — validating the new extract workflow."
+  rationale: 'Core adoption signal — tells PMs whether the extract workflow completes.'
+  analysis_recipe: 'Weekly funnel: Panel Opened → Extract Type Selected → Property Extracted, segmented by extractType. Alert if completion rate drops below 50%.'
+  stakeholder_narrative: '72% of users who open a property panel complete an extraction, up from 0% before this release — validating the new extract workflow.'
   priority: 3
-  surface: "PropertyItem"
-  file: "src/components/PropertiesPanel/PropertyItem.tsx"
-  instrumentation: "Fire after extract resolves successfully in onSuccess handler. Include extractType (TEXT or ATTRIBUTE)."
+  surface: 'PropertyItem'
+  file: 'src/components/PropertiesPanel/PropertyItem.tsx'
+  instrumentation: 'Fire after extract resolves successfully in onSuccess handler. Include extractType (TEXT or ATTRIBUTE).'
 
-- name: "Extract Type Selected"
+- name: 'Extract Type Selected'
   category: feature_success
-  rationale: "Shows which mode users prefer — informs investment in Attribute mode."
-  analysis_recipe: "Pie chart of Text vs Attribute selections over 30 days. Combine with Property Extracted to get per-mode completion rate."
-  stakeholder_narrative: "85% of extractions use Text mode vs 15% Attribute — we should double down on Text UX before expanding Attribute capabilities."
+  rationale: 'Shows which mode users prefer — informs investment in Attribute mode.'
+  analysis_recipe: 'Pie chart of Text vs Attribute selections over 30 days. Combine with Property Extracted to get per-mode completion rate.'
+  stakeholder_narrative: '85% of extractions use Text mode vs 15% Attribute — we should double down on Text UX before expanding Attribute capabilities.'
   priority: 2
-  surface: "PropertyItem"
-  file: "src/components/PropertiesPanel/PropertyItem.tsx"
-  instrumentation: "Fire in onChange of Extract Type select, passing new value."
+  surface: 'PropertyItem'
+  file: 'src/components/PropertiesPanel/PropertyItem.tsx'
+  instrumentation: 'Fire in onChange of Extract Type select, passing new value.'
 
-- name: "Property Extraction Failed"
+- name: 'Property Extraction Failed'
   category: friction_failure
-  rationale: "Surfaces where the extract workflow breaks for reliability prioritization."
-  analysis_recipe: "Error rate chart: Property Extraction Failed / (Property Extracted + Property Extraction Failed), grouped by error reason. Alert on spikes."
-  stakeholder_narrative: "Extraction failure rate dropped from 12% to 3% after the v2 error-handling patch — users are hitting fewer dead ends."
+  rationale: 'Surfaces where the extract workflow breaks for reliability prioritization.'
+  analysis_recipe: 'Error rate chart: Property Extraction Failed / (Property Extracted + Property Extraction Failed), grouped by error reason. Alert on spikes.'
+  stakeholder_narrative: 'Extraction failure rate dropped from 12% to 3% after the v2 error-handling patch — users are hitting fewer dead ends.'
   priority: 2
-  surface: "PropertyItem"
-  file: "src/components/PropertiesPanel/PropertyItem.tsx"
-  instrumentation: "Fire in catch/onError of extract call. Include error reason if available."
+  surface: 'PropertyItem'
+  file: 'src/components/PropertiesPanel/PropertyItem.tsx'
+  instrumentation: 'Fire in catch/onError of extract call. Include error reason if available.'
 ```
 
 **Do NOT include:** `Extract Type Dropdown Opened` (click, no outcome), `PropertyItem State Updated` (internal), `Attribute Input Focused` (too granular).

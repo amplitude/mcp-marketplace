@@ -9,6 +9,7 @@ Works with **Claude Code**, **Cursor**, and **Claude CLI**.
 ## Installation
 
 Claude Code: (CLI Application)
+
 ```bash
 # Add the Amplitude marketplace (one-time)
 /plugin marketplace add amplitude/mcp-marketplace
@@ -18,6 +19,7 @@ Claude Code: (CLI Application)
 ```
 
 Cursor:
+
 - Go to cursor settings
 - Click on Plugins
 - Look for the Amplitude Analytics plugin
@@ -27,38 +29,38 @@ Cursor:
 - You can add the MCP server to cursor by going to agent settings
 - Agent settings -> Tools & MCP -> Add a new MCP server
 - Add the following server to the config:
-    "amplitude-us": {
-        "command": "npx",
-        "args": [
-            "-y",
-            "mcp-remote",
-            "https://mcp-server.prod.us-west-2.amplitude.com/v1/mcp"
-        ]
-    }
+  "amplitude-us": {
+  "command": "npx",
+  "args": [
+  "-y",
+  "mcp-remote",
+  "https://mcp-server.prod.us-west-2.amplitude.com/v1/mcp"
+  ]
+  }
 - This should take you to the browser to complete the 0Auth flow
 
 ---
 
 ## What's Included
 
-| Skill | What it does |
-| ----- | ------------ |
-| **analyze-account-health** | Summarize B2B account health – usage patterns, engagement trends, risk signals, expansion opportunities |
-| **analyze-chart** | Deep dive into a specific chart to explain trends, anomalies, and likely drivers |
-| **analyze-dashboard** | Synthesize dashboards into talking points, surface concerns, connect quant to qual |
-| **analyze-experiment** | Design A/B tests, analyze running or completed experiments, interpret results with statistical rigor |
-| **analyze-feedback** | Synthesize customer feedback into themes (requests, bugs, pain points, praise) |
-| **create-chart** | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization |
-| **create-dashboard** | Build dashboards from requirements or goals – organize charts into logical sections with layouts |
-| **daily-brief** | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days |
-| **diff-intake** | Read a PR, branch, or file diff and produce a compact change brief for downstream analytics instrumentation planning |
-| **discover-analytics-patterns** | Inspect the codebase for existing tracking wrappers, naming conventions, and analytics patterns before adding new events |
-| **discover-event-surfaces** | Turn a change brief into concrete event candidates, priorities, and likely instrumentation points |
-| **weekly-brief** | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations |
-| **discover-opportunities** | Discover product opportunities by mining analytics, experiments, replays, and feedback — synthesized into RICE-scored, actionable recommendations |
-| **instrument-events** | Convert priority events into a detailed, line-by-line instrumentation plan grounded in the target code |
-| **add-analytics-instrumentation** | Run the full end-to-end instrumentation workflow for a PR, branch, file, or feature request |
-| **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
+| Skill                             | What it does                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **analyze-account-health**        | Summarize B2B account health – usage patterns, engagement trends, risk signals, expansion opportunities                                           |
+| **analyze-chart**                 | Deep dive into a specific chart to explain trends, anomalies, and likely drivers                                                                  |
+| **analyze-dashboard**             | Synthesize dashboards into talking points, surface concerns, connect quant to qual                                                                |
+| **analyze-experiment**            | Design A/B tests, analyze running or completed experiments, interpret results with statistical rigor                                              |
+| **analyze-feedback**              | Synthesize customer feedback into themes (requests, bugs, pain points, praise)                                                                    |
+| **create-chart**                  | Create Amplitude charts from natural language – event discovery, filters, groupings, visualization                                                |
+| **create-dashboard**              | Build dashboards from requirements or goals – organize charts into logical sections with layouts                                                  |
+| **daily-brief**                   | Deliver a concise daily briefing – metric anomalies, experiment updates, feedback, and deployment context from the last 1-2 days                  |
+| **diff-intake**                   | Read a PR, branch, or file diff and produce a compact change brief for downstream analytics instrumentation planning                              |
+| **discover-analytics-patterns**   | Inspect the codebase for existing tracking wrappers, naming conventions, and analytics patterns before adding new events                          |
+| **discover-event-surfaces**       | Turn a change brief into concrete event candidates, priorities, and likely instrumentation points                                                 |
+| **weekly-brief**                  | Deliver a weekly summary – week-over-week trends, wins, risks, inflection points, and strategic recommendations                                   |
+| **discover-opportunities**        | Discover product opportunities by mining analytics, experiments, replays, and feedback — synthesized into RICE-scored, actionable recommendations |
+| **instrument-events**             | Convert priority events into a detailed, line-by-line instrumentation plan grounded in the target code                                            |
+| **add-analytics-instrumentation** | Run the full end-to-end instrumentation workflow for a PR, branch, file, or feature request                                                       |
+| **monitor-experiments**           | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones                                 |
 
 ---
 
