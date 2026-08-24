@@ -30,9 +30,10 @@ name that doesn't exist won't error — it returns a well-formed chart with
 **empty data**, which reads like a real answer of "zero".
 
 Resolve names first with `search`, and `get_properties`
-(`propertyType: 'event'` or `'user'`). Use the exact name **and scope** that
-comes back. There is no `get_event_properties` tool — server descriptions and
-error messages sometimes mention it; use `get_properties` instead.
+(`propertyType: 'event'`, `'user'`, or `'group'`). Use the exact name **and
+scope** that comes back. There is no `get_event_properties` tool — server
+descriptions and error messages sometimes mention it; use `get_properties`
+instead.
 
 ## Two workflows
 
@@ -69,7 +70,7 @@ kinds (`data_table` segments) even though error hints suggest it; `set` works
 everywhere. `scope`: `event`, `user`, `group`,
 `session`, or `derivedV2` for computed properties — take the scope from the
 taxonomy lookup rather than guessing. Group-scoped properties also need
-`group_type` (e.g. `"org id"`).
+`group_type` (see below).
 
 **Event** — `{ event, where[], group_by[] }`. A **composite event** puts several
 events in one slot: add `object_type` as `INLINE_CUSTOM_EVENT` (any member
@@ -106,7 +107,8 @@ Omit `segments` entirely for all users. In `performed`, `time_type` defaults to
 
 ```jsonc
 { "relative": "Last 30 Days" }
-{ "start": 1716854400, "end": 1717459200 }   // epoch seconds; omit end for "up to now"
+{ "start": "2026-01-01", "end": "2026-01-31" }   // ISO 8601, or epoch seconds
+{ "start": "now-90d" }                           // omit end for "up to now"
 ```
 
 Optional `timezone` is an IANA name; omit for the project default.
@@ -122,6 +124,60 @@ or change the interval to match.
 
 **`count_unique_by`** — the counting entity, `"User"` by default, or a group
 like `"org id"`.
+
+## Group-scoped properties
+
+Group properties describe the **account**, not the user or the event — plan
+tier, ARR, industry, on the `org id` (or similarly named) group type. They are
+how almost every B2B question gets asked, and they are the most common thing to
+get stuck on.
+
+Discover them explicitly — they are **not** in the event or user catalogues:
+
+```jsonc
+get_properties({ projectId, propertyType: "group", groupType: "org id" })
+```
+
+Then use `scope: "group"` with the `group_type` the lookup returned, in a
+`where` filter or a `group_by`:
+
+```jsonc
+{ "property": "plan", "op": "is", "values": ["Enterprise"],
+  "scope": "group", "group_type": "org id" }
+```
+
+Three rules that avoid nearly all of the failures seen in production:
+
+1. **`group_type` is the group's display name** (`"org id"`, `"company"`) —
+   exactly as `get_group_types` / `get_properties` spells it, lowercase and
+   spaced. Not the property name, not `"Group"`, not a `grp:`-prefixed key.
+2. **Never prefix the property name.** Write `"plan"`, not `"grp:plan"` or
+   `"gp:org id:plan"` — those are storage-layer spellings that the chart API
+   rejects.
+3. **Counting by account is a different setting.** To count organizations
+   rather than users, set `count_unique_by: "org id"`. That is independent of
+   whether you filter or break down by a group property.
+
+### When a group property is rejected
+
+`Invalid group property <name> for group type <type>` means the backend's
+property registry has no key for that name — the property is advertised by the
+taxonomy API but not queryable. **This is a data-plane gap, not a mistake in
+your query, and retrying spelling variants will not fix it.** Retry loops
+burning ten-plus calls on this are the single largest source of wasted turns on
+this tool.
+
+Do this instead, in order:
+
+1. Re-read the exact name from `get_properties({propertyType: 'group'})`. If it
+   differs from what you sent, correct it and retry **once**.
+2. If it matches, stop retrying. Check for a user-scoped equivalent (accounts
+   are often mirrored onto users, e.g. a user property `plan`) and use
+   `scope: "user"`.
+3. If there is no equivalent, say plainly that the group property is not
+   queryable in this project and give the user the answer you *can* produce —
+   usually the same chart with `count_unique_by: "org id"` and no group
+   breakdown.
 
 ## Chart kinds
 
@@ -151,10 +207,10 @@ Also available: `rolling_window` (days), `cumulative`, `period_over_period`
 
 ### `funnel`
 
-Needs `steps` (at least two) and `conversion_window` — `{value, unit}` where
-unit is `second`, `minute`, `hour`, `day`, or `week`. **Both fields are
-required** — `{value: 7}` alone fails compile with
-`conversion_window.unit: Field required`.
+Needs `steps` (at least two). `conversion_window` is `{value, unit}` where unit
+is `second`, `minute`, `hour`, `day`, or `week`; a bare number or `"7 days"`
+also works, and omitting it gives the product default of 30 days. Set it
+explicitly whenever the request implies a window.
 
 `mode` is `ordered` (default), `unordered`, or `sequential`. `measured_as.as`
 is `conversion` (default), `conversion_over_time`, `time_to_convert`,
@@ -231,21 +287,32 @@ by plan:
 
 `CompileChart` failures come back as a 400 naming the offending field with a
 fix-oriented hint — read the hint, fix that one field, and retry. Do not
-rebuild the whole chart. The three seen most in production:
+rebuild the whole chart. The ones seen most in production:
 
 1. **Range/interval unit mismatch** — `Invalid range format: Last 3 Years …
-Match the relative range's unit to the interval`. Re-denominate the range
-   in the interval's unit (`Last 30 Days` at weekly interval → `Last 4 Weeks`).
+   Match the relative range's unit to the interval`. The message now carries
+   the equivalent window for your interval; paste it in. (`Last 30 Days` at a
+   weekly interval → `Last 4 Weeks`.)
 2. **Missing funnel window field** — `conversion_window.unit: Field required`.
    Pass both `value` and `unit`.
-3. **Unknown operator** — the valid operator list differs per chart kind; the
+3. **Invalid group property** — a registry gap, not a spelling mistake. See
+   "When a group property is rejected" above; do not retry variants.
+4. **Unknown operator** — the valid operator list differs per chart kind; the
    fix hint in the message is usually right, but for presence checks use `set`
    (works in every kind) rather than `is not null`.
+
+Shape mismatches no longer need a retry: a bare string is accepted wherever a
+single-key wrapper object is expected and vice versa, so `measured_as:
+"event_totals"`, `events: ["Page Viewed"]`, and `group_by: ["country"]` all
+compile. **Two consecutive failures on the same field means the field is not
+the problem** — re-check the taxonomy, or tell the user what is blocking you
+rather than trying a third spelling.
 
 ## When results come back empty
 
 1. Re-read every event and property name from `search` / `get_properties`, and
-   check the `scope` matches what the taxonomy returned.
+   check the `scope` matches what the taxonomy returned — including
+   `propertyType: 'group'` for account-level properties.
 2. Widen `date_range` — the window may predate instrumentation.
 3. Drop `segments`, then `where`, to find which filter empties the result.
 4. For property aggregations, confirm the property is in the event's `group_by`.
