@@ -11,11 +11,11 @@ Perform comprehensive feedback reviews, investigate specific feature requests, u
 
 ### Step 1: Understand Available Sources
 
-Use `Amplitude:get_feedback_sources` to see which feedback channels are connected (surveys, support, app reviews, etc.).
+Use `Amplitude:use_amplitude_ai_feedback` with `facet: "sources"` to see which feedback channels are connected (surveys, support, app reviews, etc.).
 
 ### Step 2: Get Themed Insights
 
-Use `Amplitude:get_feedback_insights` with appropriate filters:
+Use `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` and appropriate filters:
 
 - Filter by types: `request`, `complaint`, `lovedFeature`, `bug`, `painPoint`
 - Filter by date range for recent feedback
@@ -23,11 +23,11 @@ Use `Amplitude:get_feedback_insights` with appropriate filters:
 
 ### Step 3: Drill Into Specific Themes
 
-For top insights, use `Amplitude:get_feedback_mentions` to see the actual user feedback driving each theme.
+For top insights, use `Amplitude:use_amplitude_ai_feedback` with `facet: "mentions"` to see the actual user feedback driving each theme.
 
 ### Step 4: Connect to User Segments
 
-Use `Amplitude:get_cohorts` to understand if feedback themes correlate with:
+Use `Amplitude:use_amplitude_cohorts` with `action: "list"` to understand if feedback themes correlate with:
 
 - User tenure (new vs. established)
 - Plan type (free vs. paid)

@@ -13,16 +13,16 @@ Investigate what distinguishes two user groups by pulling session replays and me
 ## CRITICAL: Tool Reference
 
 **Primary tools:**
-- **`Amplitude:get_session_replays`** — Find sessions for each user group using event count filters and user property filters. Run this twice — once per group.
-- **`Amplitude:get_session_replay_events`** — Decode replays into interaction timelines. Run this for sessions from both groups.
+- **`Amplitude:get_amp_session_replay_info`** with `action: "search"` — Find sessions for each user group using event count filters and user property filters. Run this twice — once per group.
+- **`Amplitude:get_amp_session_replay_info`** with `action: "events"` — Decode replays into interaction timelines. Run this for sessions from both groups.
 
 **Supporting tools:**
-- **`Amplitude:search`** — Search for existing charts, funnels, dashboards, events, and cohorts relevant to the comparison. Always check for existing analysis before building from scratch.
-- **`Amplitude:get_cohorts`** — Discover existing cohorts that define the groups (e.g., "power users", "churned", "converted").
-- **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
+- **`Amplitude:search_amp_entities`** — Search for existing charts, funnels, dashboards, and cohorts relevant to the comparison. Always check for existing analysis before building from scratch.
+- **`Amplitude:use_amplitude_cohorts`** with `action: "list"` — Discover existing cohorts that define the groups (e.g., "power users", "churned", "converted").
+- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names. Never guess event names.
 - **`Amplitude:get_properties`** — Discover properties available for segmentation.
-- **`Amplitude:query_charts`** / **`Amplitude:query_charts`** — Pull quantitative metrics segmented by the two groups for statistical grounding.
-- **`Amplitude:get_feedback_insights`** / **`Amplitude:get_feedback_mentions`** — Check if feedback themes differ between groups.
+- **`Amplitude:get_amplitude_charts`** with `include: "data"` — Pull quantitative metrics segmented by the two groups for statistical grounding.
+- **`Amplitude:use_amplitude_ai_feedback`** with `facet: "insights"` / `facet: "mentions"` — Check if feedback themes differ between groups.
 
 ---
 
@@ -50,17 +50,17 @@ If the user's request is ambiguous (e.g., "compare power users"), ask: "What def
 ### Step 2: Get Context and Discover Segments
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to compare within.
-2. Call `Amplitude:get_cohorts` to check if existing cohorts match the requested groups. Existing cohorts encode institutional knowledge — prefer them over ad-hoc definitions.
-3. Call `Amplitude:get_events` to discover events relevant to the comparison (the goal event for conversion comparisons, engagement events for activity comparisons, etc.).
+2. Call `Amplitude:use_amplitude_cohorts` with `action: "list"` to check if existing cohorts match the requested groups. Existing cohorts encode institutional knowledge — prefer them over ad-hoc definitions.
+3. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to discover events relevant to the comparison (the goal event for conversion comparisons, engagement events for activity comparisons, etc.).
 4. Call `Amplitude:get_properties` for the key events to discover available segmentation properties.
 
 ### Step 3: Quantitative Comparison (Metrics)
 
 Before watching replays, establish the statistical picture. Budget: 3-4 chart queries.
 
-**First, search for existing analysis.** Call `Amplitude:search` with keywords related to the comparison (e.g., "onboarding funnel", "agent creation", "checkout conversion"). Existing charts and funnels encode institutional knowledge and save query budget. If you find a relevant funnel or segmented chart, use `Amplitude:query_charts` on it instead of building from scratch.
+**First, search for existing analysis.** Call `Amplitude:search_amp_entities` with keywords related to the comparison (e.g., "onboarding funnel", "agent creation", "checkout conversion"). Existing charts and funnels encode institutional knowledge and save query budget. If you find a relevant funnel or segmented chart, use `Amplitude:get_amplitude_charts` with `include: "data"` on it instead of building from scratch.
 
-Use `Amplitude:query_charts` or `Amplitude:query_charts` to compare the two groups on:
+Use `Amplitude:get_amplitude_charts` with `include: "data"` to compare the two groups on:
 
 1. **Volume & composition**: How many users are in each group? What's the ratio?
 2. **Key metrics segmented by group**: Conversion rates, session frequency, feature adoption, retention — whatever metrics are most relevant to the comparison.
@@ -76,7 +76,7 @@ Record the top 3-5 quantitative differences — these become hypotheses to valid
 
 ### Step 4: Find Sessions for Both Groups
 
-Run `Amplitude:get_session_replays` **twice** — once for each group. Request `limit: 8` for each.
+Run `Amplitude:get_amp_session_replay_info` with `action: "search"` **twice** — once for each group. Request `limit: 8` for each.
 
 **Exclude internal users by default.** Unless you're specifically studying internal behavior, add a user property filter to exclude your company's email domain (e.g., `gp:email does not contain "amplitude.com"`). This prevents internal test sessions from polluting the comparison.
 
@@ -85,20 +85,21 @@ Run `Amplitude:get_session_replays` **twice** — once for each group. Request `
 If groups are defined by a **cohort**, filter on the cohort's defining user property or event.
 
 If groups are defined by an **event outcome** (e.g., completed checkout vs. didn't):
-- **Group A (converters)**: Filter for sessions containing the conversion event (use `eventCountFilters` with `operator: "greater or equal"`, `count: "1"`).
-- **Group B (drop-offs)**: Filter for sessions containing the entry event but NOT the conversion event. Since `get_session_replays` doesn't support "did not do" filters directly, filter for the entry event only, then when watching replays in Step 5, check the interaction timeline for absence of the conversion event. Discard sessions where the user actually converted and replace with additional sessions until you have 4-6 confirmed drop-offs.
+- **Group A (converters)**: Filter for sessions containing the conversion event
+  (use `events: [{"name": "<conversion event>", "minCount": 1}]`).
+- **Group B (drop-offs)**: Filter for sessions containing the entry event but NOT the conversion event. Since `get_amp_session_replay_info` with `action: "search"` doesn't support "did not do" filters directly, filter for the entry event only, then when watching replays in Step 5, check the interaction timeline for absence of the conversion event. Discard sessions where the user actually converted and replace with additional sessions until you have 4-6 confirmed drop-offs.
 
 If groups are defined by a **user property** (plan, segment):
 - Use user property filters with `event_type: "_all"`.
 
 ### Step 5: Watch Sessions — Extract Interaction Timelines
 
-For each group, call `Amplitude:get_session_replay_events` for 4-6 sessions. Use `event_limit: 300`.
+For each group, call `Amplitude:get_amp_session_replay_info` with `action: "events"` for 4-6 sessions. Use `event_limit: 300`.
 
 **Budget: 8-12 total sessions (4-6 per group).**
 
 **Rate limiting and large responses:**
-- Call `get_session_replay_events` in batches of 3-4 at a time, not all at once. The Session Replay API enforces concurrency limits and will return 429 errors if overwhelmed. If you hit a 429, wait briefly and retry.
+- Call `get_amp_session_replay_info` with `action: "events"` in batches of 3-4 at a time, not all at once. The Session Replay API enforces concurrency limits and will return 429 errors if overwhelmed. If you hit a 429, wait briefly and retry.
 - Some sessions have extremely high interaction counts (100K+ raw events). If a response is too large and gets saved to a file, read the key portions from the saved file path. For sessions with very high `total_raw_events`, consider using a lower `event_limit` (e.g., 150) to stay within response size limits.
 
 **While analyzing, track these behavioral dimensions for each session:**
@@ -131,7 +132,7 @@ This is the core analytical step. Compare the two groups across the dimensions a
    - "Converters use templates because templates reduce time-to-value. If we surfaced templates more prominently, more users might convert."
    - "Churned users hit errors on the integration page. Fixing these errors could reduce churn."
 
-5. **Cross-reference with feedback** (optional but valuable). Call `Amplitude:get_feedback_insights` with terms related to the differentiating actions. If Group B complains about something Group A doesn't, that strengthens the signal.
+5. **Cross-reference with feedback** (optional but valuable). Call `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` and terms related to the differentiating actions. If Group B complains about something Group A doesn't, that strengthens the signal.
 
 ### Step 7: Present the Behavioral Comparison
 
@@ -193,7 +194,7 @@ For each differentiating behavior:
 - **One group has few sessions.** If one group has <3 watchable sessions, note the limited sample and reduce confidence. Present findings as "preliminary" and suggest waiting for more data or broadening the time window.
 - **User asks to compare 3+ groups.** Decline and suggest pairwise comparison: "Comparing more than 2 groups at once dilutes the analysis. Which two would you like me to start with?" Offer to run a second comparison after.
 - **Cohort doesn't exist.** If the user references a segment that doesn't have a cohort, build the group filter from events and user properties. Suggest creating a cohort for reuse: "There's no 'power users' cohort defined. I'll filter by [criteria]. Want me to suggest a cohort definition to save?"
-- **Conversion event isn't clear.** If comparing converters vs. non-converters but the conversion event isn't obvious, call `get_events` and propose 2-3 candidate events. Let the user confirm.
+- **Conversion event isn't clear.** If comparing converters vs. non-converters but the conversion event isn't obvious, call `manage_amp_events` with `action: "get"` and `kind: "event"` and propose 2-3 candidate events. Let the user confirm.
 - **nodeId limitations.** Interaction timelines show coordinates and node IDs, not element names. When comparing actions between groups, describe by page context and interaction sequence rather than specific UI elements. Focus on which pages and flows users engage with, not which buttons they click.
 
 ## Examples

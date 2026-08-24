@@ -14,9 +14,9 @@ This is a **monitoring** skill — keep output accessible to non-experts. Avoid 
 
 ## CRITICAL: Managing Response Sizes
 
-1. **`use_amp_experiments` action `get`: 3-5 IDs max per call.** Filter using `search` results BEFORE fetching.
+1. **`use_amp_experiments` action `get`: 3-5 IDs max per call.** Filter using `search_amp_entities` results BEFORE fetching.
 2. **`use_amp_experiments` action `analyze` responses are large.** Extract only `summary` objects and validity flags. Ignore `timeseries`, `xValues`, bulk arrays.
-3. **Metric name resolution**: `search` does NOT match metric IDs in `queries`. Search with `entityTypes: ["METRIC"]`, empty `queries`, `limitPerQuery: 50`, scoped to project. Match IDs from results.
+3. **Metric name resolution**: `search_amp_entities` does NOT match metric IDs in `queries`. Search with `entityTypes: ["METRIC"]`, empty `queries`, `limitPerQuery: 50`, scoped to project. Match IDs from results.
 
 ---
 
@@ -38,7 +38,7 @@ Do NOT duplicate information between the summary table and the details. The summ
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to monitor.
 2. Search for experiments:
 ```
-Amplitude:search({
+Amplitude:search_amp_entities({
   entityTypes: ["EXPERIMENT"],
   appIds: [projectId],
   queries: [],
@@ -59,7 +59,7 @@ Amplitude:search({
 1. Call `Amplitude:use_amp_experiments` with `action: "get"` and `ids` in batches of 3-5 (only the filtered set from Step 1).
 2. Extract: state, dates/duration, variants, metric IDs (primary where recommendation=true), decision, owner.
 3. Apply the filtering rules from Step 1 again using the detailed metadata (some fields like stale status or decision may only be available here).
-4. Resolve metric names via `Amplitude:search({ entityTypes: ["METRIC"], appIds: [projectId], queries: [], limitPerQuery: 50 })`. Build `{ id: name }` mapping.
+4. Resolve metric names via `Amplitude:search_amp_entities({ entityTypes: ["METRIC"], appIds: [projectId], queries: [], limitPerQuery: 50 })`. Build `{ id: name }` mapping.
 5. For experiments that have metrics configured, call `Amplitude:use_amp_experiments({ action: "analyze", id: "<id>" })` (no metricIds) to get primary metric results and data quality flags. This data feeds both the summary table and the deep-dives.
 
 **CRITICAL: Never show raw metric IDs to the user.** If a metric name can't be resolved, describe it by its role (e.g., "primary metric", "guardrail metric") — do NOT display strings like "rrgtky08" or "Metric gvgb5efj". Metric IDs are internal identifiers that mean nothing to a human reader.
@@ -226,7 +226,7 @@ Small directional changes that aren't significant should be omitted. If 5+ metri
 
 **Feedback (only if primary is significant):**
 
-Call `Amplitude:get_feedback_insights` with experiment-related keywords. Report 2-3 themes in one line each. If no relevant feedback, skip the section.
+Call `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` and experiment-related keywords. Report 2-3 themes in one line each. If no relevant feedback, skip the section.
 
 **Verdict:**
 

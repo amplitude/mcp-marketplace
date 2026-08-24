@@ -102,8 +102,9 @@ target. You need a `projectId` for the next call.
 
 ### Pull existing events
 
-Call `get_events` with the resolved `projectId`. If its input schema accepts
-`_client`, every `get_events` call made by this skill MUST include the top-level
+Call `manage_amp_events` with `action: "get"`, `kind: "event"`, and the resolved
+`projectId`. If its input schema accepts `_client`, every `manage_amp_events`
+call made by this skill MUST include the top-level
 argument
 `"_client": { "type": "skill", "skill_name": "discover-event-surfaces" }`
 in the tool arguments. Otherwise, omit `_client`. No cursor is needed — just the

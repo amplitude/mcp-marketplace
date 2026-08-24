@@ -46,7 +46,7 @@ Run these in parallel where possible. Budget: 4-6 calls for this step.
 
 #### 2a. Network Failures
 
-Use `Amplitude:query_dataset` to query `[Amplitude] Network Request`:
+Use `Amplitude:query_amplitude_data` to query `[Amplitude] Network Request`:
 
 1. **Failure rate trend.** Filter `[Amplitude] Status Code` to 4xx and 5xx ranges. Measure daily event counts and unique users. Compare to total network request volume for a failure rate percentage.
 2. **Top failing endpoints.** Group by `[Amplitude] URL` to rank which APIs fail most. Include `[Amplitude] Status Code` as a secondary grouping to distinguish 401s (auth) from 500s (server errors) from 404s (missing).
@@ -54,7 +54,7 @@ Use `Amplitude:query_dataset` to query `[Amplitude] Network Request`:
 
 #### 2b. JavaScript Errors
 
-Use `Amplitude:query_dataset` to query `[Amplitude] Error Logged`:
+Use `Amplitude:query_amplitude_data` to query `[Amplitude] Error Logged`:
 
 1. **Error volume trend.** Daily error count and unique users affected over the time window. Flag day-over-day spikes >25%.
 2. **Top errors.** Group by `Error Message` to find the highest-volume errors. Include `Error Type` and `File Name` for context.
@@ -62,7 +62,7 @@ Use `Amplitude:query_dataset` to query `[Amplitude] Error Logged`:
 
 #### 2c. Error Clicks (Frustration Signal)
 
-Use `Amplitude:query_dataset` to query `[Amplitude] Error Click`:
+Use `Amplitude:query_amplitude_data` to query `[Amplitude] Error Click`:
 
 1. **Volume trend.** Daily error click count. Spikes indicate users are actively encountering and engaging with error states.
 2. **What users are clicking.** Group by `[Amplitude] Element Text` or `[Amplitude] Message` to see which error UI elements get the most interaction.
@@ -75,7 +75,7 @@ This is where the skill adds value beyond looking at each event in isolation.
 
 2. **Error → frustration chain.** Compare JS error pages with error click pages. High error click volume on pages with high JS error rates confirms users are seeing and interacting with the broken experience.
 
-3. **Page-level triage.** Use `Amplitude:query_dataset` to group all three events by `[Amplitude] Page Path`. Produce a page-level error heatmap:
+3. **Page-level triage.** Use `Amplitude:query_amplitude_data` to group all three events by `[Amplitude] Page Path`. Produce a page-level error heatmap:
    - Pages with network failures + JS errors + error clicks = **critical** (full causal chain)
    - Pages with JS errors + error clicks but no network failures = **frontend bug**
    - Pages with network failures but no JS errors = **backend issue, gracefully handled**
@@ -85,18 +85,18 @@ This is where the skill adds value beyond looking at each event in isolation.
 
 For the top 2-3 error patterns from Step 3:
 
-1. **User scope.** Use `Amplitude:query_dataset` to count unique users affected. Compare to total active users for an impact percentage.
+1. **User scope.** Use `Amplitude:query_amplitude_data` to count unique users affected. Compare to total active users for an impact percentage.
 2. **Segment breakdown.** Group by available user properties (platform, browser, country, plan tier, org) to determine if errors concentrate in a specific segment. Call `Amplitude:get_properties` if you need to discover available properties.
-3. **Session Replays.** For the most impactful error pattern, call `Amplitude:get_session_replays` filtered to sessions containing the error event. Provide 2-3 replay links so the user can see exactly what happened.
+3. **Session Replays.** For the most impactful error pattern, call `Amplitude:get_amp_session_replay_info` with `action: "search"` filtered to sessions containing the error event. Provide 2-3 replay links so the user can see exactly what happened.
 
 ### Step 5: Root Cause Hypothesis
 
 Build a root cause hypothesis using evidence from the prior steps:
 
-1. **Deployment correlation.** Call `Amplitude:get_deployments` once. Check if error spikes align with recent deploys. If a deployment shipped within 24 hours of the error spike, it's the leading hypothesis.
-2. **Experiment correlation.** If the user mentions an experiment or if errors concentrate in a segment that maps to an experiment variant, call `Amplitude:get_experiments` and `Amplitude:query_experiment` to check.
+1. **Deployment correlation.** Call `Amplitude:use_amp_flags` with `action: "list_deployments"` once. Check if error spikes align with recent deploys. If a deployment shipped within 24 hours of the error spike, it's the leading hypothesis.
+2. **Experiment correlation.** If the user mentions an experiment or if errors concentrate in a segment that maps to an experiment variant, call `Amplitude:use_amp_experiments` with `action: "get"`, then with `action: "analyze"` to check.
 3. **Temporal pattern.** Is the error constant, intermittent, or growing? Constant suggests a code bug. Intermittent suggests infrastructure. Growing suggests a progressive failure (memory leak, queue backlog).
-4. **Feedback correlation.** Call `Amplitude:get_feedback_sources` then `Amplitude:get_feedback_insights` with keywords from the top error messages. If users are reporting the same issue, it validates the impact and may provide additional context the data can't.
+4. **Feedback correlation.** Call `Amplitude:use_amplitude_ai_feedback` with `facet: "sources"` then `facet: "insights"` with keywords from the top error messages. If users are reporting the same issue, it validates the impact and may provide additional context the data can't.
 
 ### Step 6: Present the Diagnosis
 
@@ -164,7 +164,7 @@ Actions:
 User says: "Errors seem up since yesterday's deploy"
 
 Actions:
-1. Get context and check `get_deployments` for what shipped
+1. Get context and check `use_amp_flags` with `action: "list_deployments"` for what shipped
 2. Query `[Amplitude] Error Logged` comparing pre-deploy (7d before) vs post-deploy (last 24h)
 3. Identify new error messages that didn't exist before the deploy
 4. Check if new errors correlate with failing network requests

@@ -45,9 +45,3 @@ understood, refreshed, or adapted.
   definitions first, then decide which 1–3 charts actually need data.
 - Just need the link for the user? `include: 'link'` (the default) validates
   the ids and returns URLs without running anything.
-
-## Legacy surface
-
-If `get_amplitude_charts` is not in the tool list: `get_charts` reads
-definitions, `query_charts` (≤3 ids) pulls data, `query_dataset` runs ad
-hoc, and `save_chart_edits` persists edits. The arc is unchanged.

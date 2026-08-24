@@ -13,7 +13,7 @@ follow one arc — follow it too.
 
 1. **Context.** `get_amplitude_context` (no args) → again with `projectId`.
    Do not guess project IDs.
-2. **Reuse before rebuild.** `search` for existing analyses of the same
+2. **Reuse before rebuild.** `search_amp_entities` for existing analyses of the same
    area — saved charts already encode correct event names and segments.
 3. **Verify taxonomy before querying.** `manage_amp_events` `action: 'get'`
    to confirm candidate event names exist (returns category, isInSchema,
@@ -62,14 +62,6 @@ follow one arc — follow it too.
   a working example — fix from that and retry.
 - `read ETIMEDOUT` is a backend timeout — narrow the date range/filters and
   retry once.
-
-## Legacy surface
-
-If `query_amplitude_data` is not in the tool list, the caller is on the
-unramped surface: use `query_dataset` (same job; prototype with
-`get_chart_definition_params` + `verify_chart_definition` first),
-`get_events` for taxonomy, `get_users` for user sets, and
-`get_user_timeline` for timelines. The arc is unchanged.
 
 ## What to report back
 

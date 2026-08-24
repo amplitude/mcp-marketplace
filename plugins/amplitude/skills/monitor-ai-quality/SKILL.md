@@ -13,20 +13,20 @@ You are a proactive AI operations advisor that delivers a concise, actionable he
 ### Phase 1: Get Context and Schema
 
 1. **Get context.** Call `Amplitude:get_amplitude_context` to identify the user's projects and role.
-2. **Get AI schema.** Call `Amplitude:get_agent_analytics_schema` with `include: ["filter_options"]` to discover available agent names, tool names, topic models, and rubric definitions. This tells you what's in the data before you query it.
+2. **Get AI schema.** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "schema"` to discover available agent names, tool names, topic models, and rubric definitions. This tells you what's in the data before you query it.
 3. **Determine scope.** If the user specifies an agent, time range, or focus area, narrow accordingly. Otherwise default to all agents over the last 7 days.
 
 ### Phase 2: Gather the Full Picture
 
 Run these in parallel — this is one batch of calls that gives you the complete health snapshot.
 
-1. **Quality + cost + performance overview.** Call `Amplitude:query_agent_analytics_metrics` with `metrics: ["quality", "cost", "performance", "agent_stats", "error_categories", "rubric_scores"]`. This gives you success rates, failure rates, sentiment, cost totals, latency percentiles, per-agent breakdowns, and top error categories — all in one call.
+1. **Quality + cost + performance overview.** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "sessions"`, then aggregate quality, cost, latency, sentiment, failures, rubric scores, and error categories by agent from the returned sessions and evaluator results. This gives you the overall and per-agent health snapshot.
 
-2. **Time series trends.** Call `Amplitude:query_agent_analytics_metrics` with `metrics: ["quality_timeseries", "volume_timeseries", "cost_timeseries", "success_rate_timeseries", "sentiment_timeseries", "latency_timeseries"]` and `interval: "DAY"`. This gives you the trend lines to spot regressions and spikes.
+2. **Time series trends.** Group the returned sessions locally by day and aggregate quality, volume, cost, success rate, sentiment, and latency. This gives you the trend lines to spot regressions and spikes.
 
-3. **Recent failures.** Call `Amplitude:query_agent_analytics_sessions` with `hasTaskFailure: true`, `limit: 10`, `orderBy: "-session_start"`, `responseFormat: "concise"`. This gives you the most recent failed sessions for drill-down examples.
+3. **Recent failures.** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "sessions"`, filter to task failures, limit to 10, and order by newest session first. This gives you the most recent failed sessions for drill-down examples.
 
-4. **Frustrated users.** Call `Amplitude:query_agent_analytics_sessions` with `maxSentimentScore: 0.4`, `limit: 10`, `orderBy: "-session_start"`, `responseFormat: "concise"`. This surfaces sessions where users were unhappy.
+4. **Frustrated users.** From the newest sessions, select up to 10 whose evaluator results show negative feedback or sentiment at or below 0.4. This surfaces sessions where users were unhappy.
 
 ### Phase 3: Analyze and Triage
 
@@ -62,11 +62,11 @@ With all data in hand, perform these analyses:
 
 For the 2-3 most significant findings, get supporting detail:
 
-1. **For error spikes:** Call `Amplitude:query_agent_analytics_sessions` filtered to the relevant agent or error pattern with `responseFormat: "detailed"`, `limit: 5` to get full enrichment data including failure reasons and rubric scores.
+1. **For error spikes:** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "sessions"` filtered to the relevant agent or error pattern and limit to 5 to get enrichment data including failure reasons and rubric scores.
 
-2. **For quality regressions:** Call `Amplitude:query_agent_analytics_sessions` with `maxQualityScore: 0.4` filtered to the affected agent, `responseFormat: "detailed"`, `limit: 5` to understand what's going wrong.
+2. **For quality regressions:** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "sessions"` filtered to the affected agent, then select up to 5 sessions whose evaluator quality scores are at or below 0.4 to understand what's going wrong.
 
-3. **For cost anomalies:** Call `Amplitude:query_agent_analytics_spans` with `groupBy: ["model_name"]` to see cost breakdown by model, or filter to the expensive agent to see which tools/models drive cost.
+3. **For cost anomalies:** Call `Amplitude:get_amplitude_agent_analytics_info` with `view: "spans"` and group by model to see cost breakdown by model, or filter to the expensive agent to see which tools/models drive cost.
 
 ### Phase 5: Present the Health Report
 
@@ -146,7 +146,7 @@ Actions:
 User says: "Our AI costs seem high — what's going on?"
 
 Actions:
-1. Get context, query analytics with `metrics: ["cost", "cost_by_model", "agent_stats", "cost_timeseries"]`
+1. Get context, then use `get_amplitude_agent_analytics_info` with `view: "sessions"` and aggregate the returned cost data locally by agent and day
 2. Identify which agents and models drive the most cost
 3. Query spans grouped by model to see token usage patterns
 4. Pull the most expensive sessions for examples

@@ -21,11 +21,11 @@ If the user gives a URL, use `Amplitude:get_from_url` to get the dashboard ID
 
 ### Step 1: Retrieve the Dashboard
 
-Use `Amplitude:get_dashboard` with the dashboard ID to get the full structure and chart IDs.
+Use `Amplitude:use_amp_dashboards` with `action: "get"` and the dashboard ID to get the full structure and chart IDs.
 
 ### Step 2: Query All Charts
 
-Use `Amplitude:query_charts` to fetch data for up to 3 charts at a time. Prioritize:
+Use `Amplitude:get_amplitude_charts` with `include: "data"` to fetch data for up to 3 charts at a time. Prioritize:
 
 1. Primary KPI charts (usually at the top)
 2. Charts with recent changes
@@ -47,7 +47,7 @@ When analyzing charts, focus on the most decision-relevant signals for each type
 
 If significant changes or anomalies are detected, check if user feedback can explain them:
 
-1. Use `Amplitude:get_feedback_insights` with:
+1. Use `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` and:
    - The same `projectId` as the dashboard
    - `dateStart` and `dateEnd` matching the analysis period
    - Filter by relevant types: `request`, `complaint`, `lovedFeature`, `bug`, `painPoint`
@@ -57,7 +57,7 @@ If significant changes or anomalies are detected, check if user feedback can exp
    - Bug reports coinciding with conversion dips
    - Loved features matching usage increases
 
-3. If a relevant insight is found, use `Amplitude:get_feedback_mentions` with the `insightId` to pull specific user quotes that illustrate the pattern.
+3. If a relevant insight is found, use `Amplitude:use_amplitude_ai_feedback` with `facet: "mentions"` and the `insightId` to pull specific user quotes that illustrate the pattern.
 
 **Skip this step if:**
 - No feedback sources are configured for the project

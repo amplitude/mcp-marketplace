@@ -13,14 +13,14 @@ Watch 5-10 session replays for a specific feature, page, or flow, then synthesiz
 ## CRITICAL: Tool Reference
 
 **Primary tools:**
-- **`Amplitude:get_session_replays`** — Find sessions matching event filters, user properties, or time windows. Use this to target sessions for a specific feature or flow.
-- **`Amplitude:get_session_replay_events`** — Decode a replay into an interaction timeline: navigations, clicks, inputs, scrolls. This is what you "watch."
+- **`Amplitude:get_amp_session_replay_info`** with `action: "search"` — Find sessions matching event filters, user properties, or time windows. Use this to target sessions for a specific feature or flow.
+- **`Amplitude:get_amp_session_replay_info`** with `action: "events"` — Decode a replay into an interaction timeline: navigations, clicks, inputs, scrolls. This is what you "watch."
 
 **Supporting tools:**
-- **`Amplitude:get_events`** — Discover valid event names. Never guess event names.
+- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names. Never guess event names.
 - **`Amplitude:get_properties`** — Discover properties for filtering (page path, feature area, etc.).
-- **`Amplitude:query_charts`** — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
-- **`Amplitude:get_feedback_insights`** / **`Amplitude:get_feedback_mentions`** — Cross-reference replay friction with customer feedback themes.
+- **`Amplitude:get_amplitude_charts`** with `include: "data"` — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
+- **`Amplitude:use_amplitude_ai_feedback`** with `facet: "insights"` / `facet: "mentions"` — Cross-reference replay friction with customer feedback themes.
 
 ---
 
@@ -42,7 +42,7 @@ Also determine:
 ### Step 2: Get Context and Discover Events
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to audit.
-2. Call `Amplitude:get_events` to find events related to the target area. Look for:
+2. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to find events related to the target area. Look for:
    - Page view or navigation events for the target area
    - Key interaction events (clicks, form submissions) within the flow
    - Error or failure events that may indicate friction
@@ -52,7 +52,7 @@ Also determine:
 
 Before watching replays, establish context with 1-2 chart queries. Budget: 2 calls max.
 
-- If auditing a **funnel**: Use `Amplitude:query_charts` to get the current conversion rate and identify the worst drop-off step. This tells you where to focus your replay attention.
+- If auditing a **funnel**: Use `Amplitude:get_amplitude_charts` with `include: "data"` to get the current conversion rate and identify the worst drop-off step. This tells you where to focus your replay attention.
 - If auditing a **page**: Query the page's traffic volume and any error rates to understand scale.
 - If auditing a **feature**: Query adoption/usage frequency to understand how many users interact with it.
 
@@ -60,7 +60,7 @@ This quantitative baseline makes your qualitative findings more actionable — "
 
 ### Step 4: Find Target Sessions
 
-Use `Amplitude:get_session_replays` to find 8-12 sessions (request `limit: 12` to allow for some sessions with missing replay data).
+Use `Amplitude:get_amp_session_replay_info` with `action: "search"` to find 8-12 sessions (request `limit: 12` to allow for some sessions with missing replay data).
 
 **Filter strategy by audit type:**
 
@@ -73,7 +73,7 @@ If the user specified a segment (plan type, platform, etc.), add user property f
 
 ### Step 5: Watch Sessions — Extract Interaction Timelines
 
-For each session, call `Amplitude:get_session_replay_events` with `event_limit: 300`.
+For each session, call `Amplitude:get_amp_session_replay_info` with `action: "events"` and `event_limit: 300`.
 
 **Budget: 5-8 sessions.** Skip sessions that return empty or minimal data.
 
@@ -118,7 +118,7 @@ This is the core analytical step. Aggregate findings across all watched sessions
    - Error state without clear recovery path
    - Too many steps or cognitive load
 
-5. **Cross-reference with feedback** (if available). Call `Amplitude:get_feedback_insights` with keywords from your friction findings. If users are complaining about the same thing you're seeing in replays, that's high-confidence signal.
+5. **Cross-reference with feedback** (if available). Call `Amplitude:use_amplitude_ai_feedback` with `facet: "insights"` and keywords from your friction findings. If users are complaining about the same thing you're seeing in replays, that's high-confidence signal.
 
 ### Step 7: Present the UX Audit
 

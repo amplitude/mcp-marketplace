@@ -13,7 +13,7 @@ Create new team or initiative dashboards, organize scattered charts, build execu
 
 Before building, understand what you're tracking:
 - Search for existing dashboards/charts related to the topic
-- Search for relevant events: `Amplitude:search` with entityTypes: ["EVENT", "CUSTOM_EVENT"]
+- Search for relevant events with `Amplitude:search_amp_data_taxonomy`
 - Use `get_properties` to understand available properties for segmentation
 - Ask user for clarification on primary goals, key segments, or time horizons
 
@@ -29,20 +29,19 @@ Clarify:
 ### Step 2: Gather or Create Charts
 
 **If existing charts found (>5 relevant):**
-- Use `Amplitude:search` to find relevant existing charts
-- Use `Amplitude:get_charts` to retrieve their definitions
+- Use `Amplitude:search_amp_entities` to find relevant existing charts
+- Use `Amplitude:get_amplitude_charts` with `include: "definition"` to retrieve their definitions
 - Identify gaps that need new charts
 
 **If few/no charts exist (<5 relevant):**
 - Switch to "greenfield build" mode
-- Use `Amplitude:query_dataset` to create needed charts
-- Save all charts with `Amplitude:save_chart_edits` before building dashboard
+- Use `Amplitude:query_amplitude_data` to create needed charts
+- Keep the returned chart edit IDs; `use_amp_dashboards` promotes them when creating the dashboard
 - Consider searching for relevant events first with entityTypes: ["EVENT", "CUSTOM_EVENT"]
 
 **Creating new charts:**
-- Prototype with `query_dataset` to verify data
-- Save in batches using `save_chart_edits` (more efficient)
-- Collect all chart IDs before creating dashboard
+- Prototype with `query_amplitude_data` to verify data
+- Collect the returned chart edit IDs before creating the dashboard
 
 ### Step 3: Plan the Layout
 
@@ -55,7 +54,7 @@ Organize into logical sections:
 
 ### Step 4: Create the Dashboard
 
-Use `Amplitude:create_dashboard` with:
+Use `Amplitude:use_amp_dashboards` with `action: "create"` and:
 
 - Clear, descriptive name
 - Rows with appropriate heights (375, 500, 625, or 750px)
