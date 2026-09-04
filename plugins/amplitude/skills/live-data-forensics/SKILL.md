@@ -15,12 +15,11 @@ follow one arc — follow it too.
    Do not guess project IDs.
 2. **Reuse before rebuild.** `search_amp_entities` for existing analyses of the same
    area — saved charts already encode correct event names and segments.
-3. **Verify taxonomy before querying.** `manage_amp_events` `action: 'get'`
-   to confirm candidate event names exist (returns category, isInSchema,
-   isQueryable), `get_properties`
-   (`propertyType: 'event' | 'user' | 'group'`) for the exact property names
-   **and scope** (`event` vs `user` vs `derived`). Never guess names — a wrong
-   name returns a well-formed chart with empty data, which reads as "zero".
+3. **Verify taxonomy before querying.** Inspect the connected catalog and use
+   its current taxonomy reader to confirm candidate event names, status, and
+   queryability, then read event, user, or group properties for exact names
+   **and scope**. Never guess names—a wrong name returns a well-formed chart
+   with empty data, which reads as "zero".
 4. **Check the event is live.** `check_for_recent_event_ingestion` confirms
    first-seen/last-seen before you query — a silent event means the chart
    will be empty no matter how correct the definition is.

@@ -102,14 +102,12 @@ target. You need a `projectId` for the next call.
 
 ### Pull existing events
 
-Call `manage_amp_events` with `action: "get"`, `kind: "event"`, and the resolved
-`projectId`. If its input schema accepts `_client`, every `manage_amp_events`
-call made by this skill MUST include the top-level
-argument
-`"_client": { "type": "skill", "skill_name": "discover-event-surfaces" }`
-in the tool arguments. Otherwise, omit `_client`. No cursor is needed — just the
-first page is enough for pattern detection. This returns event objects with
-fields like `eventType`, `category`, `description`, etc.
+Inspect the connected catalog and use its current taxonomy event reader with
+the resolved `projectId`. Follow only its advertised schema. When it supports
+caller attribution, identify this skill with the `name` from its YAML
+frontmatter. No cursor is needed—the first page is enough for pattern
+detection. Request the event name, category, and description fields when its
+schema supports field selection, then use the returned field names.
 
 ### Build naming references and an existing event index
 

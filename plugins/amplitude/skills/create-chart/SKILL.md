@@ -73,7 +73,7 @@ Amplitude:search with entity_types=['EVENT', 'CUSTOM_EVENT']
 
 **Get properties:**
 ```
-Amplitude:get_properties for exact property names/values
+Use the connected catalog's taxonomy property reader for exact names and scopes
 ```
 
 **Find cohorts:**
@@ -194,8 +194,8 @@ Amplitude:get_cohorts to get full definitions
 > `group_type` here is the **counting entity** ("User", or a group like
 > "org id") — not the scope of the property. To filter on an account-level
 > property, set `subprop_type` to `"group"` and `group_type` to the group type
-> that owns it, using the exact name from
-> `get_properties({propertyType: 'group', groupType: '<type>'})`. Never prefix
+> that owns it, using the exact name from the active taxonomy reader's
+> group-property surface. Never prefix
 > the property name with `grp:`. If the response is
 > `Invalid group property … for group type …`, that pair is not queryable in
 > this project — do not retry variants; use a user- or event-level equivalent.
@@ -257,7 +257,7 @@ Amplitude:get_charts to see definition structure
 
 5. **Get properties if needed:**
 ```
-Amplitude:get_properties
+Use the connected catalog's taxonomy property reader
 ```
 
 6. **Build definition** using discovered names
@@ -303,7 +303,7 @@ Amplitude:save_chart_edits with editId from query_dataset
 **Verification:**
 - Always verify event exists before using
 - Check similar charts to understand event usage
-- Confirm properties with get_properties
+- Confirm property names and scopes with the active taxonomy reader
 
 **Comparisons:**
 - Use segments for comparing user groups on same chart
@@ -314,6 +314,5 @@ Amplitude:save_chart_edits with editId from query_dataset
 - What the chart shows
 - Key insights from initial data
 - Methodology used
-
 
 

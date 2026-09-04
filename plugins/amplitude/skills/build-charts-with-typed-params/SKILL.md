@@ -29,15 +29,14 @@ The compiler validates **structure**, not your taxonomy. An event or property
 name that doesn't exist won't error — it returns a well-formed chart with
 **empty data**, which reads like a real answer of "zero".
 
-Resolve names first with `search_amp_data_taxonomy`, and `get_properties`
-(`propertyType: 'event'`, `'user'`, or `'group'`). Use the exact name **and
-scope** that comes back. There is no `get_event_properties` tool — server
-descriptions and error messages sometimes mention it; use `get_properties`
-instead.
+Resolve names first with the taxonomy search/read capabilities advertised by
+the connected catalog. Read event, user, or group properties as appropriate
+and use the exact name **and scope** returned. Do not invent a property-reader
+name from server prose or copy parameters from an older schema.
 
 ## Two workflows
 
-**Create:** `search_amp_data_taxonomy` for the taxonomy → build the typed `chart` → call
+**Create:** discover names with the current taxonomy capability → build the typed `chart` → call
 `query_amplitude_data` → `render_amplitude_chart` with the returned
 `chartEditId` to show it.
 
@@ -118,11 +117,8 @@ tier, ARR, industry, on the `org id` (or similarly named) group type. They are
 how almost every B2B question gets asked, and they are the most common thing to
 get stuck on.
 
-Discover them explicitly — they are **not** in the event or user catalogues:
-
-```jsonc
-get_properties({ projectId, propertyType: "group", groupType: "org id" })
-```
+Discover them explicitly with the connected taxonomy reader's group-property
+selector—they are **not** in the event or user catalogues.
 
 Then use `scope: "group"` with the `group_type` the lookup returned, in a
 `where` filter or a `group_by`:
@@ -135,7 +131,7 @@ Then use `scope: "group"` with the `group_type` the lookup returned, in a
 Three rules that avoid nearly all of the failures seen in production:
 
 1. **`group_type` is the group's display name** (`"org id"`, `"company"`) —
-   exactly as `get_group_types` / `get_properties` spells it, lowercase and
+   exactly as the group-type and taxonomy readers spell it, lowercase and
    spaced. Not the property name, not `"Group"`, not a `grp:`-prefixed key.
 2. **Never prefix the property name.** Write `"plan"`, not `"grp:plan"` or
    `"gp:org id:plan"` — those are storage-layer spellings that the chart API
@@ -155,8 +151,8 @@ this tool.
 
 Do this instead, in order:
 
-1. Re-read the exact name from `get_properties({propertyType: 'group'})`. If it
-   differs from what you sent, correct it and retry **once**.
+1. Re-read the exact name with the active taxonomy reader's group-property
+   selector. If it differs from what you sent, correct it and retry **once**.
 2. If it matches, stop retrying. Check for a user-scoped equivalent (accounts
    are often mirrored onto users, e.g. a user property `plan`) and use
    `scope: "user"`.
@@ -275,9 +271,9 @@ rather than trying a third spelling.
 
 ## When results come back empty
 
-1. Re-read every event and property name from `search_amp_data_taxonomy` / `get_properties`, and
-   check the `scope` matches what the taxonomy returned — including
-   `propertyType: 'group'` for account-level properties.
+1. Re-read every event and property name with the current taxonomy
+   search/reader and check the `scope` matches what it returned, including the
+   group-property surface for account-level properties.
 2. Widen `date_range` — the window may predate instrumentation.
 3. Drop `segments`, then `where`, to find which filter empties the result.
 4. For property aggregations, confirm the property is in the event's `group_by`.

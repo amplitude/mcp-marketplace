@@ -20,8 +20,9 @@ This skill operates on three Amplitude Session Replay tools. Use them in this or
 
 Supporting tools used in this skill:
 - **`Amplitude:use_amplitude_cohorts`** with `action: "find"` — Look up users by email, user ID, or other identifiers.
-- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names before filtering. Never guess event names.
-- **`Amplitude:get_properties`** — Discover properties available on an event for filtering.
+- **Available taxonomy reader** — Inspect the connected catalog and use its
+  event and event-property read capabilities to discover valid filter names.
+  Never guess names or copy parameters from an older schema.
 - **`Amplitude:use_amp_flags`** with `action: "list_deployments"` — Check if error aligns with a recent deploy.
 
 ---
@@ -42,7 +43,7 @@ If the report is vague (e.g., "something is broken in checkout"), ask one clarif
 ### Step 2: Get Context and Find the Error Event
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to investigate.
-2. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to confirm the error event name exists in the project. Common patterns:
+2. Use the catalog's taxonomy reader to confirm the exact error event name exists in the project. Common patterns:
    - `[Amplitude] Error Logged` — auto-captured JS errors
    - `[Amplitude] Network Request` with status code filters — API failures
    - Custom error events specific to the product
@@ -153,7 +154,7 @@ Structure the output as an engineering-ready bug report.
 
 ## Edge Cases
 
-- **No error events found.** The project may not have auto-capture enabled, or the error may be tracked under a custom event name. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` and search for error-related events. Report what you find and suggest what to instrument if nothing exists.
+- **No error events found.** The project may not have auto-capture enabled, or the error may be tracked under a custom event name. Use the available taxonomy event reader to search for error-related events. Report what you find and suggest what to instrument if nothing exists.
 - **User not found.** If `use_amplitude_cohorts` with `action: "find"` returns nothing, try searching with alternative identifiers (email domain, partial match). If still nothing, proceed without user filtering and search by error event alone.
 - **Sessions found but no replay events.** Some sessions may not have rrweb data (replay disabled, ad blocker, etc.). Skip those sessions and note it. Try the next session.
 - **Only 1 session available.** Present the timeline as "unvalidated reproduction steps" with Low confidence. Suggest the user try to reproduce manually to confirm.

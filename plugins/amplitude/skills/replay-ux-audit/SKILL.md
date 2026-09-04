@@ -17,8 +17,9 @@ Watch 5-10 session replays for a specific feature, page, or flow, then synthesiz
 - **`Amplitude:get_amp_session_replay_info`** with `action: "events"` — Decode a replay into an interaction timeline: navigations, clicks, inputs, scrolls. This is what you "watch."
 
 **Supporting tools:**
-- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names. Never guess event names.
-- **`Amplitude:get_properties`** — Discover properties for filtering (page path, feature area, etc.).
+- **Available taxonomy reader** — Inspect the connected catalog and use its
+  event and property read capabilities to discover valid filter names and
+  scopes. Never guess them.
 - **`Amplitude:get_amplitude_charts`** with `include: "data"` — Pull quantitative context (funnel conversion rates, feature adoption) to anchor the qualitative replay findings.
 - **`Amplitude:use_amplitude_ai_feedback`** with `facet: "insights"` / `facet: "mentions"` — Cross-reference replay friction with customer feedback themes.
 
@@ -42,7 +43,7 @@ Also determine:
 ### Step 2: Get Context and Discover Events
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to audit.
-2. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to find events related to the target area. Look for:
+2. Use the available taxonomy event reader to find events related to the target area. Look for:
    - Page view or navigation events for the target area
    - Key interaction events (clicks, form submissions) within the flow
    - Error or failure events that may indicate friction

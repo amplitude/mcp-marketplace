@@ -13,8 +13,9 @@ Create new team or initiative dashboards, organize scattered charts, build execu
 
 Before building, understand what you're tracking:
 - Search for existing dashboards/charts related to the topic
-- Search for relevant events with `Amplitude:search_amp_data_taxonomy`
-- Use `get_properties` to understand available properties for segmentation
+- Inspect the connected catalog and use its taxonomy search/read capabilities
+  to find relevant events and segmentation properties; never guess names or
+  scopes
 - Ask user for clarification on primary goals, key segments, or time horizons
 
 ### Step 1: Define Dashboard Purpose
@@ -105,6 +106,5 @@ Include rich text blocks for:
 - Check event names are exact matches (case-sensitive)
 - Verify date range covers when events were tracked
 - Confirm user segments aren't too restrictive
-
 
 

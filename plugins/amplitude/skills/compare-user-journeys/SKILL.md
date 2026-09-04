@@ -19,8 +19,8 @@ Investigate what distinguishes two user groups by pulling session replays and me
 **Supporting tools:**
 - **`Amplitude:search_amp_entities`** — Search for existing charts, funnels, dashboards, and cohorts relevant to the comparison. Always check for existing analysis before building from scratch.
 - **`Amplitude:use_amplitude_cohorts`** with `action: "list"` — Discover existing cohorts that define the groups (e.g., "power users", "churned", "converted").
-- **`Amplitude:manage_amp_events`** with `action: "get"` and `kind: "event"` — Discover valid event names. Never guess event names.
-- **`Amplitude:get_properties`** — Discover properties available for segmentation.
+- **Available taxonomy reader** — Inspect the connected catalog and use its
+  event and property read capabilities to discover valid names and scopes.
 - **`Amplitude:get_amplitude_charts`** with `include: "data"` — Pull quantitative metrics segmented by the two groups for statistical grounding.
 - **`Amplitude:use_amplitude_ai_feedback`** with `facet: "insights"` / `facet: "mentions"` — Check if feedback themes differ between groups.
 
@@ -51,8 +51,8 @@ If the user's request is ambiguous (e.g., "compare power users"), ask: "What def
 
 1. Call `Amplitude:get_amplitude_context`. If multiple projects, ask which to compare within.
 2. Call `Amplitude:use_amplitude_cohorts` with `action: "list"` to check if existing cohorts match the requested groups. Existing cohorts encode institutional knowledge — prefer them over ad-hoc definitions.
-3. Call `Amplitude:manage_amp_events` with `action: "get"` and `kind: "event"` to discover events relevant to the comparison (the goal event for conversion comparisons, engagement events for activity comparisons, etc.).
-4. Call `Amplitude:get_properties` for the key events to discover available segmentation properties.
+3. Use the available taxonomy event reader to discover events relevant to the comparison (the goal event for conversion comparisons, engagement events for activity comparisons, etc.).
+4. Use the same catalog's property read capability for the key events to discover available segmentation properties and scopes.
 
 ### Step 3: Quantitative Comparison (Metrics)
 
@@ -194,7 +194,7 @@ For each differentiating behavior:
 - **One group has few sessions.** If one group has <3 watchable sessions, note the limited sample and reduce confidence. Present findings as "preliminary" and suggest waiting for more data or broadening the time window.
 - **User asks to compare 3+ groups.** Decline and suggest pairwise comparison: "Comparing more than 2 groups at once dilutes the analysis. Which two would you like me to start with?" Offer to run a second comparison after.
 - **Cohort doesn't exist.** If the user references a segment that doesn't have a cohort, build the group filter from events and user properties. Suggest creating a cohort for reuse: "There's no 'power users' cohort defined. I'll filter by [criteria]. Want me to suggest a cohort definition to save?"
-- **Conversion event isn't clear.** If comparing converters vs. non-converters but the conversion event isn't obvious, call `manage_amp_events` with `action: "get"` and `kind: "event"` and propose 2-3 candidate events. Let the user confirm.
+- **Conversion event isn't clear.** If comparing converters vs. non-converters but the conversion event isn't obvious, use the available taxonomy event reader and propose 2-3 candidate events. Let the user confirm.
 - **nodeId limitations.** Interaction timelines show coordinates and node IDs, not element names. When comparing actions between groups, describe by page context and interaction sequence rather than specific UI elements. Focus on which pages and flows users engage with, not which buttons they click.
 
 ## Examples
