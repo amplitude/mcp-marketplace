@@ -58,6 +58,8 @@ Cursor:
 | **discover-opportunities** | Discover product opportunities by mining analytics, experiments, replays, and feedback — synthesized into RICE-scored, actionable recommendations |
 | **instrument-events** | Convert priority events into a detailed, line-by-line instrumentation plan grounded in the target code |
 | **add-analytics-instrumentation** | Run the full end-to-end instrumentation workflow for a PR, branch, file, or feature request |
+| **taxonomy** | Provide broad tracking-plan governance, naming, metadata, and data-quality guidance |
+| **tracking-plan-audit** | Identify evidence-backed event and event-property deletion candidates across telemetry, source code, ownership, dependencies, and tracking-plan branches |
 | **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
 
 ---
@@ -87,6 +89,7 @@ Cursor:
 "Find product opportunities"                       → discover-opportunities activates
 "Check on experiments"                             → monitor-experiments activates
 "Instrument the checkout flow"                     → add-analytics-instrumentation activates
+"Audit stale events; emitters are in ./web and ./api" → tracking-plan-audit activates
 "What happened this week?"                         → weekly-brief activates
 ```
 
@@ -175,6 +178,13 @@ Cursor:
 2. Skill inspects the diff and existing tracking patterns in the codebase
 3. Skill identifies the highest-value events and the exact handlers or callbacks where they belong
 4. You get a prioritized event list plus a concrete instrumentation plan an engineer can implement
+
+#### Tracking Plan Deletion Audit
+
+1. Ask: "Audit stale events and properties in this project; all emitting code is in `./web`, `./api`, and `./mobile`"
+2. The skill fully reads the tracking plan, telemetry, ownership, and dependencies, then searches every identified source root, including dynamic and generated instrumentation
+3. You get confidence-ranked deletion candidates without property values, credentials, PII, or customer-sensitive payloads
+4. The skill makes no tracking-plan change until you explicitly confirm the exact deletion; global orphan properties are swept and confirmed separately after event deletion
 
 ---
 
