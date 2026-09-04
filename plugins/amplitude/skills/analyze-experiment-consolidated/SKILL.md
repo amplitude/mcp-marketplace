@@ -83,9 +83,9 @@ If incomplete, explain what's missing and stop.
 when you need ad hoc per-variant numbers outside `analyze` (entry-point
 funnels, custom slices, cross-checks against another warehouse):
 
-- Discover the assignment event first: use `search_amp_data_taxonomy` for the
-  experiment's flag key and `search_amp_entities` for existing charts that
-  filter on it — do not guess the event name.
+- Discover the assignment event first with the connected catalog's taxonomy
+  search capability for the experiment's flag key and `search_amp_entities`
+  for existing charts that filter on it—do not guess the event name.
 - Read how an existing experiment chart structures its variant segments
   (`get_amplitude_charts` with `include: "typed"` on one) and copy that
   pattern exactly — including the bucketing property (`subject_id_type`

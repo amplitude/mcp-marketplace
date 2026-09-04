@@ -86,7 +86,10 @@ This is where the skill adds value beyond looking at each event in isolation.
 For the top 2-3 error patterns from Step 3:
 
 1. **User scope.** Use `Amplitude:query_amplitude_data` to count unique users affected. Compare to total active users for an impact percentage.
-2. **Segment breakdown.** Group by available user properties (platform, browser, country, plan tier, org) to determine if errors concentrate in a specific segment. Call `Amplitude:get_properties` if you need to discover available properties.
+2. **Segment breakdown.** Group by available user properties (platform,
+   browser, country, plan tier, org) to determine if errors concentrate in a
+   specific segment. If discovery is needed, inspect the connected catalog and
+   use its current taxonomy property reader.
 3. **Session Replays.** For the most impactful error pattern, call `Amplitude:get_amp_session_replay_info` with `action: "search"` filtered to sessions containing the error event. Provide 2-3 replay links so the user can see exactly what happened.
 
 ### Step 5: Root Cause Hypothesis

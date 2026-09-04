@@ -22,11 +22,11 @@ Use `Amplitude:search_amp_entities` to find existing dashboards, charts, or note
 Every step below breaks down "by account", and there are three different ways a
 project represents one. Check in this order and reuse the answer throughout:
 
-1. `get_group_types` — if the project has a group type (commonly `org id` or
-   `company`), that is the account. Account attributes are **group
-   properties**: `get_properties({propertyType: 'group', groupType: '<type>'})`,
-   referenced with `scope: 'group'` plus `group_type`. To count accounts rather
-   than users, set `count_unique_by` to the group type.
+1. Use the connected catalog's group-type discovery capability. If the project
+   has a group type (commonly `org id` or `company`), that is the account. Read
+   its attributes from the active taxonomy reader's group-property surface,
+   then reference them with `scope: 'group'` plus `group_type`. To count
+   accounts rather than users, set `count_unique_by` to the group type.
 2. If there is no group type, the account is usually a **user property**
    (`company`, `org_name`) — `scope: 'user'`.
 3. Failing both, an **event property** carrying the org (`org id`, `org url`).

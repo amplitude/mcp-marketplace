@@ -400,109 +400,59 @@ Default lookback: **180 days**.
 
 ---
 
-# Available Tools
+# Amplitude MCP capability selection
 
-These are the actual Amplitude MCP server tools available for taxonomy work. Tool names must match exactly.
+Inspect the connected public Amplitude MCP catalog at runtime. Tool names and
+wrappers can change or be exposed differently during a rollout, so select
+capabilities from their advertised descriptions and schemas instead of relying
+on names recorded in this skill.
 
-## Context
+## Context and discovery
 
-### `get_amplitude_context`
-Get information about the current user, organization, and accessible projects. Call this first to discover project IDs.
+- Use the project-context capability to discover accessible project IDs and
+  read the selected project's settings. Ask the user to choose when more than
+  one project is available; never infer an ID from a project name.
+- Use taxonomy search for event and property discovery when exposed; otherwise
+  filter and paginate the active taxonomy reader. Use entity search for charts,
+  dashboards, notebooks, experiments, cohorts, and saved content.
+- Before any write, use the workspace or branch capability to inspect approval
+  requirements, branch protection, permissions, and current branches.
 
-### `get_amplitude_context` with `projectId`
-Get project-specific settings: time zone, currency, session definition, AI context. Use to understand project configuration before making changes.
+## Taxonomy reads
 
-### `search_amp_entities` and `search_amp_data_taxonomy`
-Use `search_amp_entities` for charts, dashboards, notebooks, experiments,
-cohorts, and other Amplitude content. Use `search_amp_data_taxonomy` for events
-and properties.
+- Prefer the consolidated taxonomy reader when the catalog exposes one. Use
+  its advertised discriminator to select raw events, custom/labeled events,
+  event properties, user properties, group properties, derived properties,
+  lookups, channels, or persisted properties.
+- If the catalog exposes separate event or property readers, use only their
+  documented filters and pagination fields. Do not invent an alias or copy
+  parameters from another reader.
+- Resolve event and property names from returned taxonomy rows. Names are
+  case-sensitive; do not substitute display names.
+- Paginate exhaustive reads through every cursor. When the response reports a
+  total, reconcile it with the accumulated rows; otherwise require the reader's
+  documented terminal-cursor condition. A failed or partial page is not
+  completion.
+- Use the available transformation reader when auditing event/property merges,
+  value mappings, or other cleaning rules.
 
-### `manage_amp_data_taxonomy`
-Use `action: "get"` for workspace settings, including approval workflow status.
-Check before writing to the default branch — when `approvalWF` is "Required",
-the user must create a non-default branch first.
+## Metadata updates
 
-## Event Discovery
-
-### `manage_amp_events`
-Use `action: "get"` and `kind: "event"` to retrieve events from a project with
-filtering by event types, limit, and cursor pagination. Returns full event
-objects including category and active status.
-
-If the connected MCP server's `manage_amp_events` input schema accepts `_client`,
-every `manage_amp_events` call made by this skill MUST include this top-level caller
-attribution exactly. Otherwise, omit `_client`.
-
-```json
-"_client": { "type": "skill", "skill_name": "taxonomy" }
-```
-
-- Use `search_amp_data_taxonomy` first to find the event you're looking for.
-- If search doesn't return it, call `manage_amp_events` with `action: "get"` and
-  `kind: "event"` without `eventTypes` to paginate through all events.
-- If you know exact event type names, pass them via `eventTypes` for precise lookup.
-
-Use `manage_amp_events` with `action: "get"` and `kind: "custom"`, `"labeled"`,
-or `"all"` to retrieve custom events, labeled (autotrack) events, or both.
-
-- `eventKind: "_all"` — both custom and labeled events (default).
-- `eventKind: "custom"` — non-autotrack custom events only.
-- `eventKind: "labeled"` — labeled/autotrack events only.
-- Returns `isAutotrack` flag, definition, and `flattenedDefinition` (source event lists).
-
-### `get_transformations`
-Retrieve data transformations (merge events, merge properties, map property values) from a project. Use to audit data cleaning rules.
-
-## Property Discovery
-
-### `get_properties`
-Retrieve properties from a project's taxonomy. Use `propertyType` to select which kind:
-
-| `propertyType` | What it returns | Key params |
-|---|---|---|
-| `event` | Properties for a specific event type | `eventType` (required) |
-| `user` | User-level properties | `sources`, `name` |
-| `derived` | Computed/formula properties | `derivedPropertyType`, `names` |
-| `group` | Group properties (e.g., company_name, plan_tier) | `groupTypes` |
-| `lookup` | CSV lookup table properties | `configurationFilter`, `lookupTableName` |
-| `channel` | Traffic source channel properties | `names` |
-| `persisted` | Event-to-user persisted properties | `names` |
-
-All property types except `event` support limit/cursor pagination.
-
-## Metadata Updates
-
-Use `manage_amp_events` with `action: "update"` and `kind: "event"` to update
-event metadata: descriptions, display names, categories, official status, and
-event names. It operates on the tracking plan.
-
-- Event type keys must match the event `name` exactly (case-sensitive) — not the
-  `displayName`. Resolve via `manage_amp_events` with `action: "get"` and
-  `kind: "event"` first if needed.
-- Supports `branchId` or `branchName` to target non-default branches.
-- Do not overwrite existing descriptions — append additional context instead.
-- Never update bracket-prefixed or vendor-prefixed events (`[Amplitude]`, `[Experiment]`, etc.) unless explicitly requested.
-- Requires "Update Tracking Plan" permission.
-
-### `update_properties`
-Update property metadata (description, official status, category, and/or name). Use `propertyType` to select which kind:
-
-| `propertyType` | What it updates | Key params |
-|---|---|---|
-| `event` | Event property metadata (global or event-scoped) | `metadataScope`, `eventType` (when scope is `"event"`) |
-| `user` | User property metadata | `descriptions`, `isOfficial`, `categories`, `newNames` |
-
-- Use `get_properties` first to verify property names and status before updating.
-- Requires "Update Tracking Plan" permission.
-
-Use `manage_amp_events` with `action: "update"` and `kind: "custom"` or
-`"labeled"` to update descriptions, categories, names, official status, and/or
-definitions on custom or labeled events.
-
-- Only use when the user explicitly asks to update a "custom event" or "labeled
-  event." For regular events, use `kind: "event"`.
-- Definitions are **replaced in full**, not merged — pass the complete new source-event list.
-- Renaming will break chart references — always warn the user.
+- Select the event or property mutation capability only after verifying that
+  its current schema supports the requested object type, metadata fields,
+  branch selector, and scope.
+- Read the exact current object first. Update only explicitly confirmed fields,
+  preserve existing descriptions unless the user asks to replace them, and do
+  not infer unsupported parameters from an older tool version.
+- Event-property metadata can be global or scoped to one event. Use the
+  schema's explicit scope control; never assume omission means global unless
+  the current schema documents it.
+- Custom/labeled event definitions are full replacements, not merges. Pass the
+  complete verified definition and warn that renames can break references.
+- Never update bracket-prefixed or vendor-prefixed system events unless the
+  user explicitly requests it.
+- Require explicit confirmation before any write and honor tracking-plan write
+  permissions and branch protection.
 
 ---
 

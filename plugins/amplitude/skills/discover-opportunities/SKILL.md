@@ -48,7 +48,11 @@ For each funnel chart discovered, examine:
 - The step with the largest absolute drop-off
 - Whether drop-off is getting worse or better over time
 
-If no funnel charts exist but the user mentioned a flow, use `query_amplitude_data` to build an ad-hoc funnel. Call `get_properties` for the relevant events first to discover which properties are available for segmentation (platform, plan, country, etc.) — don't guess property names.
+If no funnel charts exist but the user mentioned a flow, use
+`query_amplitude_data` to build an ad-hoc funnel. First inspect the connected
+catalog and use its taxonomy property reader for the relevant events to
+discover which properties and scopes are available for segmentation (platform,
+plan, country, etc.)—don't guess property names.
 
 #### 2c. Experiment Insights
 

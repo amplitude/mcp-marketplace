@@ -48,14 +48,13 @@ Use two approaches based on what's available.
 
 ### If the Amplitude MCP is connected
 
-Call `manage_amp_events` with `action: "get"` and `kind: "event"` to fetch a
-sample of event names from the project. If its input schema accepts `_client`,
-every `manage_amp_events` call made by this skill MUST include the top-level argument
-`"_client": { "type": "skill", "skill_name": "discover-analytics-patterns" }`
-in the tool arguments; otherwise, omit `_client`. Use those results to choose a
-few representative non-system product events, then call `get_properties`
-for those events to inspect real property names. This is your primary naming
-reference.
+Inspect the connected catalog and use its current taxonomy reader to fetch a
+sample of event names from the project. Follow only the reader's advertised
+schema. When it supports caller attribution, identify this skill with the
+`name` from its YAML frontmatter. Use those results to choose a few
+representative non-system product events, then use its
+event-property read capability to inspect real property names. This is your
+primary naming reference.
 
 Do not infer naming conventions from bracket-prefixed Amplitude system names
 such as `[Amplitude], [Guides-Surveys], [Assistant], [Experiment]` for either events or properties. Exclude those from
@@ -140,8 +139,8 @@ Use this precedence order:
    event or property naming convention, it wins outright — record it and skip
    inference for whatever it specifies. Only fall through when the file is absent
    or silent on naming.
-2. **Amplitude MCP second.** If the observed `eventType` values and
-   property names returned by `get_properties` for a few representative
+2. **Amplitude MCP second.** If the observed event names and property names
+   returned by the active taxonomy reader for a few representative
    non-system events show a clear dominant convention, use that. Do not use
    bracket-prefixed Amplitude system names as naming evidence.
 3. **Codebase third.** If the MCP evidence is unavailable, sparse, or
