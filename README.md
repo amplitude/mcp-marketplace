@@ -122,8 +122,11 @@ The amplitude plugin turns your AI assistant into an expert product analyst and 
 | `instrument-events` | From prioritized event candidates, builds a concrete instrumentation plan and JSON tracking plan |
 | `add-analytics-instrumentation` | End-to-end workflow — reads code, decides what to track, and produces a full instrumentation plan in one pass |
 | `taxonomy` | Source of truth for event taxonomy generation, data auditing, and governance best practices |
+| `tracking-plan-audit` | Audits telemetry, source code, ownership, dependencies, and tracking-plan branches for safe event and event-property deletion candidates |
 
 A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-events`, with `discover-analytics-patterns` ensuring new tracking matches existing conventions.
+
+For deletion cleanup, ask: “Audit this project for stale events and properties; the emitting source roots are `path/to/web` and `path/to/service`.” The `tracking-plan-audit` skill requires complete source coverage before recommending deletions and asks for explicit confirmation before every destructive mutation.
 
 ### Briefings
 
@@ -184,6 +187,7 @@ plugins/
       replay-ux-audit/
       review-agent-insights/
       taxonomy/
+      tracking-plan-audit/
       weekly-brief/
       what-would-lenny-do/
 ```
