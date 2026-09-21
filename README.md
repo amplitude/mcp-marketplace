@@ -64,6 +64,7 @@ The amplitude plugin turns your AI assistant into an expert product analyst and 
 | `discover-analytics-patterns`   | Maps how analytics is already implemented in the repo (SDK calls, naming, imports)                            |
 | `instrument-events`             | From prioritized event candidates, builds a concrete instrumentation plan and JSON tracking plan              |
 | `add-analytics-instrumentation` | End-to-end workflow — reads code, decides what to track, and produces a full instrumentation plan in one pass |
+| `sdk-setup`                    | Installs and initializes the Amplitude unified SDK (Session Replay + Autocapture) in a frontend app — no custom events |
 
 A typical flow: `diff-intake` → `discover-event-surfaces` → `instrument-events`, with `discover-analytics-patterns` ensuring new tracking matches existing conventions.
 
@@ -150,6 +151,7 @@ plugins/
       monitor-experiments/
       monitor-reliability/
       replay-ux-audit/
+      sdk-setup/
       weekly-brief/
       what-would-lenny-do/
 ```
