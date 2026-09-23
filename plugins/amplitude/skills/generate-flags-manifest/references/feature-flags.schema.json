@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://amplitude.com/schemas/feature-flags.json",
+  "title": "feature-flags.json",
+  "description": "Output contract for the feature-flag coding-agent skill set. Records what net-new user-facing code (if any) was wrapped behind an Amplitude Experiment flag, default-OFF, and the verdict for the run. This is the single source of truth referenced by generate-flags-manifest and the /add-feature-flags orchestrator. NOTE: wrap_locations[] is model-authored and NOT authoritative — the PR diff is ground truth. The langley server-side ship gate (a real, non-empty wrap diff), not the advisory_only boolean, decides whether a PR ships.",
+  "type": "object",
+  "required": ["detected_integration", "advisory_only", "no_flaggable_surfaces", "flags"],
+  "additionalProperties": false,
+  "properties": {
+    "detected_integration": {
+      "description": "What Amplitude Experiment integration the discover-experiment-integration stage found in the repo. Drives whether code can be wrapped (Wrapped) or only suggested (Advisory).",
+      "type": "object",
+      "required": ["sdk", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "sdk": {
+          "description": "Which Experiment SDK surface the repo integrates. 'none' when no high-confidence integration was found (forces advisory_only).",
+          "type": "string",
+          "enum": ["client", "server", "none"]
+        },
+        "package": {
+          "description": "The detected SDK package, e.g. '@amplitude/experiment-js-client' (client) or '@amplitude/experiment-node-server' (server).",
+          "type": "string"
+        },
+        "import_path": {
+          "description": "Where the repo imports/initializes the experiment client from, so generated wraps reuse it (extend-before-add).",
+          "type": "string"
+        },
+        "init_pattern": {
+          "description": "A representative initialization snippet from the repo, e.g. \"Experiment.initialize('DEPLOYMENT_KEY')\".",
+          "type": "string"
+        },
+        "deployment": {
+          "description": "Optional. The Amplitude Experiment deployment the integration is wired to. A deployment is the container (with its own key) that serves flags/experiments; ONE app/project can have MULTIPLE deployments, so this is a dimension below app_id. Detection is best-effort: the deployment key in code is usually an env var or constant, not a literal, so this records how it was identified rather than the secret itself. Multiple wired deployments, a key that can't be tied to a known deployment, or per-environment keys all LOWER confidence (handled in the discovery/confidence step) — they do not need to be fully resolved here.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "key_source": {
+              "description": "Where the deployment key comes from, e.g. \"env:EXPERIMENT_DEPLOYMENT_KEY\" or \"const:DEPLOYMENT_KEY in src/lib/experiment.ts\". Never store the raw key value.",
+              "type": "string"
+            },
+            "multiple_detected": {
+              "description": "True if more than one deployment / deployment key appears wired in the repo (e.g. distinct client and server keys, or per-environment keys). A signal for the confidence evaluation.",
+              "type": "boolean"
+            }
+          }
+        },
+        "guard_pattern": {
+          "description": "A representative existing flag-guard snippet from the repo, e.g. \"experiment.variant('key').value === 'on'\", so generated guards match local convention. Omit if none exist.",
+          "type": "string"
+        },
+        "confidence": {
+          "description": "Best-effort confidence the integration is real and usable. 'low' (ambiguous / test-only / vendored import) routes the run to advisory_only.",
+          "type": "string",
+          "enum": ["high", "low"]
+        }
+      }
+    },
+    "low_confidence_note": {
+      "description": "Optional, top-level. Written only when the Phase 0 gate was uncertain whether the diff is flag-worthy and proceeded anyway because the trigger was manual (the user explicitly asked). Plain-language description of what made the call uncertain, so a reviewer can sanity-check the wrap. Omit entirely when Phase 0 was confident.",
+      "type": "string"
+    },
+    "advisory_only": {
+      "description": "True when net-new user-facing surfaces exist but no high-confidence Experiment SDK integration was found — the run suggests flags but wraps no code. The langley ship gate, not this boolean, makes the final ship decision.",
+      "type": "boolean"
+    },
+    "no_flaggable_surfaces": {
+      "description": "True when the diff has no net-new user-facing behavior worth flagging (refactor/bugfix/config/test/generated/bot). When true, flags[] is empty and the flow produces no comment, no PR, no row.",
+      "type": "boolean"
+    },
+    "flags": {
+      "description": "One entry per flag. Empty when no_flaggable_surfaces is true. In advisory_only mode entries carry definition + rationale but wrap_locations may be empty (nothing was wrapped).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "rationale", "variant_values", "default"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "description": "Flag key, derived from the feature/surface. Preserved verbatim if it matches an existing key surfaced by discovery (never rename). Casing convention is defined by the define-feature-flags skill.",
+            "type": "string"
+          },
+          "surface": {
+            "description": "Short human label for the net-new user-facing surface this flag gates.",
+            "type": "string"
+          },
+          "files": {
+            "description": "Repo-relative file paths this flag touches (informational; the diff is ground truth).",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rationale": {
+            "description": "Why this net-new code is wrapped, framed as a code change to review.",
+            "type": "string"
+          },
+          "variant_values": {
+            "description": "Variant values. v1 is binary; default ['off','on']. Targeting/multi-variant is phase 2.",
+            "type": "array",
+            "items": { "type": "string" },
+            "default": ["off", "on"]
+          },
+          "default": {
+            "description": "The default/control variant. Always 'off' in v1 (dark launch).",
+            "type": "string",
+            "default": "off"
+          },
+          "wrap_locations": {
+            "description": "Where the guard was inserted. MODEL-AUTHORED, NOT AUTHORITATIVE — the PR diff is ground truth. Empty in advisory_only mode.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["file", "line", "what_it_wraps"],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "description": "Repo-relative path where the guard sits AFTER edits.",
+                  "type": "string"
+                },
+                "line": {
+                  "description": "1-indexed line of the guard after edits (adjusted for insertions earlier in the same file).",
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "what_it_wraps": {
+                  "description": "One sentence on the net-new behavior this guard gates.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -59,6 +59,11 @@ Cursor:
 | **instrument-events** | Convert priority events into a detailed, line-by-line instrumentation plan grounded in the target code |
 | **add-analytics-instrumentation** | Run the full end-to-end instrumentation workflow for a PR, branch, file, or feature request |
 | **monitor-experiments** | Monitor active and recently completed experiments, triage by importance, and deep-dive on the most impactful ones |
+| **add-feature-flags** | Run the full feature-flag workflow for a PR — decide if a diff adds net-new user-facing behavior and wrap it behind an Amplitude Experiment flag, default-OFF |
+| **discover-experiment-integration** | Detect how a codebase integrates Amplitude Experiment (client vs server SDK, deployment, existing guard patterns and flag keys) before wrapping new code |
+| **define-feature-flags** | Standards for flag definition — key naming, default-OFF dark-launch discipline, flag-worthiness, and wrapped-vs-advisory criteria |
+| **wrap-code-in-experiment** | Wrap net-new user-facing code behind the repo's detected Experiment flag guard, default-OFF, matching local conventions |
+| **generate-flags-manifest** | Produce `.amplitude/feature-flags.json` recording the flags a PR introduces (keys, rationale, wrap locations, advisory/no-flaggable signals) |
 
 ---
 
@@ -87,6 +92,7 @@ Cursor:
 "Find product opportunities"                       → discover-opportunities activates
 "Check on experiments"                             → monitor-experiments activates
 "Instrument the checkout flow"                     → add-analytics-instrumentation activates
+"Wrap this PR behind a feature flag"               → add-feature-flags activates
 "What happened this week?"                         → weekly-brief activates
 ```
 
@@ -175,6 +181,21 @@ Cursor:
 2. Skill inspects the diff and existing tracking patterns in the codebase
 3. Skill identifies the highest-value events and the exact handlers or callbacks where they belong
 4. You get a prioritized event list plus a concrete instrumentation plan an engineer can implement
+
+#### Feature Flag Wrapping
+
+1. Ask: "Wrap this PR behind a feature flag" or "Should this new code be dark-launched?"
+2. `add-feature-flags` orchestrates a four-stage pipeline: **discovery → definition → code-generation → recording**
+   - `discover-experiment-integration` — detect the Experiment SDK (client/server), deployment, existing guard patterns and flag keys, with a confidence signal
+   - `define-feature-flags` — judge flag-worthiness and define the flag (key, rationale, default-OFF variant model)
+   - `wrap-code-in-experiment` — wrap net-new code behind the flag guard, default-OFF, reusing the repo's own client and idiom
+   - `generate-flags-manifest` — record the run in `.amplitude/feature-flags.json`
+3. The verdict is **Wrapped** (net-new surface + usable Experiment integration), **Advisory-only** (surface but no high-confidence integration — suggest, don't wrap), or **No flags needed** (no net-new user-facing behavior — stays silent)
+4. You get a default-OFF (dark-launch) wrap to review, framed as a code change — never auto-merged
+
+> These skills auto-discover from `./skills/` (slash name = skill name = directory name) and deploy
+> to running agents within ~2 minutes of landing on the skills branch. If `/add-feature-flags` is
+> unavailable, the workflow degrades to a silent no-op (no comment, no PR).
 
 ---
 
