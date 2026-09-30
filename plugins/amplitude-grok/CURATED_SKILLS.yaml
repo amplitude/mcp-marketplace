@@ -1,0 +1,71 @@
+# Grok Amplitude data-partner bot — skill manifest (draft)
+# Skill bodies are NOT copied here. See BUILDER_SKILLS.md for bundling notes.
+
+audience: Users who already have an Amplitude org and projects
+
+builder_skills:
+  repository: https://github.com/amplitude/builder-skills
+  pin: TBD  # eng must set commit SHA at publish time
+  primary_plugins:
+    - path: analytics-skills
+      skills:
+        - analyze-chart
+        - analyze-dashboard
+        - analyze-experiment
+        - analyze-feedback
+        - analyze-account-health
+        - create-chart
+        - create-dashboard
+        - monitor-experiments
+        - analyze-mcp-server
+        - create-custom-agent
+    - path: execution-skills
+      notes: daily-brief and weekly-brief ship as commands under commands/
+    - path: product-skills
+      skills:
+        - discover-opportunities
+
+mcp_marketplace_plugin: ../amplitude
+
+supplemental:
+  # Capabilities in mcp-marketplace not covered (or not primary) in builder-skills MVP set
+  location: mcp_marketplace_plugin
+  skills:
+    - id: taxonomy
+      role: Event/property naming and tracking-plan governance context
+    - id: manage-amp-context
+      role: Org/project AI context (reads via get_amplitude_context)
+    - id: chart-link-analysis
+      role: Deep analysis from shared chart URLs
+    - id: user-cohort-forensics
+      role: Cohort comparison and forensic drill-down
+    - id: live-data-forensics
+      role: Live metric investigation workflows
+    - id: compare-user-journeys
+      role: Side-by-side journey comparison
+    - id: analyze-experiment-consolidated
+      role: Consolidated experiment analysis variant
+    - id: daily-brief
+      role: Marketplace copy if not using execution-skills command
+    - id: weekly-brief
+      role: Marketplace copy if not using execution-skills command
+    - id: monitor-experiments-consolidated
+      role: Consolidated experiment monitoring variant
+
+adapter:
+  location: this plugin
+  skills:
+    - id: getting-started-with-amplitude
+      path: skills/getting-started-with-amplitude
+      role: First-run connect + route to analysis workflows
+
+secondary_optional:
+  # Not MVP positioning — available for power users / later packaging
+  location: mcp_marketplace_plugin
+  skills:
+    - add-analytics-instrumentation
+    - diff-intake
+    - discover-event-surfaces
+    - discover-analytics-patterns
+    - instrument-events
+    - tracking-plan-audit

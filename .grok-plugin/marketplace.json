@@ -7,12 +7,13 @@
   },
   "metadata": {
     "status": "draft",
-    "purpose": "Validate Grok Bot / Grok Build packaging for the Amplitude Setup bot before any public marketplace listing."
+    "purpose": "Validate Grok Bot packaging for a general Amplitude data-partner bot (existing customers) before any public marketplace listing.",
+    "tracking": "Linear MCP-836"
   },
   "plugins": [
     {
-      "name": "amplitude-setup-grok",
-      "description": "DRAFT: Amplitude Setup bot — OAuth Amplitude MCP, curated instrumentation skills, first-run onboarding. Requires manual Amplitude Docs MCP. Do not publish without Amplitude engineering approval.",
+      "name": "amplitude-grok",
+      "description": "DRAFT: Amplitude data partner for Grok — OAuth Amplitude MCP, builder-skills analytics workflows, Docs MCP (manual install). For users who already have Amplitude. Do not publish without engineering approval.",
       "category": "analytics",
       "version": "0.0.0-draft",
       "author": {
@@ -20,17 +21,18 @@
         "email": "support@amplitude.com",
         "url": "https://amplitude.com"
       },
-      "homepage": "https://github.com/amplitude/mcp-marketplace/tree/main/plugins/amplitude-setup-grok",
+      "homepage": "https://github.com/amplitude/mcp-marketplace/tree/main/plugins/amplitude-grok",
       "repository": "https://github.com/amplitude/mcp-marketplace",
       "license": "MIT",
       "keywords": [
         "amplitude",
         "analytics",
-        "instrumentation",
-        "tracking plan",
+        "charts",
+        "dashboards",
+        "experiments",
+        "product analytics",
         "grok",
-        "grok bot",
-        "setup"
+        "grok bot"
       ],
       "domains": [
         "amplitude.com",
@@ -40,7 +42,7 @@
       ],
       "source": {
         "source": "local",
-        "path": "./plugins/amplitude-setup-grok"
+        "path": "./plugins/amplitude-grok"
       }
     }
   ]

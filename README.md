@@ -153,7 +153,7 @@ Amplitude is exploring a **Setup Grok Bot** packaging layer (not published). See
 
 ```text
 .grok-plugin/
-  marketplace.json            # Draft Grok catalog (Setup bot — eng review only)
+  marketplace.json            # Draft Grok catalog (data-partner bot — eng review only)
 .agents/plugins/
   marketplace.json            # Marketplace catalog (Codex)
 .claude-plugin/
