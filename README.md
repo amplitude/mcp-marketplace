@@ -143,9 +143,17 @@ For deletion cleanup, ask: “Audit this project for stale events and properties
 
 ---
 
+## Grok Bot (draft)
+
+Amplitude is exploring a **Setup Grok Bot** packaging layer (not published). See [`docs/grok-bot-amplitude-setup.md`](docs/grok-bot-amplitude-setup.md) and [`plugins/amplitude-setup-grok/`](plugins/amplitude-setup-grok/).
+
+---
+
 ## Repository Structure
 
 ```text
+.grok-plugin/
+  marketplace.json            # Draft Grok catalog (Setup bot — eng review only)
 .agents/plugins/
   marketplace.json            # Marketplace catalog (Codex)
 .claude-plugin/
