@@ -43,7 +43,21 @@ Agent routing hints: [`AGENTS.md`](https://github.com/amplitude/builder-skills/b
 
 ## Relationship to mcp-marketplace `plugins/amplitude`
 
-Many skill **names** overlap between builder-skills and this repo. For the Grok bot MVP, **prefer builder-skills copies** for the analysis surface unless eng standardizes on one source of truth (see MCP-836). Use mcp-marketplace-only skills listed under `supplemental` in [`CURATED_SKILLS.yaml`](CURATED_SKILLS.yaml).
+Many skill **names** overlap between builder-skills and this repo. For the Grok bot MVP, **prefer builder-skills copies** for the analysis surface unless eng standardizes on one source of truth (see MCP-836). Use mcp-marketplace-only skills listed under `supplemental` and `supplemental_agent_analytics` in [`CURATED_SKILLS.yaml`](CURATED_SKILLS.yaml).
+
+## Agent Analytics (mcp-marketplace supplement, MCP-840)
+
+These skills live only under `plugins/amplitude/skills/` in this repo. They apply when the customer's project has **Amplitude Agent Analytics** instrumented (not the same as in-product AI agent insights).
+
+| Skill | Typical ask |
+| --- | --- |
+| `monitor-ai-quality` | Agent health, LLM cost, quality regressions |
+| `investigate-ai-session` | Drill into a failed or low-quality agent session |
+| `analyze-ai-topics` | What users ask agents about and topic-level quality |
+
+All three use MCP tool **`get_amplitude_agent_analytics_info`** (plus `get_amplitude_context` for project scope).
+
+**Out of scope for this bundle:** `review-agent-insights` — that skill uses **`get_agent_results`** for Amplitude in-product AI agents, not Agent Analytics SDK data.
 
 ## Explicitly later (not MVP pitch)
 

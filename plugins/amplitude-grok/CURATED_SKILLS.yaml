@@ -52,6 +52,21 @@ supplemental:
     - id: monitor-experiments-consolidated
       role: Consolidated experiment monitoring variant
 
+supplemental_agent_analytics:
+  # Linear MCP-840 (child of MCP-836). Not in builder-skills; mcp-marketplace only.
+  location: mcp_marketplace_plugin
+  requires: Amplitude Agent Analytics instrumentation in the target project
+  mcp_tool: get_amplitude_agent_analytics_info
+  exclude:
+    - review-agent-insights  # uses get_agent_results (in-product AI agents), not Agent Analytics SDK
+  skills:
+    - id: monitor-ai-quality
+      role: Proactive health report on AI agents (quality, cost, performance, errors)
+    - id: investigate-ai-session
+      role: Deep-dive specific Agent Analytics sessions or failure patterns
+    - id: analyze-ai-topics
+      role: Topic demand and quality across Agent Analytics sessions
+
 adapter:
   location: this plugin
   skills:

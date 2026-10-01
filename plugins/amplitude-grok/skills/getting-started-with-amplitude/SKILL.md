@@ -72,6 +72,9 @@ Offer concrete next steps aligned with builder-skills / supplemental skills:
 | Naming / governance questions | `taxonomy` (mcp-marketplace supplement) |
 | Compare cohorts or journeys | `compare-user-journeys`, `user-cohort-forensics` |
 | Deep dive on live anomalies | `live-data-forensics` |
+| AI agent health / sessions / topics (requires **Agent Analytics** in project) | `monitor-ai-quality`, `investigate-ai-session`, `analyze-ai-topics` via `get_amplitude_agent_analytics_info` |
+
+If Agent Analytics is not instrumented, say so and point to Docs MCP for instrumentation guidance — do not use `review-agent-insights` as a substitute (that is for in-product AI agents via `get_agent_results`).
 
 **Do not** default to `add-analytics-instrumentation`, `diff-intake`, or `instrument-events` unless the user explicitly asks to instrument code.
 
