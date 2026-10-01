@@ -145,7 +145,7 @@ For deletion cleanup, ask: “Audit this project for stale events and properties
 
 ## Grok Bot (draft)
 
-Amplitude is exploring a **Setup Grok Bot** packaging layer (not published). See [`docs/grok-bot-amplitude-setup.md`](docs/grok-bot-amplitude-setup.md) and [`plugins/amplitude-setup-grok/`](plugins/amplitude-setup-grok/).
+Amplitude is exploring a **Grok marketplace data-partner bot** for existing customers (not published). See [`docs/grok-bot-amplitude.md`](docs/grok-bot-amplitude.md) and [`plugins/amplitude-grok/`](plugins/amplitude-grok/). Setup-first promotion is later work — not this package.
 
 ---
 
