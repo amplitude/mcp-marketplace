@@ -1,7 +1,7 @@
 {
   "name": "amplitude-grok",
-  "description": "DRAFT: Grok adapter for an Amplitude data-partner bot — first-run onboarding, Amplitude product MCP, pointers to builder-skills and supplemental mcp-marketplace skills.",
-  "version": "0.0.0-draft",
+  "description": "Grok adapter for an Amplitude data-partner bot — first-run onboarding, Amplitude product MCP, pointers to builder-skills and supplemental mcp-marketplace skills.",
+  "version": "0.1.0",
   "author": {
     "name": "Amplitude",
     "email": "support@amplitude.com",

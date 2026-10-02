@@ -1,4 +1,4 @@
-# builder-skills integration (draft)
+# builder-skills integration
 
 The Grok marketplace bot is a **general Amplitude data partner** for people who **already have Amplitude**. The primary skill surface lives in **[amplitude/builder-skills](https://github.com/amplitude/builder-skills)** — not duplicated in this repo.
 
@@ -10,7 +10,7 @@ At install/publish time, combine:
 2. **builder-skills** — clone or submodule at a **pinned commit**; load selected plugin folders
 3. **Supplemental skills** from `plugins/amplitude/skills/` in *this* repo when a capability exists only here (see [`CURATED_SKILLS.yaml`](CURATED_SKILLS.yaml))
 
-Do **not** assume a single folder contains every SKILL body until CI assembles the bundle. This draft documents intent and paths only.
+Do **not** assume a single folder contains every SKILL body until CI assembles the bundle. This document records intent and paths only.
 
 ## Primary builder-skills plugins
 

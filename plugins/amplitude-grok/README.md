@@ -1,6 +1,6 @@
-# Amplitude Grok data-partner bot (DRAFT)
+# Amplitude Grok data-partner bot
 
-**Status:** Engineering preview only — **not** a published Grok Bot template or marketplace listing.
+**Status:** Engineering review — **not** a published Grok Bot template or marketplace listing without separate approval.
 
 **Audience:** People who **already have Amplitude** and want an AI data partner for analysis, charts, dashboards, experiments, taxonomy context, and related product workflows.
 
@@ -19,7 +19,7 @@ This folder is the **Grok-specific packaging adapter**. Skill bodies live primar
 | [`SAFETY.md`](SAFETY.md) | Read-before-write, no invented analytics, MCP ≠ ingestion |
 | [`skills/getting-started-with-amplitude/`](skills/getting-started-with-amplitude/SKILL.md) | First-run for **existing** customers |
 | [`.grok-plugin/plugin.json`](.grok-plugin/plugin.json) | Grok plugin manifest |
-| [`.grok-plugin/marketplace.json`](../../.grok-plugin/marketplace.json) | Draft repo catalog entry |
+| [`.grok-plugin/marketplace.json`](../../.grok-plugin/marketplace.json) | Repo Grok catalog entry |
 
 ## Skill strategy (MVP)
 

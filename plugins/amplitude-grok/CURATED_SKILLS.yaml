@@ -1,4 +1,4 @@
-# Grok Amplitude data-partner bot — skill manifest (draft)
+# Grok Amplitude data-partner bot — skill manifest
 # Skill bodies are NOT copied here. See BUILDER_SKILLS.md for bundling notes.
 
 audience: Users who already have an Amplitude org and projects

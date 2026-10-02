@@ -1,21 +1,20 @@
 {
   "name": "amplitude",
-  "description": "DRAFT — Amplitude Grok Bot packaging catalog for engineering review. Not published to xai-org/plugin-marketplace.",
+  "description": "Amplitude Grok Bot packaging catalog for engineering review. Not published to xai-org/plugin-marketplace.",
   "owner": {
     "name": "Amplitude",
     "email": "support@amplitude.com"
   },
   "metadata": {
-    "status": "draft",
     "purpose": "Validate Grok Bot packaging for a general Amplitude data-partner bot (existing customers) before any public marketplace listing.",
     "tracking": "Linear MCP-836"
   },
   "plugins": [
     {
       "name": "amplitude-grok",
-      "description": "DRAFT: Amplitude data partner for Grok — OAuth Amplitude MCP, builder-skills analytics workflows, Docs MCP (manual install). For users who already have Amplitude. Do not publish without engineering approval.",
+      "description": "Amplitude data partner for Grok — OAuth Amplitude MCP, builder-skills analytics workflows, Docs MCP (manual install). For users who already have Amplitude. Do not publish without engineering approval.",
       "category": "analytics",
-      "version": "0.0.0-draft",
+      "version": "0.1.0",
       "author": {
         "name": "Amplitude",
         "email": "support@amplitude.com",

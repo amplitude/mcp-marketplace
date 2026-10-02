@@ -31,4 +31,4 @@ This bot targets **existing Amplitude customers**. Do not promise automated net-
 
 - **Do not merge** this foundation until Amplitude engineering review completes.
 - **Do not publish** a Grok Bot template or external marketplace listing without separate approval.
-- Marketplace pins, template copy, and builder-skills SHA require eng sign-off beyond this draft PR.
+- Marketplace pins, template copy, and builder-skills SHA require eng sign-off before publication.
