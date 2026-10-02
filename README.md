@@ -143,9 +143,17 @@ For deletion cleanup, ask: “Audit this project for stale events and properties
 
 ---
 
+## Grok Bot
+
+Amplitude is exploring a **Grok marketplace data-partner bot** for existing customers (not published). See [`docs/grok-bot-amplitude.md`](docs/grok-bot-amplitude.md) and [`plugins/amplitude-grok/`](plugins/amplitude-grok/). Setup-first promotion is later work — not this package.
+
+---
+
 ## Repository Structure
 
 ```text
+.grok-plugin/
+  marketplace.json            # Grok catalog (data-partner bot — eng review only)
 .agents/plugins/
   marketplace.json            # Marketplace catalog (Codex)
 .claude-plugin/

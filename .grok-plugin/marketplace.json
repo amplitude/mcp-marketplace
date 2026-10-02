@@ -1,0 +1,48 @@
+{
+  "name": "amplitude",
+  "description": "Amplitude Grok Bot packaging catalog for engineering review. Not published to xai-org/plugin-marketplace.",
+  "owner": {
+    "name": "Amplitude",
+    "email": "support@amplitude.com"
+  },
+  "metadata": {
+    "purpose": "Validate Grok Bot packaging for a general Amplitude data-partner bot (existing customers) before any public marketplace listing.",
+    "tracking": "Linear MCP-836"
+  },
+  "plugins": [
+    {
+      "name": "amplitude-grok",
+      "description": "Amplitude data partner for Grok — OAuth Amplitude MCP, builder-skills analytics workflows, Docs MCP (manual install). For users who already have Amplitude. Do not publish without engineering approval.",
+      "category": "analytics",
+      "version": "0.1.0",
+      "author": {
+        "name": "Amplitude",
+        "email": "support@amplitude.com",
+        "url": "https://amplitude.com"
+      },
+      "homepage": "https://github.com/amplitude/mcp-marketplace/tree/main/plugins/amplitude-grok",
+      "repository": "https://github.com/amplitude/mcp-marketplace",
+      "license": "MIT",
+      "keywords": [
+        "amplitude",
+        "analytics",
+        "charts",
+        "dashboards",
+        "experiments",
+        "product analytics",
+        "grok",
+        "grok bot"
+      ],
+      "domains": [
+        "amplitude.com",
+        "app.amplitude.com",
+        "mcp.amplitude.com",
+        "mcp.eu.amplitude.com"
+      ],
+      "source": {
+        "source": "local",
+        "path": "./plugins/amplitude-grok"
+      }
+    }
+  ]
+}
