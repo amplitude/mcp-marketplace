@@ -5,7 +5,7 @@ audience: Users who already have an Amplitude org and projects
 
 builder_skills:
   repository: https://github.com/amplitude/builder-skills
-  pin: TBD  # eng must set commit SHA at publish time
+  pin: 51838c2d85560466d1bbc174ea0e645bb9c44ea9  # pinned for Grok marketplace publish (builder-skills main)
   primary_plugins:
     - path: analytics-skills
       skills:
