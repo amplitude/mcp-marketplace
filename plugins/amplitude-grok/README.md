@@ -33,7 +33,7 @@ When the project has **Agent Analytics** instrumented, include supplemental skil
 
 ## Bundling options (open for eng)
 
-1. **Pinned multi-repo bundle:** Adapter + builder-skills at fixed SHA + selected supplemental paths from this repo.
+1. **Pinned multi-repo bundle:** Adapter + builder-skills at `51838c2d85560466d1bbc174ea0e645bb9c44ea9` + selected supplemental paths from this repo.
 2. **Dev monorepo:** Install `amplitude-grok` locally and configure the client to also load builder-skills checkout paths.
 
 ## First-run (summary)
