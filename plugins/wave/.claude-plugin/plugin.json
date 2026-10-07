@@ -1,0 +1,9 @@
+{
+  "name": "wave",
+  "description": "Use Amplitude Wave to turn product signals into codebase-validated opportunities, review-ready pull requests, optional experiments, measured outcomes, and a self-improving product loop",
+  "author": {
+    "name": "Amplitude",
+    "email": "support@amplitude.com",
+    "url": "https://amplitude.com"
+  }
+}

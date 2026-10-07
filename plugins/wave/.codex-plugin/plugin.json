@@ -1,0 +1,44 @@
+{
+  "name": "wave",
+  "version": "1.0.0",
+  "description": "Run the Amplitude Wave opportunity loop from product signal to measured outcome, with review-ready PRs, optional experiments, and hard human gates.",
+  "author": {
+    "name": "Amplitude",
+    "email": "support@amplitude.com",
+    "url": "https://amplitude.com"
+  },
+  "homepage": "https://github.com/amplitude/mcp-marketplace",
+  "repository": "https://github.com/amplitude/mcp-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "amplitude",
+    "wave",
+    "opportunities",
+    "product",
+    "automation",
+    "experiments",
+    "self-improving"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Amplitude Wave",
+    "shortDescription": "Work Wave opportunities from signal to measured outcome.",
+    "longDescription": "Review and improve Wave opportunities against current code, dispatch coding agents, drive PRs to review-ready, prepare optional experiments, measure outcomes, and refine the workflow. Merge and live experiment launch always require humans.",
+    "developerName": "Amplitude",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://amplitude.com",
+    "privacyPolicyURL": "https://amplitude.com/privacy",
+    "termsOfServiceURL": "https://amplitude.com/terms",
+    "defaultPrompt": [
+      "Show me the top Wave opportunities and recommend what to do next.",
+      "Run Wave autopilot on the top approved opportunity and stop at a review-ready PR.",
+      "Measure Wave opportunities that have completed their outcome window."
+    ],
+    "brandColor": "#005AF0"
+  }
+}

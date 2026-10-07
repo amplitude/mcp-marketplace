@@ -1,0 +1,26 @@
+{
+  "projectId": "YOUR_PROJECT_ID",
+  "defaults": {
+    "mode": "attended",
+    "maxOpportunitiesPerRun": 3,
+    "maxConcurrentAgents": 2,
+    "maxNewIdeasPerRun": 1,
+    "maxRetriesPerStage": 2,
+    "leaseTtlSeconds": 1800,
+    "staleLeaseGraceMinutes": 30,
+    "stalePrInactivityDays": 5,
+    "measurementWindowDays": 14,
+    "minOpportunitiesForRefine": 20,
+    "dryRun": false
+  },
+  "repos": [
+    {
+      "repository": "your-org/your-app",
+      "baseBranch": "main",
+      "setup": "pnpm install",
+      "test": "pnpm test",
+      "lint": "pnpm lint",
+      "build": "pnpm build"
+    }
+  ]
+}
