@@ -1,0 +1,4 @@
+node_modules/
+.coda.json
+.coda-credentials.json
+_upload_build/
