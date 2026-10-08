@@ -1,9 +1,9 @@
 # Amplitude x Superhuman
----
+
 This directory is the Amplitude plugin for Superhuman. A plugin is the developer-facing shipping unit that bundles connectors and agents; it is not a user-facing product surface.
 
 ## Lexicon & Reserved Files
----
+
 Superhuman imbues the following terms with specific meaning:
 
 | Term | Meaning |
@@ -18,7 +18,7 @@ Superhuman generates the following files (which cannot be renamed) when building
 - `.coda-pack.json` identifies that pack once it has been pushed to Superhuman's server. It lives in the same directory as the Typscript file from which it was generated.
 
 ## Create & Deploy
----
+
 Prerequisites:
 - Node.js 22. Node 23 and newer abort on Windows when the packs CLI exits.
 - A Superhuman account that can create agents
@@ -44,7 +44,7 @@ Instructions:
   This creates a `.coda-pack.ts` file in the same directory.
 
 ## Test
----
+
 These checks apply to `ambient-assistant` after it has been uploaded and installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
 
 Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Ambient Assistant** is listed. The agent log shows which connector tools ran.
@@ -58,7 +58,7 @@ Use Email, Docs, or https://textarea.org. If no underline appears, open the Supe
 | No writes | Any scenario above. Inspect the agent log. | The connector is not asked to create, edit, or delete Amplitude content. A confirmation dialog means a mutating tool was called. |
 
 ## Update
----
+
 To update an existing agent:
 1. Repeat the upload step.
   ```bash
