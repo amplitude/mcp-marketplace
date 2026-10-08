@@ -39,7 +39,7 @@ Instructions:
 3. Create the agent on Superhuman's server then upload its source.
    ```bash
    npx packs create agents/{pack-filepath}.ts --name "{Friendly Name}" --description "{Description}."
-   npx packs upload agents/{pack-filepath}.ts --use-latest --notes "{Version Notes}."
+   npx packs upload agents/{pack-filepath}.ts --notes "{Version Notes}."
    ```
    This creates a `.coda-pack.ts` file in the same directory.
 
@@ -62,7 +62,7 @@ Use Email, Docs, or https://textarea.org. If no underline appears, open the Supe
 To update an existing agent:
 1. Repeat the upload step.
    ```bash
-   npx packs upload agents/{pack-filepath}.ts --use-latest --notes "{Describe the change.}"
+   npx packs upload agents/{pack-filepath}.ts --notes "{Describe the change.}"
    ```
    Do not run `npx packs create` again.
 2. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
