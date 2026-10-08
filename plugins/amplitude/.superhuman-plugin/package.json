@@ -5,7 +5,17 @@
   "engines": {
     "node": ">=22"
   },
+  "scripts": {
+    "postinstall": "node scripts/patch-packs-cli-exit.js"
+  },
   "devDependencies": {
     "@codahq/packs-sdk": "1.18.0"
+  },
+  "overrides": {
+    "express": "4.22.3"
+  },
+  "allowScripts": {
+    "esbuild@0.25.0": true,
+    "isolated-vm@6.0.2": true
   }
 }
