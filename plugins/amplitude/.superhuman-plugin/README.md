@@ -50,7 +50,7 @@ These checks apply to `ambient-assistant` after it has been uploaded and install
 Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Ambient Assistant** is listed. The agent log shows which connector tools ran.
 
 | Scenario | Input | Expectation |
-| --- | --- | --- |
+| :--- | :--- | :--- |
 | Named metric or chart | Weekly active users dropped after yesterday's release. | One card cites the matching metric or chart, with the time window and a source link. The sentence is unchanged. |
 | Experiment | The onboarding experiment should be ready to call. | One card reports the experiment status returned by Amplitude. It does not claim a winner unless Amplitude returned that result. |
 | Unresolvable writing | I will send the notes after lunch. | No underline, no card, and no Amplitude write. |
