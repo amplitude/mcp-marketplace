@@ -25,12 +25,12 @@ Prerequisites:
 
 Instructions:
 1. Compile the agent locally.
-  ```bash
-  npm install
-  npx packs validate {pack-filepath}.ts
-  npx packs build {pack-filepath}.ts
-  ```
-  `validate` checks the agent definition and `build` compiles it locally. Neither command contacts Amplitude, triggers the agent, or pushes the agent to Superhuman's server.
+    ```bash
+    npm install
+    npx packs validate {pack-filepath}.ts
+    npx packs build {pack-filepath}.ts
+    ```
+    `validate` checks the agent definition and `build` compiles it locally. Neither command contacts Amplitude, triggers the agent, or pushes the agent to Superhuman's server.
 2. Register an API token.
   ```bash
   npx packs register --open
