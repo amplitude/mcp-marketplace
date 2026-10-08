@@ -32,16 +32,16 @@ Instructions:
     ```
     `validate` checks the agent definition and `build` compiles it locally. Neither command contacts Amplitude, triggers the agent, or pushes the agent to Superhuman's server.
 2. Register an API token.
-  ```bash
-  npx packs register --open
-  ```
-  In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.
+    ```bash
+    npx packs register --open
+    ```
+    In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.
 3. Create the agent on Superhuman's server then upload its source.
-  ```bash
-  npx packs create agents/{pack-filepath}.ts --name "{Friendly Name}" --description "{Description}."
-  npx packs upload agents/{pack-filepath}.ts --use-latest --notes "{Version Notes}."
-  ```
-  This creates a `.coda-pack.ts` file in the same directory.
+    ```bash
+    npx packs create agents/{pack-filepath}.ts --name "{Friendly Name}" --description "{Description}."
+    npx packs upload agents/{pack-filepath}.ts --use-latest --notes "{Version Notes}."
+    ```
+    This creates a `.coda-pack.ts` file in the same directory.
 
 ## Test
 
