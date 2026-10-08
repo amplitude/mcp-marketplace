@@ -3,10 +3,7 @@
   "private": true,
   "description": "Superhuman plugin that ships Amplitude agents.",
   "engines": {
-    "node": ">=22"
-  },
-  "scripts": {
-    "postinstall": "node scripts/patch-packs-cli-exit.js"
+    "node": "22.x"
   },
   "devDependencies": {
     "@codahq/packs-sdk": "1.18.0"

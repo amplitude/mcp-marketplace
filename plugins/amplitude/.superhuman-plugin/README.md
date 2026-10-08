@@ -36,7 +36,7 @@ Superhuman uses three names:
 
 Requirements:
 
-- Node.js 22 or newer
+- Node.js 22. Node 23 and newer abort on Windows when the packs CLI exits.
 - A Superhuman account that can create agents
 
 From this directory:
