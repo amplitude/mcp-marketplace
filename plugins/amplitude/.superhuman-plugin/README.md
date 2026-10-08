@@ -9,7 +9,7 @@ The plugin holds one or more agents. Each agent is a sibling directory with its 
 
 `ambient-assistant/` is the agent that exists today. It watches Email and Docs while someone is writing. When the text names a customer, feature, metric, chart, experiment, release, or product-performance claim, it shows one informational card with current Amplitude data.
 
-Add another agent by creating a sibling directory with `agent.ts` and `agent.json`, then running `./deploy.sh create <agent>`. Do not add a second agent to an existing `agent.ts`. One upload registers one agent.
+Add another agent as a sibling directory with its own `agent.ts`. One upload registers one agent.
 
 ## Superhuman lexicon
 
@@ -27,7 +27,7 @@ Superhuman uses three names:
 | --- | --- |
 | Agent source | `export const pack` inside `agent.ts` |
 | Connector ID `56421` | `packId` |
-| `./deploy.sh` | `npx packs` and `@codahq/packs-sdk` |
+| The CLI | `npx packs` and `@codahq/packs-sdk` |
 | An agent's server ID | `.coda-pack.json` |
 
 `.coda.json` is the API token file. It is a credential, not the agent's server ID.
@@ -43,15 +43,15 @@ From this directory:
 
 ```bash
 npm install
-./deploy.sh validate ambient-assistant
-./deploy.sh build ambient-assistant
+npx packs validate ambient-assistant/agent.ts
+npx packs build ambient-assistant/agent.ts
 ```
 
 `validate` checks the agent definition. `build` compiles it. Neither command contacts Amplitude or runs the while-writing trigger. Installing the agent in Superhuman Go happens after deployment.
 
 ## Manual testing
 
-These checks apply to `ambient-assistant` after `./deploy.sh create` or `./deploy.sh update`, and after the agent is installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
+These checks apply to `ambient-assistant` after it has been uploaded and installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
 
 Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Ambient Assistant** is listed. The agent log shows which connector tools ran.
 
@@ -68,37 +68,40 @@ Use Email, Docs, or https://textarea.org. If no underline appears, open the Supe
 
 ## Manual deployment
 
-`./deploy.sh` reads the listing name and description from the agent's `agent.json`. It keeps the API token in `.coda.json` at this plugin root. Each agent's server ID stays in that agent's `.coda-pack.json`.
+Run these commands from this directory. The first registration stores the API token in `.coda.json` here. `packs create` writes `.coda-pack.json` next to the `agent.ts` it uploads.
 
-The first `create` opens a browser so you can register a Superhuman token. Later commands reuse `.coda.json`.
+Register once:
 
-`./deploy.sh update` makes a new version available to the account that uploaded it. `npx packs release` is a separate step when that version should be installable more broadly. The script does not release.
+```bash
+npx packs register --open
+```
+
+In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI.
 
 ### Add a new agent
 
-1. Create a sibling directory containing `agent.ts` and `agent.json`.
-2. `agent.json` must include `name` and `description`.
-3. Run:
+Create the agent on the server once, then upload its source:
 
 ```bash
-./deploy.sh create <agent>
+npx packs create ambient-assistant/agent.ts \
+  --name "Ambient Assistant" \
+  --description "Shows current Amplitude context beside customer, metric, experiment, and product claims while you write."
+
+npx packs upload ambient-assistant/agent.ts --notes "Initial version."
 ```
 
-The script validates, builds, runs `packs create` once, and uploads the initial version. It refuses to create an agent that already has `.coda-pack.json`.
+For another agent, use that agent's `agent.ts` path and its own name and description. Run `packs create` once per agent. A second run stores a different server ID in `.coda-pack.json`.
 
-4. Commit the new `.coda-pack.json`.
-5. Open https://go.superhuman.com, browse agents, and install the agent by the name in `agent.json`.
-6. On the agent settings screen, connect the Amplitude connector.
+Commit the new `.coda-pack.json`.
+
+Open https://go.superhuman.com, browse agents, and install **Ambient Assistant**. On the agent settings screen, connect the Amplitude connector.
 
 ### Update an existing agent
 
-1. Edit that agent's `agent.ts`.
-2. Run:
-
 ```bash
-./deploy.sh update <agent> "Describe the change."
+npx packs upload ambient-assistant/agent.ts --notes "Describe the change."
 ```
 
-The script validates, builds, and uploads a new version. It does not run `packs create`. Running `packs create` again would store a different server ID in `.coda-pack.json`.
+Do not run `packs create` again.
 
-3. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
+Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
