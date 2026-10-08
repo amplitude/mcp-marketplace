@@ -1,51 +1,99 @@
+// ------------------------------------------------------------------------------------------------
+// OVERVIEW
+// ------------------------------------------------------------------------------------------------
+// This agent is designed to act as a helpful assistant who provides just-in-time
+// context-aware information in response to a user's writing. The scope of this context is limited
+// to questions that can be confidently answered via Amplitude.
+// ------------------------------------------------------------------------------------------------
+
+// Import necessary modules.
 import * as sdk from '@codahq/packs-sdk';
 
-// This file is the Ambient Assistant agent inside the Amplitude Superhuman plugin.
-// The early-access SDK still requires the exported builder to be named `pack`.
+// Instantiate a new agent.
 const agent = sdk.newAgent();
+
+// Export the agent. The early-access SDK still requires the exported builder to be named `pack`.
 export const pack = agent;
 
-// Published Amplitude connector: https://superhuman.com/store/connectors/amplitude-56421
-const AmplitudeConnectorId = 56421;
 
-agent.setInstructions(`
-Look at the writing in front of the user. When it names something current Amplitude data can clarify, show one informational card beside that reference.
+// ------------------------------------------------------------------------------------------------
+// TOOLS
+// ------------------------------------------------------------------------------------------------
+// To be effective, an agent needs access to tools that it can use to react to the user's writing.
+// Available tools include Superhuman Docs, Superhuman Mail, Superhuman MCP connectors, and web
+// search. Some tools (Superhuman Docs, Superhuman Mail) double as trigger surfaces -- see below.
+// ------------------------------------------------------------------------------------------------
 
-A reference qualifies when it is specific and at least one of these is true:
-- It names a customer or account.
-- It names a product feature whose usage can be checked.
-- It names an Amplitude metric, chart, or dashboard.
-- It names an experiment.
-- It names a release.
-- It states a product-performance claim, such as adoption, conversion, errors, or retention.
-
-For each distinct reference:
-1. Use the Amplitude connector to retrieve the current fact that matches it, within the signed-in user's permissions.
-2. Prefer a saved chart or dashboard over a new query.
-3. Show one informational card next to the reference. Include:
-   - the finding, using numbers returned by Amplitude
-   - the time window that finding covers
-   - a link to the chart, dashboard, or other Amplitude source
-4. When the current day is only partly complete, say that the number is partial.
-5. When the reference cannot be matched confidently, or Amplitude returns nothing, show no card.
-
-Do not rewrite the user's text.
-Do not show a second card for the same reference.
-Do not create, edit, or delete anything in Amplitude.
-Do not invent customers, metrics, events, or results.
-`);
-
+// Enumerate the necessary tools that the agent needs access to.
 agent.setTools({
-  connectors: [{packId: AmplitudeConnectorId}],
+  connectors: [
+    {packId: 56421} // https://superhuman.com/store/connectors/amplitude-56421
+  ]
 });
 
+
+// ------------------------------------------------------------------------------------------------
+// TRIGGERS
+// ------------------------------------------------------------------------------------------------
+// This agent is designed to act in response to the user's writing instead of at the user's
+// direction. Watching and waiting for an opportunity to share information that the user did not
+// know to ask for is how this agent adds value.
+// ------------------------------------------------------------------------------------------------
+
+// Set an ambient always-on trigger. Take care to avoid fatiguing the user with low-value context.
 agent.setDefaultWhileWritingTrigger({
   condition: `
-The visible writing includes a specific customer or account, product feature, Amplitude metric or chart, experiment, release, or product-performance claim for which current Amplitude data could provide useful context.
+The visible writing includes a claim that can be confidently fact-checked with Amplitude data. Such claims include:
+  - Assertions about common product analytics metrics (conversion rate, retention rate, active user count, etc.)
+  - Assertions about product features (new feature adoption, feature usage, feature effectiveness, etc.)
+  - Assertions about Amplitude metrics, charts, or dashboards
+  - Assertions about experiments or releases
 `,
   assistMode: sdk.ContextualTriggerAssistMode.Proactive,
   decorationStyle: sdk.ContextualTriggerDecorationStyle.Underline,
-  surfaces: [sdk.ContextualTriggerSurface.Docs, sdk.ContextualTriggerSurface.Email],
-  // Hostnames only. The SDK rejects schemes and paths.
-  blockedDomains: ['amplitude.com', 'analytics.amplitude.com', 'app.amplitude.com', 'app.eu.amplitude.com'],
+  surfaces: [
+    sdk.ContextualTriggerSurface.Docs,
+    sdk.ContextualTriggerSurface.Email
+  ],
+  blockedDomains: [ // Don't trigger on Amplitude properties. Hostnames only; the SDK rejects schemes and paths.
+    'amplitude.com',
+    'analytics.amplitude.com',
+    'app.amplitude.com',
+    'app.eu.amplitude.com'
+  ]
 });
+
+
+// ------------------------------------------------------------------------------------------------
+// INSTRUCTIONS
+// ------------------------------------------------------------------------------------------------
+// Once triggered, the agent needs to know what to do. Instructions should be written carefully to
+// not overlap with triggers so as to avoid conflicts
+// ------------------------------------------------------------------------------------------------
+
+// Set instructions for what the agent should do when triggered.
+agent.setInstructions(`
+Obey the following ground rules at all times:
+  - Do not rewrite the user's text.
+  - Do not create, edit, or delete anything in Amplitude.
+  - Do not fabricate customers, metrics, events, results, or insights.
+
+Respond to the user's writing with the following steps:
+  1. Identify the claim made in the user's writing.
+  2. Search Amplitude for evidence that supports or refutes the claim. Evidence should be prioritized as follows:
+      i. Official preconfigured pages. These include the following wildcard Amplitude URLs:
+          - */analytics/{org}/space/product-analytics/*
+          - */analytics/{org}/space/web-analytics/*
+          - */analytics/{org}/space/ecommerce-analytics/*
+          - */agent-analytics/{org}/*
+          - */analytics/{org}/session-replay/*
+          - */ai-feedback/{org}/*
+          - */experiment/{org}/*
+          - */guides-surveys/{org}/*
+      ii.Content that has been marked as official. I.e., content that appears in the following Amplitude search URL: */analytics/{org}/search?official+content=true
+      iii. Governed metrics. I.e., metrics from the following Amplitude URL: */analytics/{org}/metrics
+      iv. Popular content.
+      v. Everything else.
+  3. Assess your confidence in the evidence you gathered. Score your confidence from 0% to 100%.
+  4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return a summary of the evidence you gathered along with your confidence score.
+`);
