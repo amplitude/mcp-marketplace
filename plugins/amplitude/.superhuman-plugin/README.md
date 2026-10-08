@@ -1,167 +1,104 @@
-# Amplitude context plugin
+# Amplitude x Superhuman
 
-Developer-facing Superhuman plugin for the Amplitude context agent. The agent watches Email and Docs while someone is writing. When the text names a customer, feature, metric, chart, experiment, release, or product-performance claim, it shows one informational card with current Amplitude data.
+This directory is the Amplitude plugin for Superhuman. A plugin is the developer-facing shipping unit. It is not a user-facing product surface.
 
-The Amplitude connector is already published and is not defined in this directory:
+The plugin holds one or more agents. Each agent is a sibling directory with its own instructions, trigger, and server ID. Agents in this plugin use the published Amplitude connector:
 
 - Listing: https://superhuman.com/store/connectors/amplitude-56421
 - Connector ID: `56421`
 
-This directory is the shipping unit. Superhuman calls that unit a plugin. It contains the agent and declares the connector the agent may use.
+`ambient-assistant/` is the agent that exists today. It watches Email and Docs while someone is writing. When the text names a customer, feature, metric, chart, experiment, release, or product-performance claim, it shows one informational card with current Amplitude data.
 
-## Legacy SDK names
+Add another agent by creating a sibling directory with `agent.ts` and `agent.json`, then running `./deploy.sh create <agent>`. Do not add a second agent to an existing `agent.ts`. One upload registers one agent.
 
-The early-access toolchain still uses the former "pack" vocabulary. Those names stay only where the SDK requires them:
+## Superhuman lexicon
 
-| In this repository | Required by the current SDK |
+Superhuman uses three names:
+
+| Term | Meaning |
 | --- | --- |
-| `plugin.ts` | `export const pack` |
-| Amplitude connector ID `56421` | `packId` |
-| `npx packs …` | `@codahq/packs-sdk` and the `packs` command |
-| Server link created by `packs create` | `.coda-pack.json` |
+| Plugin | Developer-facing package that bundles connectors, agents, or both. This directory is the plugin. |
+| Agent | A workflow with instructions and triggers. `ambient-assistant/` is one agent. |
+| Connector | Tools an agent can call. This plugin uses the Amplitude connector and does not define a new one. |
 
-## Requirements
+**Pack** is the retired name for this shipping unit. The early-access toolchain has not finished the rename, so these identifiers remain:
+
+| Current meaning | Identifier the SDK still requires |
+| --- | --- |
+| Agent source | `export const pack` inside `agent.ts` |
+| Connector ID `56421` | `packId` |
+| `./deploy.sh` | `npx packs` and `@codahq/packs-sdk` |
+| An agent's server ID | `.coda-pack.json` |
+
+`.coda.json` is the API token file. It is a credential, not the agent's server ID.
+
+## Local development
+
+Requirements:
 
 - Node.js 22 or newer
-- A Superhuman account that can create plugins
-- The Amplitude connector connected in Superhuman Go after the agent is installed
-
-## Local checks
+- A Superhuman account that can create agents
 
 From this directory:
 
 ```bash
 npm install
-npm run validate
-npm run build
+./deploy.sh validate ambient-assistant
+./deploy.sh build ambient-assistant
 ```
 
-`validate` imports the agent and checks the SDK definition. `build` compiles it locally. Neither command contacts Amplitude or runs the while-writing behavior.
-
-## Publish
-
-Register a token once in this directory. The command stores it in `.coda.json`, which is gitignored.
-
-```bash
-npx packs register --open
-```
-
-Create the remote plugin once. The CLI writes `.coda-pack.json` with the new plugin's server ID. Commit that file so later uploads target the same plugin.
-
-```bash
-npx packs create plugin.ts \
-  --name "Amplitude Context" \
-  --description "Shows current Amplitude context beside customer, metric, experiment, and product claims while you write."
-```
-
-Upload a revision after each change to `plugin.ts`. Each upload creates a new version.
-
-```bash
-npx packs upload plugin.ts --notes "Initial version."
-```
-
-Installed copies keep the triggers and tool grants they received at install time. After an upload changes the trigger or the connector grant, reinstall the agent to pick up that change.
-
-## Install
-
-1. Open https://go.superhuman.com.
-2. In the Agents section, browse agents and search for **Amplitude Context**.
-3. Open it and install it.
-4. On the agent settings screen, connect the Amplitude connector.
+`validate` checks the agent definition. `build` compiles it. Neither command contacts Amplitude or runs the while-writing trigger. Installing the agent in Superhuman Go happens after deployment.
 
 ## Manual testing
 
-Superhuman does not execute this README. After the agent is uploaded and installed, a person runs these scenarios in a writing surface and compares the result with the expected behavior.
+These checks apply to `ambient-assistant` after `./deploy.sh create` or `./deploy.sh update`, and after the agent is installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
 
-`npm run validate` and `npm run build` do not perform this check. Behavioral testing starts only after install, with the Amplitude connector connected and a project the signed-in user can read.
+Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Ambient Assistant** is listed. The agent log shows which connector tools ran.
 
-Use https://textarea.org, or an Email or Docs surface. If underlines do not appear, open the Superhuman Go writing-suggestions panel and confirm **Amplitude Context** is listed. Agent logs show which connector tools ran.
+| Scenario | Input | Expectation |
+| --- | --- | --- |
+| Named account | `Acme's adoption looks healthy this quarter.` | The agent runs without a chat request. The account name is underlined. One card states a sourced finding, the time window, and a link. The sentence is unchanged. |
+| Named metric or chart | `Weekly active users dropped after yesterday's release.` | One card cites the matching metric or chart, with the time window and a source link. The sentence is unchanged. |
+| Experiment | `The onboarding experiment should be ready to call.` | One card reports the experiment status returned by Amplitude. It does not claim a winner unless Amplitude returned that result. |
+| Unresolvable writing | `I will send the notes after lunch.` | No underline, no card, and no Amplitude write. |
+| Repeated reference | `Acme renewed. I still need to confirm Acme's usage before the call.` | One card for Acme, not two. |
+| Partial current day | A metric whose current day is still in progress. | The card says the number is partial and does not treat the day as complete. |
+| Amplitude host | On `app.amplitude.com` or `app.eu.amplitude.com`, write a sentence that names a customer or metric. | The while-writing trigger does not run. Those hosts are listed in `blockedDomains`. |
+| No writes | Any scenario above. Inspect the agent log. | The connector is not asked to create, edit, or delete Amplitude content. A confirmation dialog means a mutating tool was called. |
 
-### A named account produces one card
+## Manual deployment
 
-Input:
+`./deploy.sh` reads the listing name and description from the agent's `agent.json`. It keeps the API token in `.coda.json` at this plugin root. Each agent's server ID stays in that agent's `.coda-pack.json`.
 
-```text
-Acme's adoption looks healthy this quarter.
+The first `create` opens a browser so you can register a Superhuman token. Later commands reuse `.coda.json`.
+
+`./deploy.sh update` makes a new version available to the account that uploaded it. `npx packs release` is a separate step when that version should be installable more broadly. The script does not release.
+
+### Add a new agent
+
+1. Create a sibling directory containing `agent.ts` and `agent.json`.
+2. `agent.json` must include `name` and `description`.
+3. Run:
+
+```bash
+./deploy.sh create <agent>
 ```
 
-Expected:
+The script validates, builds, runs `packs create` once, and uploads the initial version. It refuses to create an agent that already has `.coda-pack.json`.
 
-- The agent runs without a chat request.
-- The account name is underlined.
-- One card states a sourced Amplitude finding, the time window, and a link.
-- The sentence is unchanged.
+4. Commit the new `.coda-pack.json`.
+5. Open https://go.superhuman.com, browse agents, and install the agent by the name in `agent.json`.
+6. On the agent settings screen, connect the Amplitude connector.
 
-### A named metric or chart produces one card
+### Update an existing agent
 
-Input:
+1. Edit that agent's `agent.ts`.
+2. Run:
 
-```text
-Weekly active users dropped after yesterday's release.
+```bash
+./deploy.sh update <agent> "Describe the change."
 ```
 
-Expected:
+The script validates, builds, and uploads a new version. It does not run `packs create`. Running `packs create` again would store a different server ID in `.coda-pack.json`.
 
-- One card cites the matching metric or chart from Amplitude.
-- The card includes the time window and a source link.
-- The sentence is unchanged.
-
-### An experiment reference produces one card
-
-Input:
-
-```text
-The onboarding experiment should be ready to call.
-```
-
-Expected:
-
-- One card reports the experiment status returned by Amplitude.
-- The card does not claim a winner unless Amplitude returned that result.
-
-### Unresolvable writing produces no card
-
-Input:
-
-```text
-I will send the notes after lunch.
-```
-
-Expected:
-
-- No underline.
-- No card.
-- No Amplitude write.
-
-### A repeated reference produces one card
-
-Input:
-
-```text
-Acme renewed. I still need to confirm Acme's usage before the call.
-```
-
-Expected:
-
-- One card for Acme, not two.
-
-### Partial current-day data is labeled partial
-
-Use a metric whose current day is still in progress.
-
-Expected:
-
-- The card does not treat the incomplete day as a full day.
-- The card says the number is partial.
-
-### Amplitude pages stay quiet
-
-Open a page on `app.amplitude.com` or `app.eu.amplitude.com` and write a sentence that would otherwise qualify.
-
-Expected:
-
-- The while-writing trigger does not run. Those hosts are listed in `blockedDomains`.
-
-### Writes do not run
-
-For any scenario above, confirm in the agent log that the connector was not asked to create, edit, or delete Amplitude content. A confirmation dialog during the unprompted pass means a mutating tool was called, which this agent is instructed not to do.
+3. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.

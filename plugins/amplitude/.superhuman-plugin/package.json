@@ -1,14 +1,9 @@
 {
   "name": "amplitude-superhuman-plugin",
   "private": true,
-  "description": "Superhuman plugin that ships the Amplitude context agent.",
+  "description": "Superhuman plugin that ships Amplitude agents.",
   "engines": {
     "node": ">=22"
-  },
-  "scripts": {
-    "validate": "packs validate plugin.ts",
-    "build": "packs build plugin.ts",
-    "upload": "packs upload plugin.ts"
   },
   "devDependencies": {
     "@codahq/packs-sdk": "1.18.0"

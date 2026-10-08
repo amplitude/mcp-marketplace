@@ -1,1 +1,5 @@
 .DS_Store
+plugins/amplitude/.superhuman-plugin/**/.coda.json
+plugins/amplitude/.superhuman-plugin/**/.coda-credentials.json
+plugins/amplitude/.superhuman-plugin/**/node_modules/
+plugins/amplitude/.superhuman-plugin/**/_upload_build/

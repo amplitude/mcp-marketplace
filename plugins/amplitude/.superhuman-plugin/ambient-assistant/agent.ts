@@ -1,7 +1,7 @@
 import * as sdk from '@codahq/packs-sdk';
 
-// Superhuman now calls this shipping unit a plugin. The early-access SDK still
-// requires the exported builder to be named `pack`.
+// This file is the Ambient Assistant agent inside the Amplitude Superhuman plugin.
+// The early-access SDK still requires the exported builder to be named `pack`.
 const agent = sdk.newAgent();
 export const pack = agent;
 

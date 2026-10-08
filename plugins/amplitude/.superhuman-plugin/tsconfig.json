@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": []
   },
-  "include": ["plugin.ts"]
+  "include": ["*/agent.ts"]
 }
