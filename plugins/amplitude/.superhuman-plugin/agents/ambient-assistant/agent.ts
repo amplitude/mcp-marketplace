@@ -68,7 +68,7 @@ The visible writing includes a claim that can be confidently fact-checked with A
 // INSTRUCTIONS
 // ------------------------------------------------------------------------------------------------
 // Once triggered, the agent needs to know what to do. Instructions should be written carefully to
-// not overlap with triggers so as to avoid conflicts
+// not overlap with triggers so as to avoid conflicts.
 // ------------------------------------------------------------------------------------------------
 
 // Set instructions for what the agent should do when triggered.
