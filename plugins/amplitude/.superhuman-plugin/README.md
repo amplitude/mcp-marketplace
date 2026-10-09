@@ -38,8 +38,8 @@ Instructions:
    In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.
 3. Create the agent on Superhuman's server then upload its source.
    ```bash
-   npx packs create agents/{pack-filepath}.ts --name "{Friendly Name}" --description "{Description}."
-   npx packs upload agents/{pack-filepath}.ts --notes "{Version Notes}."
+   npx packs create {pack-filepath}.ts --name "{Friendly Name}" --description "{Description}"
+   npx packs upload {pack-filepath}.ts --notes "{Version Notes}"
    ```
    This creates a `.coda-pack.ts` file in the same directory.
 
@@ -59,10 +59,10 @@ Use Email, Docs, or https://textarea.org. If no underline appears, open the Supe
 
 ## Update
 
-To update an existing agent:
-1. Repeat the upload step.
+To update an existing pack:
+1. Repeat the upload step, which includes verification. Do not run `npx packs create` again.
    ```bash
-   npx packs upload {pack-filepath}.ts --notes "{Describe the change.}"
+   npx packs upload {pack-filepath}.ts --notes "{Describe the change}"
    ```
-   Do not run `npx packs create` again.
-2. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
+2. Navigate to the [pack history](https://docs.superhuman.com/p/56421?section=history) in Superhuman. Release the latest version.
+3. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
