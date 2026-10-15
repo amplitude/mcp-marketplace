@@ -244,6 +244,13 @@ use this skill's standards.
    - Live (ingested) names can't be renamed in metadata. List each as an instrumentation change
      (High effort) with the compliant name; a display name is only a stopgap.
    - Descriptions, categories, allowed values, and required properties go on the branch.
+7. If an AI Context naming rule matches a Settings value exactly (see the casing table) and that
+   setting is `none`, end the report by recommending that an admin set it in Data → Settings.
+   Give the exact values, for example events `sentence_case` + `infinitive_noun` and properties
+   `lower_camel_case`. The Data UI checks names against Settings; it doesn't check AI Context.
+   Warn that existing names that don't match will then show as violations in the Data UI.
+   Skip this when the setting already has a value (report the conflict instead) and for rules a
+   setting can't express, such as allowed values, required properties, or prefixes.
 
 ## When Writing or Updating Metadata
 
