@@ -229,9 +229,9 @@ use this skill's standards.
 2. Report any Settings / AI Context conflict next. Conflicts are not scored.
 3. Check every event and property in scope against every rule.
 4. Write each violation in this form:
-   `<event or property>: <what's wrong>. Rule: <rule text> (<source>). Fix: <compliant value>.`
-   `<source>` is one of: Data → Settings, project AI Context, org AI Context, existing convention,
-   Amplitude default.
+   `<event or property>: <what's wrong>. Rules: <rule text> (<source>); <rule text> (<source>). Fix: <compliant value>.`
+   List every rule the item breaks, including the one that sets its severity. `<source>` is one of:
+   Data → Settings, project AI Context, org AI Context, existing convention, Amplitude default.
 5. Rank with "Scoring and Prioritizing Issues": breaking a customer-declared rule (Settings or
    AI Context) is MEDIUM impact, HIGH if it also makes the name ambiguous or splits one concept
    across names.
@@ -425,6 +425,7 @@ Default lookback: **180 days**.
 | Missing description (clear name) | LOW | Add description; deprioritize |
 | Missing category | LOW | Add category |
 | Breaks a customer-declared rule (Data → Settings or AI Context) | MEDIUM | Fix on a branch; cite the rule and its source |
+| Value outside a customer's allowed list | MEDIUM; HIGH when ingested data already uses the value | Fix the allowed values on a branch; ask what the stray value should map to |
 | Naming convention outlier (no customer rule) | LOW | Flag for future realignment |
 | Unexpected event/property | LOW | Add to plan or block after review |
 | Stale (last seen beyond lookback) | LOW | Quick win — schedule for deprecation |
