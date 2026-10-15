@@ -235,6 +235,8 @@ use this skill's standards.
 5. Rank with "Scoring and Prioritizing Issues": breaking a customer-declared rule (Settings or
    AI Context) is MEDIUM impact, HIGH if it also makes the name ambiguous or splits one concept
    across names.
+   When you rank a finding HIGH, its Rules list must include the rule that made it HIGH: for a
+   split concept, "one name per concept (Amplitude default)" on every item in the split.
 6. Propose fixes as one change set for a tracking-plan branch. After the user confirms, apply it
    to a new branch or one the user names, never to main, and leave review and merge to the
    customer.
