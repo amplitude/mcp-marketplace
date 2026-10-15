@@ -247,10 +247,11 @@ use this skill's standards.
 7. If the project's Data → Settings naming convention is `none` (no naming rule) and the AI
    Context has a naming rule that one of the casing-table values expresses exactly, end the report
    by recommending that an admin set that value in Data → Settings. Give the exact values, for
-   example events `sentence_case` + `infinitive_noun` and properties `lower_camel_case`. The Data UI checks names against Settings; it doesn't check AI Context.
-   Warn that existing names that don't match will then show as violations in the Data UI.
-   Skip this when the setting already has a value (report the conflict instead) and for rules a
-   setting can't express, such as allowed values, required properties, or prefixes.
+   example events `sentence_case` + `infinitive_noun` and properties `lower_camel_case`. The
+   Data UI checks names against Settings; it doesn't check AI Context. Warn that existing names
+   that don't match will then show as violations in the Data UI. Skip this when the setting
+   already has a value (report the conflict instead) and for rules a setting can't express, such
+   as allowed values, required properties, or prefixes.
 
 ## When Writing or Updating Metadata
 
