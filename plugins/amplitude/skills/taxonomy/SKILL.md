@@ -4,8 +4,9 @@ description: >
   Source of truth for event taxonomy generation, data auditing, and governance best practices
   in Amplitude. Use when an agent needs to create, validate, audit, score, or recommend
   improvements to event tracking plans, naming conventions, property standards, data quality,
-  or deprecation workflows. Covers naming rules, property standards, scoring frameworks,
-  safe metadata operations, deprecation procedures, and AI readiness guidance.
+  or deprecation workflows, including checking a plan against the customer's own standard
+  (Data → Settings naming conventions and AI Context). Covers naming rules, property standards,
+  scoring frameworks, safe metadata operations, deprecation procedures, and AI readiness guidance.
 ---
 
 # Taxonomy Generation & Data Auditing
@@ -14,6 +15,7 @@ description: >
 
 - User asks to create or review a tracking plan or event taxonomy
 - User wants to validate event/property naming conventions
+- User asks to audit or review a plan or branch against "our standard", their naming settings, or their AI Context
 - User needs to audit data quality (duplicates, stale events, missing metadata)
 - User asks about funnel design or event relationships
 - Agent is generating event names or property names and needs to follow standards
@@ -172,8 +174,74 @@ Frame metadata and cleanup work as AI readiness improvements. Every AI feature s
 
 ## When Reading and Analyzing (Always Safe)
 
-Reading and analysis operations carry no risk — be autonomous and decisive. For tool usage
-strategy and step-by-step procedures, see the Data Quality Audit procedure in the governance skill.
+Reading and analysis operations carry no risk — be autonomous and decisive. To audit names and
+metadata against a standard, follow "Auditing Against the Customer's Standard" below.
+
+## Whose Standard Applies
+
+Before auditing, proposing, or reviewing names, read the customer's standard from both places:
+
+- **Data → Settings naming conventions:** the workspace settings read (`eventNC`, `propertyNC`).
+  Each has a casing and, for events, a structure (see the table below), or a custom regex. The
+  Data UI enforces these. A setting that is empty or `none` is no rule.
+- **AI Context:** the org-level and project-level text from the project-context read. Project
+  context overrides org context.
+
+Apply sources in this order. A later source only fills what earlier ones leave open:
+
+| Order | Source | Governs |
+|-------|--------|---------|
+| 1 | Data → Settings | Casing and structure of event and property names |
+| 2 | AI Context (project, then org) | Everything the settings don't cover: allowed values, required properties, prefixes, abbreviations, boolean naming, description wording, categories |
+| 3 | A convention the taxonomy already follows consistently | Gaps left by 1–2 |
+| 4 | This skill's standards ("When Recommending New Instrumentation") | Anything still uncovered |
+
+Settings values, as the Data UI checks them:
+
+| Casing | Form | Example | Not allowed |
+|--------|------|---------|-------------|
+| `upper_case` | Words separated by spaces, all capitals | `PLAY SONG`, `IS PREMIUM` | Lowercase letters, `_`, `-` |
+| `lower_case` | Words separated by spaces, all lowercase | `play song` | Uppercase letters, `_`, `-` |
+| `title_case` | Words separated by spaces, each capitalized | `Song Played` | `_`, `-` |
+| `sentence_case` | Words separated by spaces, first letter capitalized | `Song played` | `_`, `-` |
+| `camel_case` | No separators, each word capitalized | `SongPlayed` | Spaces, `_`, `-` |
+| `lower_camel_case` | No separators, first word lowercase | `songPlayed` | Spaces, `_`, `-` |
+| `snake_case` | Words joined by `_`, all lowercase | `song_played` | Uppercase letters, spaces, `-` |
+| `custom` | Must match the setting's regex | | |
+
+Structure (events only): `noun_past` = `Song Played`, `past_noun` = `Played Song`,
+`infinitive_noun` = `Play Song`.
+
+Combine rules rather than picking one: apply an AI Context rule in the Settings form. With
+`upper_case`, a required `is_` boolean prefix becomes `IS ` (`IS PREMIUM`), never `IS_PREMIUM`.
+
+**If Settings and AI Context disagree on a name's casing or structure, judge names by Settings.**
+This holds when the user says "our standard" and when the AI Context calls itself the standard.
+Report the conflict once, before the findings, quoting both rules, and recommend aligning them.
+Switch to the AI Context rule only if the user tells you to after seeing the conflict.
+
+If neither source has any rule, say "No customer standard found — using Amplitude's defaults" and
+use this skill's standards.
+
+## Auditing Against the Customer's Standard
+
+1. Read both sources above. Start the report with the rules found, each tagged with its source.
+2. Report any Settings / AI Context conflict next. Conflicts are not scored.
+3. Check every event and property in scope against every rule.
+4. Write each violation in this form:
+   `<event or property>: <what's wrong>. Rule: <rule text> (<source>). Fix: <compliant value>.`
+   `<source>` is one of: Data → Settings, project AI Context, org AI Context, existing convention,
+   Amplitude default.
+5. Rank with "Scoring and Prioritizing Issues": breaking a customer-declared rule (Settings or
+   AI Context) is MEDIUM impact, HIGH if it also makes the name ambiguous or splits one concept
+   across names.
+6. Propose fixes as one change set for a tracking-plan branch. After the user confirms, apply it
+   to a new branch or one the user names, never to main, and leave review and merge to the
+   customer.
+   - Planned events and properties: rename them on the branch.
+   - Live (ingested) names can't be renamed in metadata. List each as an instrumentation change
+     (High effort) with the compliant name; a display name is only a stopgap.
+   - Descriptions, categories, allowed values, and required properties go on the branch.
 
 ## When Writing or Updating Metadata
 
@@ -196,7 +264,7 @@ strategy and step-by-step procedures, see the Data Quality Audit procedure in th
 
 ## When Recommending Cleanup or Deprecation
 
-Deprecation must always follow a phased process. For the step-by-step procedure, see the governance skill's Deprecation Workflow.
+Deprecation must always follow a phased process. For deletion-focused audits, use the `tracking-plan-audit` skill.
 
 **Never:**
 - Present delete/hide/block as immediate one-step solutions
@@ -205,6 +273,8 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 - Skip dependency checks before recommending deprecation
 
 ## When Recommending New Instrumentation
+
+These are Amplitude's defaults. Where the customer has a rule (see "Whose Standard Applies"), theirs wins.
 
 ### Event Naming Standards
 
@@ -216,7 +286,7 @@ Deprecation must always follow a phased process. For the step-by-step procedure,
 | `Form Submitted` | `Submit Form` | Noun-first = scannable, sortable |
 | `Product Added` | `product added`, `product_added`, `productAdded` | Amplitude treats different casings as separate events — always use Title Case, not snake_case or camelCase |
 
-**Consistency is the top priority.** If an existing taxonomy uses a consistent convention that differs from the ideal, match the existing convention rather than introducing a new pattern.
+**Consistency is the top priority.** If the customer has no naming rule but the taxonomy consistently uses a convention that differs from the ideal, match it rather than introducing a new pattern.
 
 **User perspective, not system perspective:**
 - `Message Sent` (user sent) not `Message Delivered` (system delivered)
@@ -296,7 +366,7 @@ Three dimensions:
 | Level | Points | Definition | Examples |
 |-------|--------|------------|---------|
 | HIGH | 3 | Name is ambiguous — analyst cannot reliably interpret it | Jargon, acronyms, blob words, confusable names |
-| MEDIUM | 2 | Name is interpretable but taxonomy is messier for it | Convention outliers, unexpected events not on plan |
+| MEDIUM | 2 | Name is interpretable but taxonomy is messier for it | Breaking the customer's declared standard, convention outliers, unexpected events not on plan |
 | LOW | 1 | Name is clear; issue is missing polish | Missing description when name is self-explanatory |
 
 ### 2. Event Importance
@@ -327,6 +397,7 @@ Three dimensions:
 - Hide events (NOT block or delete)
 - Set up Automated Tasks
 - Add AI Context to project settings
+- Tracking-plan edits on a branch the customer reviews and merges (planned renames, allowed values, required properties)
 
 **Not allowed:**
 - Blocking, deleting, merging, or transforming events
@@ -353,7 +424,8 @@ Default lookback: **180 days**.
 | Duplicate property across event + user scope | MEDIUM | Clarify correct source of truth |
 | Missing description (clear name) | LOW | Add description; deprioritize |
 | Missing category | LOW | Add category |
-| Naming convention outlier | LOW | Flag for future realignment |
+| Breaks a customer-declared rule (Data → Settings or AI Context) | MEDIUM | Fix on a branch; cite the rule and its source |
+| Naming convention outlier (no customer rule) | LOW | Flag for future realignment |
 | Unexpected event/property | LOW | Add to plan or block after review |
 | Stale (last seen beyond lookback) | LOW | Quick win — schedule for deprecation |
 | Single-day (first seen = last seen) | LOW | Quick win — likely test; verify first |
@@ -458,5 +530,5 @@ on names recorded in this skill.
 
 # Workflows
 
-For step-by-step execution procedures (data quality audits, governance analyses, event verification,
-deprecation workflows, tracking plan generation, tool usage strategy), see the **governance** skill.
+- Auditing names and metadata against a standard: "Auditing Against the Customer's Standard" (Layer 2).
+- Deletion and cleanup audits: the `tracking-plan-audit` skill.
