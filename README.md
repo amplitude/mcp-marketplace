@@ -72,7 +72,7 @@ Then run `/mcp` from inside Claude Code, select `plugin:amplitude:amplitude`, an
 
 ## Amplitude Plugin
 
-The amplitude plugin turns your AI assistant into an expert product analyst and instrumentation partner. Skills are organized into seven areas:
+The amplitude plugin turns your AI assistant into an expert product analyst and instrumentation partner. Skills are organized into six areas:
 
 ### Core Analytics
 
@@ -135,12 +135,6 @@ For deletion cleanup, ask: “Audit this project for stale events and properties
 | `daily-brief` | Morning briefing of the most important changes across your Amplitude instance |
 | `weekly-brief` | Weekly recap of trends, wins, and risks to share with your team or leadership |
 
-### Bonus
-
-| Skill | What it does |
-| --- | --- |
-| `what-would-lenny-do` | Answers product strategy questions by searching Lenny Rachitsky's archive (requires `lennysdata` MCP) |
-
 ---
 
 ## Grok Bot
@@ -197,7 +191,6 @@ plugins/
       taxonomy/
       tracking-plan-audit/
       weekly-brief/
-      what-would-lenny-do/
 ```
 
 ---
