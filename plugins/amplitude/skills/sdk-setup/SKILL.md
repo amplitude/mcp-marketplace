@@ -147,8 +147,9 @@ initAll('<AMPLITUDE_API_KEY>', {
 Notes:
 
 - `initAll` returns a promise; you do not need to await it to finish the task.
-- `serverZone: 'EU'` must be added only if the account is EU. Ask if unclear;
-  default to US.
+- `serverZone: 'EU'` must be added only when you were given `server_zone: EU`.
+  The setup flow resolves residency server-side; never ask the customer and
+  never guess. Omit the option entirely for US — that is the SDK default.
 - `autocapture` accepts `true` or an options object. Fields include
   `pageViews`, `sessions`, `elementInteractions`, `frustrationInteractions`,
   `networkTracking`, and `webVitals`.
