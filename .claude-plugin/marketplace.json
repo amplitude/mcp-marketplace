@@ -41,6 +41,30 @@
       "category": "analytics"
     },
     {
+      "name": "wave",
+      "source": "./plugins/wave",
+      "description": "Run the Amplitude Wave self-improving product loop from codebase-validated opportunity to review-ready PR, optional experiment, measured outcome, and workflow refinement",
+      "version": "1.0.0",
+      "author": {
+        "name": "Amplitude",
+        "email": "support@amplitude.com",
+        "url": "https://amplitude.com"
+      },
+      "homepage": "https://github.com/amplitude/mcp-marketplace",
+      "repository": "https://github.com/amplitude/mcp-marketplace",
+      "license": "MIT",
+      "keywords": [
+        "amplitude",
+        "wave",
+        "opportunities",
+        "product",
+        "automation",
+        "experiments",
+        "self-improving"
+      ],
+      "category": "productivity"
+    },
+    {
       "name": "amplitude-experimental",
       "source": "./plugins/amplitude-experimental",
       "description": "Experimental skills from Amplitude",
