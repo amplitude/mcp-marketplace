@@ -49,18 +49,23 @@ Amplitude:search({
 ```
 3. **Filtering rules — include experiments that are:**
    - **Running and not stale:** Any experiment in a running state that is NOT marked as stale. Stale experiments have gone idle and should be excluded.
+   - **Potentially enabled but not started:** Keep feature-experiment candidates marked enabled or "Active flag" even when they are not marked Running. If search omits enabled state or analysis dates, fetch their metadata before deciding whether to exclude them.
    - **Recently decided:** Completed experiments that have a decision recorded AND were modified within the last 14 days. These are worth reviewing to confirm the decision or share learnings.
-4. **Exclude:** Drafts, disabled experiments, and stale experiments.
+4. **Exclude:** Ordinary drafts, disabled experiments, and stale experiments. First check enabled feature experiments for an unset analysis start date; do not discard these as drafts, non-running, or stale. Standalone release flags and survey/nudge deployments do not require an experiment analysis start date.
 
 ---
 
 ### Step 2: Fetch Metadata, Metric Names & Primary Results
 
 1. Call `Amplitude:get_experiments` in batches of 3-5 IDs (only the filtered set from Step 1).
-2. Extract: state, dates/duration, variants, metric IDs (primary where recommendation=true), decision, owner.
-3. Apply the filtering rules from Step 1 again using the detailed metadata (some fields like stale status or decision may only be available here).
+2. Extract: state, `enabled`, `experimentStartDate`, `experimentEndDate`, delivery method/type, variants, metric IDs (primary where recommendation=true), decision, owner. Derive duration from the verified analysis start date, never creation or flag-enable time.
+3. Apply the filtering rules from Step 1 again using the detailed metadata. For SDK/feature experiments:
+   - **Enabled with `experimentStartDate: null`:** State **Not started**, verdict **Needs start**. Include under **Needs setup** with the experiment URL and owner (when available). Explain that flag enablement controls delivery but does not start analysis; direct the user to **Start Experiment** in the UI.
+   - **Start date absent or metadata read failed:** Report **Start unverified** / **Fix config**; re-fetch or surface the read limitation rather than treating it as a running experiment.
+   - **Future start date:** State **Scheduled**, verdict **Monitor**. Include under **Keep watching** with the scheduled date; do not analyze until it starts.
+   - Do not infer start from enabled state or traffic, retry enablement to set a date, or invent lifecycle actions absent from the connected tool schema.
 4. Resolve metric names via `Amplitude:search({ entityTypes: ["METRIC"], appIds: [projectId], queries: [], limitPerQuery: 50 })`. Build `{ id: name }` mapping.
-5. For experiments that have metrics configured, call `Amplitude:query_experiment({ id: "<id>" })` (no metricIds) to get primary metric results and data quality flags. This data feeds both the summary table and the deep-dives.
+5. Only for running/recently completed feature experiments with a verified past analysis start date and metrics configured, call `Amplitude:query_experiment({ id: "<id>" })` (no metricIds) to get primary metric results and data quality flags. This data feeds both the summary table and the deep-dives.
 
 **CRITICAL: Never show raw metric IDs to the user.** If a metric name can't be resolved, describe it by its role (e.g., "primary metric", "guardrail metric") — do NOT display strings like "rrgtky08" or "Metric gvgb5efj". Metric IDs are internal identifiers that mean nothing to a human reader.
 
@@ -82,9 +87,9 @@ Date: [Today] | Project: [Name] ([ID])
 
 **Column definitions:**
 - **Experiment** — Human-readable name (NOT a URL, NOT an ID)
-- **State** — Running or Completed
-- **Duration** — Days since experiment started
-- **Lift** — Primary metric relative lift if available, "—" if no data. For multi-variant, show range (e.g., "-17% to -20%")
+- **State** — Running, Completed, Not started, Start unverified, or Scheduled
+- **Duration** — Days since the verified analysis start; "—" when not started, unverified, or scheduled
+- **Lift** — Primary metric relative lift if available, "—" if no data or the experiment has not started/is unverified/scheduled. For multi-variant, show range (e.g., "-17% to -20%")
 - **Verdict** — What to do (see vocabulary below)
 
 **Verdict vocabulary:**
@@ -98,6 +103,7 @@ Date: [Today] | Project: [Name] ([ID])
 | **Decided: Ship** | Recently completed, team decided to ship |
 | **Decided: Don't ship** | Recently completed, team decided not to ship |
 | **Fix config** | Query error, broken exposure event, or severely imbalanced traffic |
+| **Needs start** | Enabled feature experiment with a null analysis start date — use Start Experiment in the UI |
 | **Needs metrics** | Running without metrics — can't evaluate |
 | **N/A** | Survey/nudge deployment, not a feature experiment |
 
@@ -246,9 +252,9 @@ Call `Amplitude:get_feedback_insights` with experiment-related keywords. Report 
 | Guardrails | Clean | 1 regression needs fixing | Clean or not enough data | Significant regression on critical metric |
 | Experiment state | Completed | Completed | Running | Completed or running |
 
-#### 4b: Running Experiments (monitoring, no action needed)
+#### 4b: Running or Scheduled Experiments (monitoring, no action needed)
 
-For experiments with **Monitor** verdict, provide a one-line status each:
+For experiments with **Monitor** verdict, provide a one-line status each. For scheduled experiments, show the scheduled date and link instead of duration, sample sizes, or results.
 
 ```
 ---
@@ -276,7 +282,7 @@ If the experiment was shipped without metrics or without statistical significanc
 
 #### 4d: Needs Setup
 
-For experiments with **Fix config**, **Needs metrics**, or **N/A** verdict:
+For experiments with **Needs start**, **Fix config**, **Needs metrics**, or **N/A** verdict:
 
 ```
 ---
@@ -293,7 +299,7 @@ Each experiment appears in exactly one detail section. Do NOT list an experiment
 ## Edge Cases
 
 - **No experiments:** Report clearly, suggest checking other projects
-- **No data (<24hrs):** Note the experiment just started, check back in 7 days
+- **No data (<24hrs):** Only say the experiment just started when its analysis start date confirms this. Enabled with a null start date is **Needs start**, not an experiment waiting to collect data.
 - **SRM detected:** Lead with this in data quality — it can invalidate everything else
 - **10+ experiments:** Summary table for all, deep-dive top 3, offer to analyze more
 - **Response too large / saved to disk:** Extract `summary` + validity flags only
