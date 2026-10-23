@@ -56,6 +56,13 @@ Use `Amplitude:get_experiments` with experiment ID to capture:
 - Attached metrics: primary (recommendation=true), secondary, guardrails (stores as IDs)
 - Bucketing strategy
 
+**Verify experiment start before analysis or launch claims:**
+- For SDK/feature experiments, enabling the flag controls variant delivery; it does not set the experiment's analysis start date. An enabled flag alone also does not prove traffic is being allocated.
+- After creating an experiment or making a user-requested enable/rollout change, read it back using `Amplitude:get_experiments` with the experiment ID. Check `enabled`, `experimentStartDate`, and `experimentEndDate`; the flag-update response alone omits the analysis start date.
+- If `experimentStartDate` is null, report **"Experiment analysis has not started"**. If the date is missing from the response or the read fails, report **"Experiment start could not be verified"**. Do not claim the experiment is running, calculate runtime from creation/enable time, or draw lift/ship conclusions in either case. A future start date is scheduled, not running.
+- For an unstarted experiment, return its Amplitude URL and direct the user to **Start Experiment** in the UI, then re-read the experiment when they return. Do not invent start/schedule/stop actions or writable date fields absent from the connected tool schema, or retry `enabled=true` as a way to start analysis.
+- Apply this check to feature experiments, not standalone release flags or survey/nudge deployments. Experiments with a verified past start date continue through the normal running/completed validation below.
+
 **Get metric names:**
 - Extract metric IDs from the experiment response (e.g., "c4pn8fkv")
 - **CRITICAL: Amplitude MCP cannot retrieve metric names by ID directly**
@@ -523,5 +530,6 @@ If user wants to **design a new experiment**, guide them through:
 4. **Create experiment:**
    - Use `Amplitude:create_experiment` with projectIds, variants, and metrics
    - Return experiment ID, URL, and deployment key for engineering
+   - Read back and report delivery state and analysis start separately using the start verification above; creation or flag enablement alone is not a completed experiment launch.
 
 For detailed setup guidance, consider using the `setup-experiment-and-flags` skill.
