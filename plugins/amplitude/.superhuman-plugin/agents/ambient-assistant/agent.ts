@@ -51,10 +51,6 @@ The visible writing includes a claim that can be confidently fact-checked with A
 `,
   assistMode: sdk.ContextualTriggerAssistMode.Proactive,
   decorationStyle: sdk.ContextualTriggerDecorationStyle.Underline,
-  surfaces: [
-    sdk.ContextualTriggerSurface.Docs,
-    sdk.ContextualTriggerSurface.Email
-  ],
   blockedDomains: [ // Don't trigger on Amplitude properties. Hostnames only; the SDK rejects schemes and paths.
     'amplitude.com',
     'analytics.amplitude.com',
@@ -80,20 +76,7 @@ Obey the following ground rules at all times:
 
 Respond to the user's writing with the following steps:
   1. Identify the claim made in the user's writing.
-  2. Search Amplitude for evidence that supports or refutes the claim. Evidence should be prioritized as follows:
-      i. Official preconfigured pages. These include the following wildcard Amplitude URLs:
-          - */analytics/{org}/space/product-analytics/*
-          - */analytics/{org}/space/web-analytics/*
-          - */analytics/{org}/space/ecommerce-analytics/*
-          - */agent-analytics/{org}/*
-          - */analytics/{org}/session-replay/*
-          - */ai-feedback/{org}/*
-          - */experiment/{org}/*
-          - */guides-surveys/{org}/*
-      ii.Content that has been marked as official. I.e., content that appears in the following Amplitude search URL: */analytics/{org}/search?official+content=true
-      iii. Governed metrics. I.e., metrics from the following Amplitude URL: */analytics/{org}/metrics
-      iv. Popular content.
-      v. Everything else.
-  3. Assess your confidence in the evidence you gathered. Score your confidence from 0% to 100%.
-  4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return a summary of the evidence you gathered along with your confidence score.
+  2. Search Amplitude for evidence that supports or refutes the claim. 
+  3. Assess your confidence in the evidence you gathered. Official/popular content should be considered more trustworth than unofficial/unpopular content. (Note: some users may choose to test with an Amplitude sandbox environment, which should not be disregarded as "unofficial" by default.) Score your confidence from 0% to 100%.
+  4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return a summary of the evidence you gathered along with your confidence score and your reasoning for your confidence.
 `);
