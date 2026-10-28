@@ -47,7 +47,7 @@ Instructions:
 
 These checks apply to `ambient-assistant` after it has been uploaded and installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
 
-Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Ambient Assistant** is listed. The agent log shows which connector tools ran.
+Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Amplitude Ambient Assistant** is listed. The [agent log](https://docs.superhuman.com/brain/agent/setup/70949) shows the usage history for the authenticated Superhuman user. See Superhuman's [troubleshooting tips](https://docs.superhuman.com/@hector/go-agent-development-guide/troubleshooting-34) for additional testing advice.
 
 | Scenario | Input | Expectation |
 | :--- | :--- | :--- |

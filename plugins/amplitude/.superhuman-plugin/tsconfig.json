@@ -2,8 +2,8 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "target": "es2022",
     "esModuleInterop": true,
     "skipLibCheck": true,
