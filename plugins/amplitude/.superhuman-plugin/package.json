@@ -6,13 +6,13 @@
     "node": "22.x"
   },
   "devDependencies": {
-    "@codahq/packs-sdk": "1.18.0"
+    "@codahq/packs-sdk": "1.18.4"
   },
   "overrides": {
     "express": "4.22.3"
   },
   "allowScripts": {
-    "esbuild@0.25.0": true,
+    "esbuild@0.28.2": true,
     "isolated-vm@6.0.2": true
   }
 }
