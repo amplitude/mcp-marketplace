@@ -44,7 +44,7 @@ agent.setTools({
 agent.setDefaultWhileWritingTrigger({
   condition: `
 The visible writing includes a claim that can be confidently fact-checked with Amplitude data. Such claims include:
-  - Assertions about common product analytics metrics (conversion rate, retention rate, active user count, etc.)
+  - Assertions about common product analytics metrics (conversion rate, retention rate, user count, etc.)
   - Assertions about product features (new feature adoption, feature usage, feature effectiveness, etc.)
   - Assertions about Amplitude metrics, charts, or dashboards
   - Assertions about experiments or releases
@@ -74,9 +74,9 @@ This seems like a fact that could be supported or refuted by your product usage 
 
 // Create a response template for confident findings.
 const confidentEvidence = `
-{Summarize the evidence you gathered and how it supports or contradicts the claim in one to three sentences.}
+{In the first paragarph, summarize the evidence you gathered and how it supports or contradicts the claim in one to three sentences.}
 
-{Explain your confidence in the evidence you outlined above, including your numerical confidence score and your reasoning behind it.}
+{In the second paragraph, explain your confidence in the evidence you outlined above, including your numerical confidence score and your reasoning behind it.}
 `
 
 // Set instructions for what the agent should do when triggered.
