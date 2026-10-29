@@ -64,5 +64,7 @@ To update an existing pack:
    ```bash
    npx packs upload {pack-filepath}.ts --notes "{Describe the change}"
    ```
-2. Navigate to the [pack history](https://docs.superhuman.com/p/56421?section=history) in Superhuman. Release the latest version.
+2. Navigate to the pack history in Superhuman and release the latest version. (Note: the ability to release via CLI is on Superhuman's roadmap.)
+   - [Amplitude](https://docs.superhuman.com/p/56421?section=history) MCP connector
+   - [Amplitude Ambient Assistant](https://docs.superhuman.com/p/70949?section=history) agent
 3. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
