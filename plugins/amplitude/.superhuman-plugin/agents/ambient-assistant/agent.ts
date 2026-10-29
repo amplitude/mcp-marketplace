@@ -67,18 +67,6 @@ The visible writing includes a claim that can be confidently fact-checked with A
 // not overlap with triggers so as to avoid conflicts.
 // ------------------------------------------------------------------------------------------------
 
-// Create a response template for when the relevant project is unclear.
-const ambiguousProject = `
-This seems like a fact that could be supported or refuted by your product usage data. However, I'm unsure which Amplitude project to use. Please clarify.
-`
-
-// Create a response template for confident findings.
-const confidentEvidence = `
-{In the first paragarph, summarize the evidence you gathered and how it supports or contradicts the claim in one to three sentences.}
-
-{In the second paragraph, explain your confidence in the evidence you outlined above, including your numerical confidence score and your reasoning behind it.}
-`
-
 // Set instructions for what the agent should do when triggered.
 agent.setInstructions(`
 Obey the following ground rules at all times:
@@ -89,7 +77,7 @@ Obey the following ground rules at all times:
 
 Respond to the user's writing with the following steps:
   1. Identify the claim made in the user's writing.
-  2. Search Amplitude for evidence that supports or contradicts the claim. Contradictory evidence need not present a clear counter-narrative, but can merely poke holes in the user's claim. Prioritize evidence from official/popular sources over evidence from unofficial/unpopular sources. If it's unclear which Amplitude project to use, return the following message: "${ambiguousProject}".
+  2. Search Amplitude for evidence that supports or contradicts the claim. Contradictory evidence need not present a clear counter-narrative, but can merely poke holes in the user's claim. Prioritize evidence from official/popular sources over evidence from unofficial/unpopular sources. If it's unclear which Amplitude project to use, return the following message: "This seems like a fact that could be supported or refuted by your product usage data. However, I'm unsure which Amplitude project to use. Please clarify."
   3. Assess your confidence that the evidence you gathered is correct, accurate, complete, and reliable. Official/popular content should be considered more trustworthy than unofficial/unpopular content. (Note: some users may choose to test with an Amplitude sandbox environment, which should not be disregarded as "unofficial" by default.) Score your confidence in your analysis of the evidence from 0% to 100%.
-  4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return results in the following format: "${confidentEvidence}".
+  4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return results formatted as two paragraphs: the first paragraph presents the evidence and its relevants, the second paragraph explains your confidence (including your numerical confidence score) and your reasoning behind it.
 `);
