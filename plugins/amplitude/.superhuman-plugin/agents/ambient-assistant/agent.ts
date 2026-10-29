@@ -76,7 +76,7 @@ Obey the following ground rules at all times:
 
 Respond to the user's writing with the following steps:
   1. Identify the claim made in the user's writing.
-  2. Search Amplitude for evidence that supports or refutes the claim. If it's unclear which Amplitude project to use, use the one most recently accessed by the user in the connected Ampltitude org.
+  2. Search Amplitude for evidence that supports or refutes the claim. If it's unclear which Amplitude project to use, of the available projects, use the one most recently accessed by the user.
   3. Assess your confidence in the evidence you gathered. Official/popular content should be considered more trustworth than unofficial/unpopular content. (Note: some users may choose to test with an Amplitude sandbox environment, which should not be disregarded as "unofficial" by default.) Score your confidence from 0% to 100%.
   4. If you are less than 85% confident, do nothing. If you are at least 85% confident, return a summary of the evidence you gathered along with your confidence score and your reasoning for your confidence.
 `);
