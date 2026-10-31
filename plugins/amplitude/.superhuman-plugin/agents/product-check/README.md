@@ -11,7 +11,7 @@ This agent ambiently verifies product usage claims made in a user's writing agai
 
 - [Agent file](agent.ts) -- modify as needed.
 - [Coda-pack file](.coda-pack.json) -- do not modify!
-- [Public listing](TBD)
+- [Public listing](https://docs.superhuman.com/packs/product-check-70949)
 - [Internal listing](https://docs.superhuman.com/p/70949?section=listing) -- requires admin access
 - [Installation settings and logs](https://docs.superhuman.com/brain/agent/setup/70949) -- scoped to the authenticated user only
 - [Version history](https://docs.superhuman.com/p/70949?section=history)
