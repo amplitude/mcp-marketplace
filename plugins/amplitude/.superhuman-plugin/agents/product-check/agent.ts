@@ -7,7 +7,7 @@
 // ------------------------------------------------------------------------------------------------
 
 // Import necessary modules.
-import * as sdk from '@codahq/packs-sdk';
+import * as sdk from '@superhuman/plugins-sdk';
 
 // Instantiate a new agent.
 const agent = sdk.newAgent();

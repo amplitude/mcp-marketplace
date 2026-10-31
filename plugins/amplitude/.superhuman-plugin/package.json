@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "devDependencies": {
-    "@codahq/packs-sdk": "1.18.4"
+    "@superhuman/plugins-sdk": "1.19.0"
   },
   "overrides": {
     "express": "4.22.3"

@@ -1,6 +1,12 @@
 # Amplitude x Superhuman
 
-This directory is the Amplitude plugin for Superhuman. A plugin is the developer-facing shipping unit that bundles connectors and agents; it is not a user-facing product surface.
+This directory contains multiple plugins (connectors and agents) that intersect Amplitude with Superhuman.
+
+## Prerequisites
+
+- A Superhuman account provisioned with developer capabilities
+- An Amplitude project with MCP enabled
+- A local install of Node.js 22 (Node 23 and newer abort on Windows when the packs CLI exits)
 
 ## Lexicon & Reserved Files
 
@@ -8,63 +14,74 @@ Superhuman imbues the following terms with specific meaning:
 
 | Term | Meaning |
 | :--- | :--- |
-| Plugin | Developer-facing package that bundles connectors and agents. This directory is the plugin. |
-| Connector | Tools an agent can call. This plugin uses the Amplitude connector and does not define a new one. |
+| Plugin | Developer-facing package that constitutes either a connector or an agent. Plugins are intersection points between Superhuman and third parties like Amplitude. |
+| Connector | A connector an MCP server.  Superhuman serves as the MCP client. |
 | Agent | A workflow with instructions and triggers. |
-| Pack | A Typscript file that defines either a connector or an agent. |
+| Pack | The [former term](https://docs.superhuman.com/packs/build/latest/blog/2026/10/22/packs-to-plugins/) for a plugin. This term is still used throughout the SDK. |
 
 Superhuman generates the following files (which cannot be renamed) when building and publishing packs:
 - `.coda.json` is an API token file. It should be gitignored.
 - `.coda-pack.json` identifies that pack once it has been pushed to Superhuman's server. It lives in the same directory as the Typscript file from which it was generated.
 
-## Create & Deploy
+## Installing the SDK
 
-Prerequisites:
-- Node.js 22. Node 23 and newer abort on Windows when the packs CLI exits.
-- A Superhuman account that can create agents
+Run the following commands on your local machine to install Superhuman's SDK.
 
-Instructions:
-1. Compile the agent locally.
+```bash
+mkdir {plugin-directory}
+cd {plugin-directory}
+npm init -y
+npm install --save-dev @superhuman/plugins-sdk@latest
+npx packs init
+```
+
+## Developing a New Plugin
+
+1. Write a typscript file that constitutes either a [connector](https://docs.superhuman.com/packs/build/latest/tutorials/build/mcp/#write-the-code) or an [agent](https://docs.superhuman.com/@hector/go-agent-development-guide/sdk-documentation-31).
+1. Compile the plugin locally.
    ```bash
-   npm install
-   npx packs validate {pack-filepath}.ts
-   npx packs build {pack-filepath}.ts
+   npx packs validate {plugin-filepath}.ts
+   npx packs build {plugin-filepath}.ts
    ```
    `validate` checks the agent definition and `build` compiles it locally. Neither command contacts Amplitude, triggers the agent, or pushes the agent to Superhuman's server.
-2. Register an API token.
+1. Register an API token.
    ```bash
    npx packs register --open
    ```
    In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.
-3. Create the agent on Superhuman's server then upload its source.
+1. Create the plugin on Superhuman's server then upload its source.
    ```bash
-   npx packs create {pack-filepath}.ts --name "{Friendly Name}" --description "{Description}"
-   npx packs upload {pack-filepath}.ts --notes "{Version Notes}"
+   npx packs create {plugin-filepath}.ts --name "{Friendly Name}" --description "{Description}"
+   npx packs upload {plugin-filepath}.ts --notes "{Version Notes}"
    ```
-   This creates a `.coda-pack.ts` file in the same directory.
+   This creates a `.coda-pack.ts` file in the same directory.  Do not modify this file, as it's used to identify the plugin on Superhuman's server.
 
-## Test
+## Testing a Plugin
 
-These checks apply to `ambient-assistant` after it has been uploaded and installed in Superhuman Go with the Amplitude connector connected. The signed-in user needs access to an Amplitude project.
+To test a connector:
+1. Add the connector to [Superhuman Go](https://go.superhuman.com/connectors).
+1. Start a new chat and ask a question that is answerable by the connector.
 
-Use Email, Docs, or https://textarea.org. If no underline appears, open the Superhuman Go writing-suggestions panel and confirm **Amplitude Ambient Assistant** is listed. The [agent log](https://docs.superhuman.com/brain/agent/setup/70949) shows the usage history for the authenticated Superhuman user. See Superhuman's [troubleshooting tips](https://docs.superhuman.com/@hector/go-agent-development-guide/troubleshooting-34) for additional testing advice.
+To test an agent:
+1. Add the agent in Superhuman Go from the [agent directory](https://go.superhuman.com/agent-directory).
+1. Attempt to trigger the agent from Superhuman Mail or https://textarea.org.  Superhuman Docs does not currently support the while-writing trigger, so it is not a good testing surface.
+1. If the agent does not trigger, open the Superhuman Go writing-suggestions panel and ensure that the agent is active.
+1. If the agent is active but not triggering, [test directly](https://go.superhuman.com/agents/70949) in Superhuman Go.  This allows you to circumvent the trigger condition to test prompting the agent.
 
-| Scenario | Input | Expectation |
-| :--- | :--- | :--- |
-| Named metric or chart | Weekly active users dropped after yesterday's release. | One card cites the matching metric or chart, with the time window and a source link. The sentence is unchanged. |
-| Experiment | The onboarding experiment should be ready to call. | One card reports the experiment status returned by Amplitude. It does not claim a winner unless Amplitude returned that result. |
-| Unresolvable writing | I will send the notes after lunch. | No underline, no card, and no Amplitude write. |
-| Amplitude host | On `app.amplitude.com` or `app.eu.amplitude.com`, write a sentence that names a customer or metric. | The while-writing trigger does not run. Those hosts are listed in `blockedDomains`. |
-| No writes | Any scenario above. Inspect the agent log. | The connector is not asked to create, edit, or delete Amplitude content. A confirmation dialog means a mutating tool was called. |
+After testing, review the session logs at `https://docs.superhuman.com/brain/agent/setup/<packId>`.  See Superhuman's [troubleshooting tips](https://docs.superhuman.com/@hector/go-agent-development-guide/troubleshooting-34) for additional testing advice.
 
-## Update
+## Updating an Existing Plugin
 
-To update an existing pack:
-1. Repeat the upload step, which includes verification. Do not run `npx packs create` again.
+1. Modify the local plugin file as necessary.  Do not modify its corresponding `coda-pack.json` file since it is used to identify the plugin on Superhuman's server.
+1. Re-upload the plugin. Uploading a plugin also verifies it, so no need to run a separate verify command. Do not run `npx packs create`, since this will create a new plugin instead of recreating the existing plugin.
    ```bash
-   npx packs upload {pack-filepath}.ts --notes "{Describe the change}"
+    npx packs upload {plugin-filepath}.ts --notes "{Describe the change}"
    ```
-2. Navigate to the pack history in Superhuman and release the latest version. (Note: the ability to release via CLI is on Superhuman's roadmap.)
-   - [Amplitude](https://docs.superhuman.com/p/56421?section=history) MCP connector
-   - [Amplitude Ambient Assistant](https://docs.superhuman.com/p/70949?section=history) agent
-3. Reinstall the agent in Superhuman Go when the upload changes its trigger or the connector it is allowed to call. An installed copy keeps the trigger and connector grant it received at install time.
+1. If you previously added the plugin in Superhuman, modify the pack maker settings to use the most recent version instead of the most recent release.  See [Superhuman's documentation](https://coda.io/packs/build/latest/development/versions/) for the distinction between versions and releases.
+1. Iteratively test and modify.
+
+## Releasing a Plugin
+
+1. Navigate to the plugin history at `https://docs.superhuman.com/p/<packId>?section=history`.
+1. Release the latest version via the GUI. The ability to release via the CLI is on Superhuman's roadmap.
+1. Users' existing installs will be upgraded automatically.  See [Superhuman's documentation](https://coda.io/packs/build/latest/development/versions/#rollout) for details.
