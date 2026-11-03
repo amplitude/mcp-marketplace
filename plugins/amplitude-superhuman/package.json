@@ -1,0 +1,18 @@
+{
+  "name": "amplitude-superhuman-plugin",
+  "private": true,
+  "description": "Superhuman plugin that ships Amplitude agents.",
+  "engines": {
+    "node": "22.x"
+  },
+  "devDependencies": {
+    "@superhuman/plugins-sdk": "1.19.0"
+  },
+  "overrides": {
+    "express": "4.22.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "isolated-vm@6.0.2": true
+  }
+}
