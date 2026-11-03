@@ -1,0 +1,21 @@
+import { hasOwn } from "@smithy/core/serde";
+import { isArrayBuffer, toHex, toUint8Array } from "@smithy/core/serde";
+import { SHA256_HEADER, UNSIGNED_PAYLOAD } from "./constants";
+export const getPayloadHash = async ({ headers, body }, hashConstructor) => {
+    for (const headerName in headers) {
+        if (!hasOwn(headers, headerName))
+            continue;
+        if (headerName.toLowerCase() === SHA256_HEADER) {
+            return headers[headerName];
+        }
+    }
+    if (body == undefined) {
+        return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    }
+    else if (typeof body === "string" || ArrayBuffer.isView(body) || isArrayBuffer(body)) {
+        const hashCtor = new hashConstructor();
+        hashCtor.update(toUint8Array(body));
+        return toHex(await hashCtor.digest());
+    }
+    return UNSIGNED_PAYLOAD;
+};

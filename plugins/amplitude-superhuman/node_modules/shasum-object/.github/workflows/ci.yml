@@ -1,0 +1,66 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Run tests
+    strategy:
+      matrix:
+        node-version:
+          - '0.8'
+          - '0.10'
+          - '0.12'
+          - '4.x'
+          - '6.x'
+          - '8.x'
+          - '10.x'
+          - '12.x'
+          - '14.x'
+          - '15.x'
+          - '16.x'
+          - '17.x'
+          - '18.x'
+          - '19.x'
+          - '20.x'
+          - '21.x'
+          - '22.x'
+          - '23.x'
+          - '24.x'
+    runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_STRICT_SSL: ${{matrix.node-version != '0.8'}}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install Node.js ${{matrix.node-version}}
+        uses: dcodeIO/setup-node-nvm@v4
+        with:
+          node-version: ${{matrix.node-version}}
+      - name: Install latest npm
+        run: |
+          source /home/runner/mynvm/nvm.sh
+          nvm install-latest-npm
+      - name: Install dependencies
+        run: |
+          source /home/runner/mynvm/nvm.sh
+          npm install
+      - name: Run tests
+        run: |
+          source /home/runner/mynvm/nvm.sh
+          npm test
+
+  lint:
+    name: Standard Style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+            node-version: lts/*
+      - name: Install dependencies
+        run: npm install
+      - name: Check style
+        run: npm run lint

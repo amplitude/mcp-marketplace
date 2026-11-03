@@ -1,0 +1,12 @@
+import { hasOwn } from "@smithy/core/serde";
+const getTransformedHeaders = (headers) => {
+    const transformedHeaders = {};
+    for (const name in headers) {
+        if (!hasOwn(headers, name))
+            continue;
+        const headerValues = headers[name];
+        transformedHeaders[name] = Array.isArray(headerValues) ? headerValues.join(",") : headerValues;
+    }
+    return transformedHeaders;
+};
+export { getTransformedHeaders };

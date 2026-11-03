@@ -1,0 +1,36 @@
+{
+  "name": "shasum-object",
+  "description": "get the shasum of a buffer or object",
+  "version": "1.0.1",
+  "author": "Renée Kooi <renee@kooi.me>",
+  "bin": "bin.js",
+  "bugs": {
+    "url": "https://github.com/goto-bus-stop/shasum-object/issues"
+  },
+  "dependencies": {
+    "fast-safe-stringify": "^2.0.7"
+  },
+  "devDependencies": {
+    "safe-buffer": "^5.2.0",
+    "standard": "^17.1.0",
+    "tape": "^5.0.0"
+  },
+  "homepage": "https://github.com/goto-bus-stop/shasum-object",
+  "keywords": [
+    "buffer",
+    "hash",
+    "object",
+    "sha1",
+    "shasum"
+  ],
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goto-bus-stop/shasum-object.git"
+  },
+  "scripts": {
+    "lint": "standard",
+    "test": "node test"
+  }
+}

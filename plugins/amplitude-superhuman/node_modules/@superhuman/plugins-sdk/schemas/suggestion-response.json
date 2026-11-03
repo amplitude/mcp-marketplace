@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {
+        "suggestions": {
+          "maxItems": 500,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "startOffset": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Inclusive start position in UTF-16 code units; zero-based."
+              },
+              "endOffset": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Exclusive end position in UTF-16 code units; greater than startOffset."
+              },
+              "original": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The exact portion of the request text between the two offsets."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Short heading displayed on the suggestion card."
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Explanation displayed on the suggestion card."
+              },
+              "replacement": {
+                "description": "Plain-text replacement. Omit for advice only; an empty string deletes the selected text.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "startOffset",
+              "endOffset",
+              "original",
+              "title",
+              "explanation"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "suggestions"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "suggestions": {
+          "minItems": 0,
+          "maxItems": 0,
+          "type": "array",
+          "items": {}
+        },
+        "unavailable": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S",
+          "description": "Provider could not assess text. Use a brief non-sensitive reason; never display, forward, or retain it."
+        }
+      },
+      "required": [
+        "suggestions",
+        "unavailable"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
