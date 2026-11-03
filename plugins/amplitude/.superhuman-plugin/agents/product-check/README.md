@@ -2,6 +2,8 @@
 
 This agent ambiently verifies product usage claims made in a user's writing against data in Amplitude.  It's purpose is to help users make accurate statements about their product usage.
 
+https://github.com/user-attachments/assets/57d55a0c-e145-4701-a3c2-67aea923820a
+
 ## Prerequisites
 
 - An Amplitude project with MCP enabled.  If a user has access to more than one project, the agent will seek clarification as necessary as to which project to use.
