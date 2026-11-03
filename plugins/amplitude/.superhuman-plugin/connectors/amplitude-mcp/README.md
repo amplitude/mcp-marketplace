@@ -2,6 +2,8 @@
 
 This connector enables Superhuman, as an MCP client, to access Amplitude's MCP server.  It is available to install from [Superhuman's store](https://superhuman.com/store/connectors/amplitude-56421).
 
+https://github.com/user-attachments/assets/2893bc99-f088-4642-8f09-a1009e0b30c5
+
 ## Prerequisites
 
 - A Superhuman account
