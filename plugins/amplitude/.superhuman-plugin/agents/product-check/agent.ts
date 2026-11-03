@@ -27,8 +27,19 @@ export const pack = agent;
 // Enumerate the necessary tools that the agent needs access to.
 agent.setTools({
   connectors: [
-    {packId: 56421} // https://superhuman.com/store/connectors/amplitude-56421
-  ]
+    {
+      packId: 56421, // https://superhuman.com/store/connectors/amplitude-56421
+      mcpTools: [ // Read-only tools necessary for executing the instructions.
+        {toolName: 'get_amplitude_context', serverName: 'Amplitude'},
+        {toolName: 'search', serverName: 'Amplitude'},
+        {toolName: 'get_from_url', serverName: 'Amplitude'},
+        {toolName: 'get_amplitude_charts', serverName: 'Amplitude'},
+        {toolName: 'query_amplitude_data', serverName: 'Amplitude'},
+        {toolName: 'get_experiments', serverName: 'Amplitude'},
+        {toolName: 'query_experiment', serverName: 'Amplitude'},
+      ],
+    },
+  ],
 });
 
 
@@ -71,7 +82,6 @@ The visible writing includes a claim that can be confidently fact-checked with A
 agent.setInstructions(`
 Obey the following ground rules at all times:
   - Do not rewrite the user's text.
-  - Do not create, edit, or delete anything in Amplitude.
   - Do not fabricate customers, metrics, events, results, or insights.
   - Do not include partial data from incomplete days in any analysis.
 

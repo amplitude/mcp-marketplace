@@ -1,6 +1,6 @@
 # Product Check
 
-This agent ambiently verifies product usage claims made in a user's writing against data in Amplitude.  It's purpose is to help users make accurate statements about their product usage.
+This agent ambiently verifies product usage claims made in a user's writing against data in Amplitude.  It's purpose is to help users make accurate statements about their product usage. It can be installed from [Superhuman's store](https://docs.superhuman.com/packs/product-check-70949).
 
 https://github.com/user-attachments/assets/57d55a0c-e145-4701-a3c2-67aea923820a
 
