@@ -48,7 +48,7 @@ npx packs init
    ```bash
    npx packs register --open
    ```
-   In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.
+   In the browser dialog, name the token and generate it. Do not set a Pack ID. Paste the token back into the CLI. This creates a `.coda.json` file containing the API key, which should be gitignored.  To rotate the key, revoke the key in your [Superhuman account](https://docs.superhuman.com/account), generate a new one in the GUI, and update the `.coda.json` file with the new key.
 1. Create the plugin on Superhuman's server then upload its source.
    ```bash
    npx packs create {plugin-filepath}.ts --name "{Friendly Name}" --description "{Description}"
