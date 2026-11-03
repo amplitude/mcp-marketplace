@@ -1,1 +1,0 @@
-export { fromIni } from "./fromIni";
