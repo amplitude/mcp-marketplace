@@ -12,12 +12,17 @@ Works with **Claude Code**, **Cursor**, **Codex**, **Gemini CLI**, and **Claude*
 
 ```
 claude plugin install amplitude
+claude plugin install wave
 ```
+
+`amplitude` is analytics and instrumentation. `wave` is Opportunity Manager workflows
+and already bundles Amplitude MCP — you do not need both unless you want both skill sets.
 
 Or from inside Claude Code:
 
 ```
 /plugin install amplitude
+/plugin install wave
 /reload-plugins
 ```
 
@@ -56,6 +61,8 @@ To work on the plugin from a local checkout in Claude Code:
 ```bash
 git clone https://github.com/amplitude/mcp-marketplace
 claude --plugin-dir ./mcp-marketplace/plugins/amplitude
+# or, for Wave opportunity workflows:
+claude --plugin-dir ./mcp-marketplace/plugins/wave
 ```
 
 Then run `/mcp` from inside Claude Code, select `plugin:amplitude:amplitude`, and follow the browser prompts to authenticate.
@@ -67,6 +74,19 @@ Then run `/mcp` from inside Claude Code, select `plugin:amplitude:amplitude`, an
 | Plugin | Description |
 | --- | --- |
 | [amplitude](./plugins/amplitude/) | Reusable analysis and instrumentation skills covering charts, dashboards, experiments, session replays, reliability, AI agent analytics, and analytics tracking workflows |
+| [wave](./plugins/wave/) | End-to-end Wave opportunity workflows covering codebase validation, coding-agent handoff, PR verification, experiments, outcome measurement, and pipeline refinement |
+
+---
+
+## Wave Plugin
+
+The Wave plugin runs the self-improving product loop from product signal to measured
+outcome. Its nine skills reconcile existing work, validate opportunities against current
+code, dispatch isolated coding agents, shepherd pull requests to review-ready, prepare
+optional experiments, record outcomes, and refine the workflow.
+
+Pull-request merge and live experiment launch always remain explicit human gates. See the
+[Wave plugin README](./plugins/wave/) for configuration, skills, and example prompts.
 
 ---
 
