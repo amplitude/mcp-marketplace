@@ -1,6 +1,6 @@
 ---
 name: edit-guides-surveys
-description: Creates, edits, and archives Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, and survey questions. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, or settings.
+description: Creates, edits, and archives Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, survey questions, and themes. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, theme, or settings.
 x-amp-flags: [mcp-run-amp]
 ---
 
@@ -58,6 +58,15 @@ A step has a `title`, a `form_factor` (`modal`, `popover`, `tooltip`, `banner`, 
 - `no_action`
 
 A button's `actions` field is an action sequence that overrides `action`. If you change `action` on a button that has one, update `actions.navigation` to match, or remove `actions`. Leave action types you don't recognize unchanged.
+
+## Themes
+
+A guide's or survey's look comes from the theme in its `theme_id`.
+
+- **Find one:** `["themes", "list"]` with `project`, then `["themes", "get"]` for its details. Pick a theme whose `platform` matches the item's `platform`.
+- **Apply it:** `["guides", "update"]` or `["surveys", "update"]` with `theme-id` and `latest-version`. Pass `theme-id: "null"` for the project's default theme.
+- **Custom styling:** a theme with `is_internal: true` is one item's custom styling. It can't be applied to another item. Applying a different theme to an item with custom styling deletes that styling, so confirm with the user first.
+- **Errors:** `platform_mismatch`, `theme_is_internal` and `not_found` mean the theme can't be used on this item. Pick another one from `themes list`. A 403 `operation_not_enabled` means theme writes aren't enabled for this project. Tell the user to change the theme in the app.
 
 ## Block-builder steps
 
