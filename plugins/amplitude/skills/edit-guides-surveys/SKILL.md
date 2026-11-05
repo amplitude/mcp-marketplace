@@ -75,7 +75,7 @@ Translations are stored per variant, as locale → translation key → text. The
 - **New content:** `create` doesn't take translations, and only existing steps and blocks can be translated. Create or edit the content first, read it again, then translate it.
 - **Errors:**
   - A 400 names `variants.<i>.translations.<locale>.<key>`. The usual causes are a locale that isn't in `localization.locales` (the user adds languages in project settings), the default locale, or a key that isn't in `sources`.
-  - A 403 with `error_code: operation_not_enabled` means translations aren't enabled for the organization. Tell the user; don't retry.
+  - If `localization.enabled` is false, localization is turned off in the project settings and writes return 400. Tell the user to enable it there; don't retry.
 - **Confirm:** the update response includes `translation_status`. Report which locales still have `missing` or `outdated` keys.
 
 ## Block-builder steps
