@@ -35,7 +35,7 @@ A step has a `title`, a `form_factor` (`modal`, `popover`, `tooltip`, `banner`, 
 
 - **Block shape:** `{uuid, type, meta}`, with `meta` keys in camelCase.
 - **Edit in place:** change the block you need and send the whole `content` array back.
-- **Keep each block's `uuid`.** Survey responses are keyed by it. Give a new block a new v4 UUID.
+- **Keep each block's `uuid`.** Survey responses are keyed by it. Leave `uuid` off a new block; one is assigned on save.
 
 | `type` | `meta` |
 |---|---|
@@ -45,7 +45,7 @@ A step has a `title`, a `form_factor` (`modal`, `popover`, `tooltip`, `banner`, 
 | `video` | `type: "url"`, `src` |
 | `survey_text`, `survey_text_short` | `prompt` is the input's placeholder, not the question. Put the question in a `markdown` block or the step `title`. |
 | `survey_list` | `options`, `listType` (`single`, `multiple`), `displayType` (`list`, `dropdown`, `grid`) |
-| `survey_rating` | `type` (`stars`, `numbers`, `emojis`, `nps`), `options`, `lowerLabel`, `upperLabel`; `emojis` when the type is `emojis` |
+| `survey_rating` | `type` (`stars`, `numbers`, `emojis`, `nps`), `options` (the number of choices; `nps` is a 0–10 scale and takes `10`), `lowerLabel`, `upperLabel`; `emojis` when the type is `emojis` |
 | `survey_hidden` | `label`, `source` (`{type: "static", value}` or `{type: "event_property", property}`) |
 
 **Question validation:** questions take an optional `validation.required: {value, message}`. A required question needs a `message`.
@@ -53,11 +53,33 @@ A step has a `title`, a `form_factor` (`modal`, `popover`, `tooltip`, `banner`, 
 **Button actions:**
 - `step_forward`, `step_back`, `complete`, `dismiss`
 - `link` with `value` (the URL) and `operation` (`self` or `blank`)
-- `go_to_step` with `value` (the step id)
+- `go_to_step` with `value` (the step's 0-based position in `steps`, not its id)
 - `snooze`
-- `no_action`
+- `no_action`: the button advances to the next step, or finishes the guide or survey on the last step. The dashboard's survey templates use it for the submit button.
 
 A button's `actions` field is an action sequence that overrides `action`. If you change `action` on a button that has one, update `actions.navigation` to match, or remove `actions`. Leave action types you don't recognize unchanged.
+
+### Example: an NPS survey
+
+`["surveys", "create"]` with `project`, `title` and this `variants` value, passed as a JSON string:
+
+```json
+[
+  {
+    "variant": "treatment-nps",
+    "steps": [
+      {
+        "title": "How likely are you to recommend us to a friend or colleague?",
+        "form_factor": {"type": "popover", "position": "center", "footerLayout": "split", "titleAlignment": "start", "contentAlignment": "start"},
+        "content": [
+          {"type": "survey_rating", "meta": {"type": "nps", "options": 10, "lowerLabel": "Not likely at all", "upperLabel": "Extremely likely"}},
+          {"type": "button", "meta": {"label": "Submit", "buttonType": "primary", "action": {"type": "no_action"}}}
+        ]
+      }
+    ]
+  }
+]
+```
 
 ## Themes
 
