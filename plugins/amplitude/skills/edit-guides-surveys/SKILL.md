@@ -1,6 +1,6 @@
 ---
 name: edit-guides-surveys
-description: Creates, edits, and archives Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, survey questions, and themes. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, theme, or settings.
+description: Creates, edits, translates, and archives Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, survey questions, themes, and translations. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, theme, settings, or translations.
 x-amp-flags: [mcp-run-amp]
 ---
 
@@ -89,6 +89,25 @@ A guide's or survey's look comes from the theme in its `theme_id`.
 - **Apply it:** `["guides", "update"]` or `["surveys", "update"]` with `theme-id` and `latest-version`. Pass `theme-id: "null"` for the project's default theme.
 - **Custom styling:** a theme with `is_internal: true` is one item's custom styling. It can't be applied to another item. Applying a different theme to an item with custom styling deletes that styling, so confirm with the user first.
 - **Errors:** `platform_mismatch`, `theme_is_internal` and `not_found` mean the theme can't be used on this item. Pick another one from `themes list`. A 403 `operation_not_enabled` means theme writes aren't enabled for this project. Tell the user to change the theme in the app.
+
+## Translations
+
+Translations are stored per variant, as locale → translation key → text. The default locale is the content itself. Edit it with the step content, not with translations.
+
+- **Read first:** `get` with `include-unpublished-changes: "true"` and `include-translations: "true"`. The response adds:
+  - `localization`: the project's `default_locale` and the `locales` you can write.
+  - Per variant, `translations`: what is stored now.
+  - Per variant, `translation_status.sources`: every translatable key with its default-locale text. Translate these values.
+  - Per variant, `translation_status.locales.<locale>.missing` and `.outdated`: what is left to do. An outdated key was translated from text that has since changed.
+- **Copy keys from `sources`.** Don't build them. They look like `display_title`, `steps[123].title` and `steps[123].blocks[<uuid>].content.markdown`.
+- **Write only translations:** `update` with `latest-version` and `variants` set to `[{"id": "<variant id>", "translations": {"fr": {"<key>": "..."}, "de": {...}}}]`. Send only the variants and locales you change, and no `variant` key or content fields. Several locales can go in one call.
+- **Merge rules:** keys you leave out keep their translation. `null` for a key clears it; `null` for a locale clears every key in it.
+- **Values:** match the source. Keep Markdown and HTML structure, links and `{{...}}` placeholders. `content.survey_list` takes an array of option labels in the source order.
+- **New content:** `create` doesn't take translations, and only existing steps and blocks can be translated. Create or edit the content first, read it again, then translate it.
+- **Errors:**
+  - A 400 names `variants.<i>.translations.<locale>.<key>`. The usual causes are a locale that isn't in `localization.locales` (the user adds languages in project settings), the default locale, or a key that isn't in `sources`.
+  - If `localization` is only `{"enabled": false}`, localization is turned off in the project settings: the read has no translations or status, and writes return 400. Tell the user to enable it there; don't retry.
+- **Confirm:** the update response includes `translation_status`. Report which locales still have `missing` or `outdated` keys.
 
 ## Block-builder steps
 
