@@ -14,6 +14,7 @@ Perform comprehensive, detailed deep-dive analysis of experiments to make data-d
 - Checking on running experiment progress and early signals
 - Understanding why an experiment succeeded or failed
 - Investigating unexpected results or segment-level effects
+- A pasteable monitoring table (one row per variant, one column per metric) is a data table, not a segmentation chart. See the create-chart skill.
 
 ---
 

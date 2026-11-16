@@ -89,7 +89,7 @@ Amplitude:get_cohorts to get full definitions
 | `eventsSegmentation` | Counting events/users over time, trends, comparisons, KPIs, distributions, property analytics |
 | `funnels` | Multi-step conversion analysis with a **known sequence**, drop-off analysis, time between specific events, time-to-convert metrics |
 | `retention` | User return behavior, cohort retention curves, churn analysis |
-| `dataTableV2` | Tabular comparisons, rankings, multi-dimensional breakdowns |
+| `dataTableV2` | Tabular comparisons, rankings, multi-dimensional breakdowns, and experiment monitoring tables (one row per variant, one column per metric) |
 | `customerJourney` | Path exploration, discovering **unknown paths** users take, comparing converted vs dropped-off paths |
 | `sessions` | Session duration, session frequency, time spent per user, session length distributions |
 
@@ -122,6 +122,7 @@ Amplitude:get_cohorts to get full definitions
 **dataTableV2** - Tabular data. Use for:
 - Breakdowns by dimensions (country, platform, etc.)
 - Multi-metric comparisons in table format
+- Experiment monitoring: one row per variant, one column per metric. Use a GROUP_BY row on the user property `gp:[Experiment] <flag-key>` and filter out `(none)`. The display name without `gp:` returns only an Overall row. Per-variant UNIQUES of `[Experiment] Exposure`, filtered to event property `[Experiment] Flag Key`, match the experiment view's exposed-user counts. Compare the variant rows, not Overall, because Overall dedupes users across variants. Other metric columns are users currently assigned to that variant, not the experiment analysis numerator. Prefer the typed `data_table` chart when that skill is available.
 
 **customerJourney** - Path exploration and discovery. Use for:
 - Understanding the actual paths users take (vs. expected paths in funnels)

@@ -101,6 +101,16 @@ funnels, custom slices, cross-checks against another warehouse):
   assignments per variant since launch. Zero or lopsided assignment =
   bucketing/ramp problem, not a metric result.
 
+**Monitoring table (one row per variant, one column per metric):** build this
+as `query_amplitude_data` kind `data_table`, not as segmentation segments.
+One property row on `gp:[Experiment] <flag-key>` (`scope` `user`, exclude
+`(none)`), one column per metric. See build-charts-with-typed-params.
+Per-variant UNIQUES of the exposure event match the experiment view's exposed
+users. Other metric columns are current assignment counts, not the analysis
+numerator, so `analyze` stays the source for lift and significance. Save the
+table on a dashboard at full width with chartMetas view `table`. The chart
+widget cannot draw it; the query CSV is what gets pasted into a monitoring doc.
+
 Use `Amplitude:use_amp_experiments` (primary metric only) to assess:
 
 **Traffic Balance (SRM Check):**

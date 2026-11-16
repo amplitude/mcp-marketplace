@@ -133,9 +133,11 @@ Three rules that avoid nearly all of the failures seen in production:
 1. **`group_type` is the group's display name** (`"org id"`, `"company"`) —
    exactly as the group-type and taxonomy readers spell it, lowercase and
    spaced. Not the property name, not `"Group"`, not a `grp:`-prefixed key.
-2. **Never prefix the property name.** Write `"plan"`, not `"grp:plan"` or
+2. **Never prefix a group property name.** Write `"plan"`, not `"grp:plan"` or
    `"gp:org id:plan"` — those are storage-layer spellings that the chart API
-   rejects.
+   rejects. This rule is for group properties. The experiment assignment user
+   property is the opposite: its canonical name is `gp:[Experiment] <flag-key>`
+   (see `data_table`).
 3. **Counting by account is a different setting.** To count organizations
    rather than users, set `count_unique_by: "org id"`. That is independent of
    whether you filter or break down by a group property.
@@ -223,6 +225,35 @@ Needs `columns` (at least one), each with a `metric_type` — `UNIQUES`, `TOTALS
 `FORMULA`, `SESSIONS`, `CONVERSION`, or the property aggregations `PROPSUM`,
 `PROPAVG`, `PROPMAX`, `PROPMIN`. `rows` are the breakdown dimensions, each
 `kind` either `property` or `time`.
+
+Use this kind when the user asks for a table, a pasteable grid, or experiment
+results with one row per variant and one column per metric. Segmentation puts
+each variant on its own series, which becomes one column per metric per
+variant. The chart widget cannot draw a data table; the CSV in the query
+response is the table, and the chart edit still saves onto a dashboard
+(`chartMetas` view `"table"`, full width).
+
+**Experiment monitoring table.** One property row, and one column per metric.
+Fifteen or more columns is supported; the chart-builder cap of 10 does not
+apply here.
+
+- `property` is `gp:[Experiment] <flag-key>` and `scope` is `user`. That is the
+  assignment user property. The display name without the `gp:` prefix compiles
+  and returns only an Overall row. If CompileChart says a name is a display
+  name, retry once with the canonical name it returns.
+- Row `where`: the same property, `op` `"is not"`, `values` `["(none)"]`.
+- Put metric filters on the column `where`. Filters nested on `event.where`
+  are dropped and the column then counts the unfiltered event.
+- Exposure column: `UNIQUES` of `[Experiment] Exposure`, with a column `where`
+  on event property `[Experiment] Flag Key` equal to the flag key, and
+  `date_range` since the experiment start. Those per-variant uniques match the
+  experiment view's exposed-user counts. The Overall row dedupes users who
+  appear in more than one variant, so compare the variant rows, not Overall.
+- These rows are the current user-property assignment. They match exposure
+  counts while the rollout has not reassigned users. Any other metric column
+  counts users currently in that variant who did the event. It is not the
+  experiment analysis numerator. `use_amp_experiments` analyze stays the
+  source for lift and significance. Segments-as-rows is not supported.
 
 ## Worked example
 

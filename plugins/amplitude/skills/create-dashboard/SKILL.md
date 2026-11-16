@@ -65,7 +65,7 @@ Use `Amplitude:use_amp_dashboards` with `action: "create"` and:
   - `metric_only`: Headline KPIs (single number)
   - `series`: Trend lines (default view)
   - `converted`: Funnels (conversion view)
-  - `table`: Data tables
+  - `table`: Data tables. Required when the user asked for a table. The chart itself must be a `data_table`; a segmentation chart's table view still pivots each variant into columns.
 
 ### Step 5: Add Context
 
@@ -100,7 +100,8 @@ Include rich text blocks for:
 **Query errors (500/400):**
 - Simplify: remove complex groupBy, reduce date ranges, avoid nested properties
 - Verify events/properties exist using search first
-- Use eventsSegmentation with groupBy instead of dataTableV2 for top N lists
+- When the user asks for a table, a pasteable grid, or experiment results with one row per variant and one column per metric, build a `data_table` (see build-charts-with-typed-params). Give it its own row at width 12 and height 625, and set chartMetas view to `table` keyed by the chart edit id. Do not substitute an eventsSegmentation line chart.
+- A top-N list of individual users can stay an eventsSegmentation chart with a groupBy. Do not use that pattern for an experiment monitoring table.
 
 **No data returned:**
 - Check event names are exact matches (case-sensitive)
