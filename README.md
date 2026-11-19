@@ -111,6 +111,7 @@ The amplitude plugin turns your AI assistant into an expert product analyst and 
 | `investigate-ai-session` | Deep-dives specific AI agent sessions or failure patterns for root-cause analysis |
 | `monitor-ai-quality` | Delivers a proactive health report on AI agents covering quality, cost, performance, and errors |
 | `review-agent-insights` | Synthesizes recent results from Amplitude's AI agents into a unified, impact-ranked narrative |
+| `use-mcp-analytics` | Drills into MCP servers instrumented with MCP Analytics, from usage topics to episodes and tool calls |
 
 ### Analytics Instrumentation
 
@@ -190,6 +191,7 @@ plugins/
       review-agent-insights/
       taxonomy/
       tracking-plan-audit/
+      use-mcp-analytics/
       weekly-brief/
 ```
 
