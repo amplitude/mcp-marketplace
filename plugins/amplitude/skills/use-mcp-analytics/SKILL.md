@@ -1,5 +1,5 @@
 ---
-name: analyze-mcp-servers
+name: use-mcp-analytics
 description: Analyzes MCP servers instrumented with Amplitude MCP Analytics through `run_amp`, from usage topics down to individual episodes and their tool calls. Use when the user asks how their MCP server is used, which tools or topics fail or thrash, why an MCP session went wrong, or which MCP clients and auth types hit errors.
 x-amp-flags: [mcp-run-amp]
 ---
