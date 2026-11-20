@@ -242,13 +242,11 @@ apply here.
   and returns only an Overall row. If CompileChart says a name is a display
   name, retry once with the canonical name it returns.
 - Row `where`: the same property, `op` `"is not"`, `values` `["(none)"]`.
-- Put metric filters on the column `where`. Filters nested on `event.where`
-  are dropped and the column then counts the unfiltered event.
 - Exposure column: `UNIQUES` of `[Experiment] Exposure`, with a column `where`
   on event property `[Experiment] Flag Key` equal to the flag key, and
   `date_range` since the experiment start. Those per-variant uniques match the
-  experiment view's exposed-user counts. The Overall row dedupes users who
-  appear in more than one variant, so compare the variant rows, not Overall.
+  experiment view's exposed-user counts. Ignore the Overall row: it is not a
+  total of the variant rows.
 - These rows are the current user-property assignment. They match exposure
   counts while the rollout has not reassigned users. Any other metric column
   counts users currently in that variant who did the event. It is not the

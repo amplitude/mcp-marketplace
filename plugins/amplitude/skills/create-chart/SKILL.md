@@ -122,7 +122,7 @@ Amplitude:get_cohorts to get full definitions
 **dataTableV2** - Tabular data. Use for:
 - Breakdowns by dimensions (country, platform, etc.)
 - Multi-metric comparisons in table format
-- Experiment monitoring: one row per variant, one column per metric. Use a GROUP_BY row on the user property `gp:[Experiment] <flag-key>` and filter out `(none)`. The display name without `gp:` returns only an Overall row. Per-variant UNIQUES of `[Experiment] Exposure`, filtered to event property `[Experiment] Flag Key`, match the experiment view's exposed-user counts. Compare the variant rows, not Overall, because Overall dedupes users across variants. Other metric columns are users currently assigned to that variant, not the experiment analysis numerator. Prefer the typed `data_table` chart when that skill is available.
+- Experiment monitoring: one row per variant, one column per metric. Use a GROUP_BY row on the user property `gp:[Experiment] <flag-key>` and filter out `(none)`. The display name without `gp:` returns only an Overall row. Per-variant UNIQUES of `[Experiment] Exposure`, filtered to event property `[Experiment] Flag Key`, match the experiment view's exposed-user counts. Ignore the Overall row: it is not a total of the variant rows. Other metric columns are users currently assigned to that variant, not the experiment analysis numerator. Prefer the typed `data_table` chart when that skill is available.
 
 **customerJourney** - Path exploration and discovery. Use for:
 - Understanding the actual paths users take (vs. expected paths in funnels)
