@@ -1,6 +1,6 @@
 ---
 name: edit-guides-surveys
-description: Creates, edits, translates, and archives Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, survey questions, and translations. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, settings, or translations.
+description: Creates, edits, translates, archives, and turns on test mode for Amplitude Guides and Surveys through `run_amp`, including step content blocks, buttons, survey questions, and translations. Use before changing a guide's or survey's copy, steps, questions, buttons, targeting, settings, translations, or test mode.
 x-amp-flags: [mcp-run-amp]
 ---
 
@@ -28,6 +28,16 @@ All guide and survey reads and writes go through `run_amp`, which calls the Ampl
   - Then run it with `allowDestructive: true`, after the user confirms.
 - **Retries aren't safe.** A retried create makes a duplicate. After an ambiguous failure, list or get before you try again.
 - **Objects and arrays as flags:** pass them as JSON strings, for example `"variants": "[...]"`.
+
+## Test mode
+
+To try an unpublished guide or survey on a real site, turn on test mode. While it's on, only the listed testers see the item.
+
+- **Turn it on:** `update` with `latest-version` and `flag-config` set to `{"test_instrumentation": true, "testers": [{"variant_key": "<variant>", "values": ["<user or device id>"]}]}`. Take `variant_key` from `variants[].variant`. Ask the user which user or device IDs to add; don't guess them.
+- **`testers` replaces the list.** Every variant's user and device testers are replaced, and variants you leave out get none. To keep the current testers, send only `test_instrumentation`. Cohort testers set in the app are kept.
+- **Turn it off:** `update` with `flag-config` set to `{"test_instrumentation": false}`.
+- **Check it:** `status` reads `testing`, and `flag_config.test_instrumentation` and `flag_config.testers` show the settings.
+- **When it's refused:** test mode can't change on a published or scheduled item or an experiment, and it needs permission to edit published items. Tell the user to use the Testing section in the app instead.
 
 ## Step content
 
