@@ -151,7 +151,11 @@ Important `run_amp` constraints:
      row boundaries and column values: a quoted field can hold commas, line
      breaks, `""` escapes and trailing spaces, and re-serializing rows can
      change them. When a file system or code tool is available, build the
-     merged CSV with code rather than by retyping it.
+     merged CSV with code rather than by retyping it. Import still takes the
+     CSV inline in `flags.csv`, so the call must carry the merged text
+     exactly, including trailing spaces, zero-width characters and curly
+     quotes. The larger the CSV, the easier that is to get wrong: for a
+     large plan, suggest smaller runs of named events.
    - A row count is the number of data rows, header excluded. An event's
      row count is its `Event` block in the merged CSV; rows of a property
      group it links are counted under the group.
@@ -185,9 +189,26 @@ Important `run_amp` constraints:
        events (batches of 100), `fields` = `["name", "tags", "sources"]`:
        the selected events the target already has, with their tags and
        sources,
-     - `get_tracking_plan_sources`: the target's source names.
+     - `get_tracking_plan_sources`: the target's source names,
+     - for each selected event the target already has whose block links a
+       property group (`Event Property Group` rows): `get_amp_taxonomy`
+       `action: "properties"`, `propertyType: "event"`, `eventType` = the
+       event, `names` = that group's properties. Any name that comes back
+       (not in `missing`) is already directly on the target's event, and
+       import then fails with a 422 ("Property … already exists on event
+       …") after writing part of the branch. Do not import to that target
+       until the user chooses: remove those properties from the event on
+       the target, remove the `Event Property Group` row for that event
+       from the CSV (this applies to every target), or skip that target.
      If a read fails, say in step 4 that this target's existing events were
      not checked.
+   - **Check owners.** Collect the distinct non-empty `Object Owner` values
+     in the merged CSV and call `get_org_users`. Import fails with a 422
+     ("Unable to find requested user") on an owner it cannot resolve. For
+     each owner that is not an active user of the targets' org, ask the
+     user before import whether to blank that owner's cells; never blank
+     them without consent. If the call fails, say in step 4 that owners
+     were not checked.
 
 4. **Show preview**
    - For each selected event, show the event name and its row count.
@@ -210,9 +231,12 @@ Important `run_amp` constraints:
      tags and property-group links will be made to match the CSV, and name
      each tag and source the target event has that the CSV lacks: those
      will be removed (an event with no `Event Source` in the CSV loses all
-     its sources). Name each CSV source the target does not have: it will
-     be skipped. Property-group links on the target are not read before
+     its sources). Property-group links on the target are not read before
      import; step 7 reports any that are removed.
+   - **Sources.** Per target, name each CSV source the target does not
+     have: it is skipped on every event, new or existing.
+   - List any property-group conflict and owner from step 3, with the
+     user's choice.
    - Naming conventions: if a target's `eventNC` or `propertyNC` is set,
      compare the selected event and property names with its casing (ignore
      a bracketed prefix such as `[Amplitude]`), and say which names do not
@@ -264,7 +288,10 @@ Important `run_amp` constraints:
      - `flags.project = <target_project_id>`
      - `flags.branch-name = <target_branch_name>`
      - `flags.csv = <merged_csv_text>`
-   - Handle responses by run_amp result:
+   - Handle responses by run_amp result. A failure can come back as a tool
+     error that still carries a run_amp result (`ok: false`, an `exitCode`,
+     and `stderr` JSON with `error.http_status`); classify it by that
+     status.
      - **success:** `ok: true` and `exitCode: 0`; record `body.data.branch_name`,
        `body.data.branch_id`, and `body.data.breakdown`. `event_properties`
        counts distinct properties, not event-property links: a property on two
@@ -293,14 +320,20 @@ Important `run_amp` constraints:
        Import no further targets. Tell the user they need the **Update
        Tracking Plan** permission on that target (or org admin) and that an
        org admin can grant it.
+     - **422 unprocessable:** `error.http_status: 422`. Import no further
+       targets. Report `error.detail` and `error.hint` verbatim. Import
+       writes as it goes, so the branch named in the message holds part of
+       the CSV. Known causes: a property group's property already directly
+       on the event, and an owner it cannot resolve (step 3 checks both).
      - **any other failure or tool error:** import no further targets. Report
        `stderr`, or the tool error message, verbatim.
-   - After any failure other than a 409, read that target's `workspace` and
-     check for a branch with the planned name. If there is one, this run
-     created it: say so, and include it in steps 7-8. If not, say nothing
-     was created on that target.
-   - After any failure, still run steps 7-9 for targets already imported. If
-     no target was imported, skip steps 7-8.
+   - After any failure other than a 409 or a connection-scope error, read
+     that target's `workspace` and check for a branch with the planned
+     name. If there is one, this run created it and it is **partial**:
+     say so, review it in step 7, and in step 8 offer only Delete or Leave,
+     never Merge. If not, say nothing was created on that target.
+   - Run steps 7-8 for every branch this run created, whether its import
+     succeeded or failed partway. If no branch was created, skip steps 7-8.
 
 7. **Review each imported branch**
    - Never approve, and do not merge during review (merging is only a step 8
@@ -333,7 +366,9 @@ Important `run_amp` constraints:
      In all-events mode and CSV mode, run the events read (with `eventTypes`
      in batches of 100) and the per-event properties reads only for the events
      `branch_changes` marks **Added** or **Updated**. Report the count of
-     the other events as unchanged by the import and not re-read.
+     the other events as unchanged by the import and not re-read. On a
+     partial branch, unmarked events may simply not have been reached:
+     say so instead of calling them unchanged.
      If `branch_changes` marks any entity **Updated**, repeat the events read
      and the per-event properties reads on the target's main (omit
      `branchName`), limited to those entities, for their before values. An
@@ -378,8 +413,9 @@ Important `run_amp` constraints:
      review the branch in Amplitude Data.
 
 8. **Merge, delete or leave each branch**
-   - Ask the user what to do with each imported branch. They may choose
-     differently per target:
+   - Ask the user what to do with each branch this run created. They may
+     choose differently per target (a partial branch from a failed import
+     gets only Delete or Leave):
      - **Merge**: apply the branch to the target's main. Merging also removes
        the branch.
      - **Delete**: abort the sync for that target and discard the branch.
@@ -413,9 +449,10 @@ Important `run_amp` constraints:
    - For each target:
      - target project id and name,
      - branch name,
-     - import status; for a failed or skipped import, the error and whether
-       a branch exists, and what the user can do (for example reconnect
-       with write access),
+     - import status; for a failed or skipped import, the error, whether a
+       partial branch exists and what it holds, and what the user can do
+       (for example reconnect with write access, or fix the cause step 6
+       reported),
      - Added / Updated per event, what changed for Updated events, and any
        unexpected entries, or the import `breakdown` and a note that the
        review was skipped,
