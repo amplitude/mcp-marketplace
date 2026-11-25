@@ -76,8 +76,8 @@ Important `run_amp` constraints:
      target, and target ids must be unique.
    - **CSV mode** has no source project or source branch: skip the source
      checks and the event-list bullets below, and use the file name without
-     its extension (or `csv` for pasted text) as `<source-project>` in the
-     branch name. If the user names events, say CSV mode copies the whole
+     its extension (or `csv` for pasted text), slugified like a project
+     name, as `<source-project>` in the branch name. If the user names events, say CSV mode copies the whole
      file and ask them to trim the file or confirm.
    - If no events were given but a source branch was, call `get_amp_taxonomy`
      with `action: "branch_changes"` on the source branch, list the events it
@@ -91,7 +91,7 @@ Important `run_amp` constraints:
      empty, export from main by omitting `branch-name`.
    - Build one target branch name per target, using a UTC timestamp:
      `<prefix-or-taxonomy-sync>-<source-project>-<yyyymmddhhmm>-<target-project>`.
-     Slugify each project name: replace every run of characters other than
+     Slugify each project name and the prefix: replace every run of characters other than
      letters, digits and `-` with a single `-`, and trim leading and trailing
      `-` (`[TEMP] Web App (Dev)` becomes `TEMP-Web-App-Dev`).
    - For each target, call `get_amp_taxonomy` with `action: "workspace"`:
@@ -109,10 +109,13 @@ Important `run_amp` constraints:
      - apply the merge rules below to the file as one CSV. A hand-edited
        file is where a stray `Action` value is most likely, so stop on any
        value other than empty or `IGNORE` and quote the rows,
+     - stop and quote any row whose field count differs from the header's
+       (import rejects it with a 422 "Invalid Record Length"),
      - stop if it has no `Event` row or is over 262,144 characters,
      - the selected events are the `Object Name` of every remaining `Event`
        block,
-     - skip the source metadata reads at the end of this step.
+     - skip the source metadata reads ("Find source metadata" below), but
+       still run the target reads and the owner check.
    - Otherwise, export from the source project:
      `command: ["tracking-plan", "export"]`
    - The run_amp contract accepts one `event` value per call, so for multiple
@@ -157,9 +160,12 @@ Important `run_amp` constraints:
      CSV inline in `flags.csv`, so the call must carry the merged text
      exactly, including trailing spaces, zero-width characters and curly
      quotes. Export output also arrives only inside the tool result, so
-     copying it into a file is itself retyping. Check the length of the text
-     you pass against the merged CSV. The larger the CSV, the easier this is
-     to get wrong: for a large plan, suggest smaller runs of named events.
+     copying it into a file is itself retyping (write non-ASCII characters
+     as escapes). You cannot measure the text you pass; step 7's breakdown
+     counts and branch reads are the check. A whole plan of about 80 events
+     (30K characters) has been copied this way without loss, but the larger
+     the CSV, the easier it is to get wrong: for a large plan, suggest
+     smaller runs of named events.
    - A row count is the number of data rows, header excluded. An event's
      row count is its `Event` block in the merged CSV; rows of a property
      group it links are counted under the group.
@@ -186,13 +192,14 @@ Important `run_amp` constraints:
        both `name` and `mergedFrom`. A name found only in another row's
        `mergedFrom` is merged into that row on the source. A selected event
        whose `mergedFrom` lists other selected events means the merge target
-       and its sources are all copied as separate events.
+       and its sources are all copied as separate events. A merge source is
+       still copied as a plain event or property; only the merge is not.
      - If either call fails, do not stop; step 4 says the check was skipped.
    - **Read the targets.** For each target, with `projectId = <target>`:
      - `get_amp_taxonomy` `action: "events"`, `eventTypes` = the selected
-       events (batches of 100), `fields` = `["name", "tags", "sources"]`:
-       the selected events the target already has, with their tags and
-       sources,
+       events (batches of 100), `fields` = `["name", "description", "tags",
+       "sources"]`: the selected events the target already has (absent
+       events have no row; there is no `missing` list),
      - `get_tracking_plan_sources`: the target's source names,
      - for each selected event the target already has whose block links a
        property group (`Event Property Group` rows): `get_amp_taxonomy`
@@ -204,16 +211,27 @@ Important `run_amp` constraints:
        until the user chooses: remove those properties from the event on
        the target, remove the `Event Property Group` row for that event
        from the CSV (this applies to every target), or skip that target.
+       This read cannot tell a direct property from one that comes through
+       a group: if the target's event may already link that group, say
+       removing the row would make import unlink it.
+     After any change the user approves to the CSV (here or for owners),
+     apply the step 3 merge rules again: a group no kept event links is
+     dropped, from every target, with its settings. Recount rows.
      If a read fails, say in step 4 that this target's existing events were
      not checked.
    - **Check owners.** Collect the distinct non-empty `Object Owner` values
      in the merged CSV; if there are none, skip this check. Otherwise call
-     `get_org_users` (org admins only; the list can be large). Import fails
-     with a 422 ("Unable to find requested user") on an owner it cannot
-     resolve. For each owner not in the returned users (by `loginId` or
-     `email`), ask the user before import whether to blank that owner's
-     cells; never blank them without consent. If the call fails, say in
-     step 4 that owners were not checked.
+     `get_org_users` with `action: "get_users"` (org admins only). It has
+     no email filter and the full list can exceed a tool result, so page
+     with `limit` and `cursor` until `hasMore` is false, and match each
+     owner against `loginId` and `email`, ignoring case. Import fails with
+     a 422 ("Unable to find requested user") on an owner it cannot
+     resolve. For each owner not found, ask the user before import whether
+     to blank that owner's cells; never blank them without consent. To
+     blank one, change only that cell in the row's original text. A blank
+     owner cell leaves any owner the target's event already has. If the
+     call fails or paging stops early, say in step 4 that owners were not
+     checked.
 
 4. **Show preview**
    - For each selected event, show the event name and its row count.
@@ -241,7 +259,8 @@ Important `run_amp` constraints:
      description stays. Property-group links on the target are not read
      before import; step 7 reports any that are removed.
    - **Sources.** Per target, name each CSV source the target does not
-     have: it is skipped on every event, new or existing.
+     have: it is skipped on every event, new or existing. If the CSV sets
+     no `Event Source` at all, say new events will have no sources.
    - List any property-group conflict and owner from step 3, with the
      user's choice.
    - Naming conventions: if a target's `eventNC` or `propertyNC` is set,
@@ -255,8 +274,10 @@ Important `run_amp` constraints:
      - event `isOfficial: true`,
      - property `classifications`,
      - a merge (a project-wide transformation): an event or property with
-       `mergedFrom`, or a property found only in another row's `mergedFrom`
-       (name its merge target),
+       `mergedFrom` (name all its sources, including ones dropped as
+       `IGNORE`), or a property found only in another row's `mergedFrom`
+       (name its merge target). Say the events and properties themselves
+       are copied; only the merge is not,
      - property `isSplit: true` (property splitting is set per project),
      - an `ampl://` image in an event description (the description is
        copied, but the image will not resolve in another project).
@@ -331,9 +352,12 @@ Important `run_amp` constraints:
        org admin can grant it.
      - **422 unprocessable:** `error.http_status: 422`. Import no further
        targets. Report `error.detail` and `error.hint` verbatim. Import
-       writes as it goes, so the branch named in the message holds part of
+       writes as it goes, so a branch named in the message holds part of
        the CSV. Known causes: a property group's property already directly
-       on the event, and an owner it cannot resolve (step 3 checks both).
+       on the event, and an owner it cannot resolve (step 3 checks both),
+       which leave a partial branch; and a malformed row ("Invalid Record
+       Length"), which is rejected before any branch is created and may
+       have no `hint`.
      - **any other failure or tool error:** import no further targets. Report
        `stderr`, or the tool error message, verbatim.
    - After any failure other than a 409 or a connection-scope error, read
@@ -360,7 +384,7 @@ Important `run_amp` constraints:
      - `action: "events"`, `branchName = <target_branch_name>`,
        `eventTypes` = the selected events, `fields` =
        `["name", "displayName", "description", "category", "tags",
-       "sources"]`,
+       "sources", "owner"]` (a field absent from a row is not set),
      - one `action: "properties"` call **per selected event**, with
        `propertyType: "event"`, `branchName = <target_branch_name>`,
        `eventType = <event>`, `names` = the properties in that event's block
@@ -421,8 +445,12 @@ Important `run_amp` constraints:
        values, const value, regex, `isArrayType` and `isHidden`,
      - a property listed in the CSV but missing from the event on the branch
        (returned in the per-event read's `missing` list).
-     Min/max lengths and values are not readable here; if the CSV sets any,
-     say they were not verified.
+     Min/max lengths and values, number-is-integer, property descriptions
+     and categories, event activity and hidden flags are not compared here;
+     if the CSV sets any, say they were not verified. Expected differences:
+     a property whose CSV description differs per event may come back with
+     `isOverridden: true`, and an `[Amplitude] …` event may get its name as
+     a display name when the CSV cell is blank.
    - If `get_amp_taxonomy` is unavailable or any of these calls fails, do not
      substitute exports. Report the import `breakdown` counts from step 6,
      state which part of the branch review was skipped, and point the user to
