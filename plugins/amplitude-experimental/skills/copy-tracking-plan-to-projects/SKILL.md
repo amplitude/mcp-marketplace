@@ -1,6 +1,6 @@
 ---
 name: copy-tracking-plan-to-projects
-description: Copies selected tracking-plan events from one Amplitude project's main or branch to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy tracking-plan changes or events to other projects, or to keep the same tracking-plan edits in sync across projects.
+description: Copies selected tracking-plan events, or every event in the plan, from one Amplitude project's main or branch to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy a tracking plan, tracking-plan changes or events to other projects, or to keep the same tracking-plan edits in sync across projects.
 x-amp-flags: [mcp-run-amp]
 ---
 
@@ -16,8 +16,9 @@ explicitly asks in step 8.
 
 - Source project (id or name) and optional source branch name.
 - One or more target projects (ids or names).
-- Event names to sync. If the user names a source branch but no events, step 2
-  derives them from that branch.
+- Event names to sync, or **all events** (the whole events tracking plan of
+  the source main or branch). If the user names a source branch but no
+  events, step 2 derives them from that branch.
 - Optional branch-name prefix for target imports.
 
 Important `run_amp` constraints:
@@ -56,8 +57,13 @@ Important `run_amp` constraints:
    - If no events were given but a source branch was, call `get_amp_taxonomy`
      with `action: "branch_changes"` on the source branch, list the events it
      adds or updates, and ask the user to confirm the event list.
-   - Ensure every event name is non-empty. If source branch is empty, export
-     from main by omitting `branch-name`.
+   - **All-events mode** applies only when the user asks for the whole
+     tracking plan or all events (for example "copy the tracking plan from A
+     to B"). If they gave neither events nor a source branch and did not say
+     all, ask whether they mean all events or specific ones; never assume
+     all. In all-events mode the event list comes from the step 3 export.
+   - Otherwise, ensure every event name is non-empty. If source branch is
+     empty, export from main by omitting `branch-name`.
    - Build one target branch name per target, using a UTC timestamp:
      `<prefix-or-taxonomy-sync>-<source-project>-<yyyymmddhhmm>-<target-project>`.
      Slugify each project name: replace every run of characters other than
@@ -75,6 +81,13 @@ Important `run_amp` constraints:
      - optional `flags.branch-name = <source_branch_name>`
      - `flags.type = "events"`
      - `flags.event = <one_event_name>`
+   - **All-events mode:** run one export with the same flags but no
+     `flags.event`, and never set `include-deleted`. The selected events are
+     the `Object Name` of every `Event` block in that CSV. Apply the merge
+     rules below to that one CSV (they drop `IGNORE` rows and check
+     `Action`). If the export fails or the merged CSV is over the cap, stop
+     and suggest copying named events, or a source branch's changes, in
+     smaller runs.
    - Stop before import if any export fails (`ok` is false, or a tool error,
      which includes over-cap errors), if `stderr` reports unmatched event names,
      or if the CSV has no `Event` row.
@@ -94,7 +107,8 @@ Important `run_amp` constraints:
    - **Find source metadata the CSV does not carry.** Never copy it; step 4
      only warns. On the same source branch or main, call `get_amp_taxonomy`:
      - `action: "events"`, `eventTypes` = the selected events, `fields` =
-       `["name", "description", "isOfficial", "sources", "mergedFrom"]`,
+       `["name", "description", "isOfficial", "sources", "mergedFrom"]`;
+       for more than 100 events, split `eventTypes` into batches of 100,
      - `action: "properties"`, `propertyType: "event"`, `names` = every
        `Event Property Name` in the merged CSV, from both `Event` and
        `Property Group` blocks, `fields` = `["name",
@@ -110,6 +124,9 @@ Important `run_amp` constraints:
 4. **Show preview**
    - For each requested event, show the event name and the row count from its
      export.
+   - In all-events mode, say so, show the event count, and list the event
+     names. Say the targets keep any events and properties they have that
+     the source lacks; nothing is removed.
    - Also show:
      - total merged row count,
      - each property group in the merged CSV, with its properties and the
@@ -217,6 +234,10 @@ Important `run_amp` constraints:
        returns the plan-wide
        definition and misses event-level overrides, which is where the
        import writes an event's own `Property Required` and similar values.
+     In all-events mode, run the events read (with `eventTypes` in batches
+     of 100) and the per-event properties reads only for the events
+     `branch_changes` marks **Added** or **Updated**. Report the count of
+     the other events as unchanged by the import and not re-read.
      If `branch_changes` marks any entity **Updated**, repeat the events read
      and the per-event properties reads on the target's main (omit
      `branchName`), limited to those entities, for their before values. An
@@ -277,8 +298,9 @@ Important `run_amp` constraints:
      - Then read the target's main with `get_amp_taxonomy` (omit
        `branchName`): `action: "events"` for the selected events and one
        `action: "properties"` call per selected event with `eventType`, as in
-       step 7. Confirm the synced events and properties are on main. Report
-       any that are missing.
+       step 7 (in all-events mode, for the same events step 7 read). Confirm
+       the synced events and properties are on main. Report any that are
+       missing.
    - **Delete** uses `manage_amp_branches` with `action: "delete_branch"`,
      `projectId`, `branchName`. It is also two-step: call once, then again
      with `confirmed: true` after the user's explicit go-ahead.
