@@ -1,6 +1,6 @@
 ---
 name: copy-tracking-plan-to-projects
-description: Copies selected tracking-plan events, or every event in the plan, from one Amplitude project's main or branch to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy a tracking plan, tracking-plan changes or events to other projects, or to keep the same tracking-plan edits in sync across projects.
+description: Copies selected tracking-plan events, or every event in the plan, from one Amplitude project's main or branch, or from a tracking-plan CSV file, to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy a tracking plan, tracking-plan changes or events to other projects, to apply a tracking-plan CSV to several projects, or to keep the same tracking-plan edits in sync across projects.
 x-amp-flags: [mcp-run-amp]
 ---
 
@@ -14,11 +14,15 @@ explicitly asks in step 8.
 
 ## Required inputs
 
-- Source project (id or name) and optional source branch name.
+- A source, one of:
+  - a source project (id or name) and optional source branch name, or
+  - **CSV mode:** a tracking-plan CSV file in the format Amplitude exports,
+    as a file path or pasted text.
 - One or more target projects (ids or names).
-- Event names to sync, or **all events** (the whole events tracking plan of
-  the source main or branch). If the user names a source branch but no
-  events, step 2 derives them from that branch.
+- For a source project: event names to sync, or **all events** (the whole
+  events tracking plan of the source main or branch). If the user names a
+  source branch but no events, step 2 derives them from that branch. CSV
+  mode copies every event in the file.
 - Optional branch-name prefix for target imports.
 
 Important `run_amp` constraints:
@@ -60,6 +64,11 @@ Important `run_amp` constraints:
    - The source and every target must be in `projects`; stop and name any that
      is not (no access, or a different org). The source must not also be a
      target, and target ids must be unique.
+   - **CSV mode** has no source project or source branch: skip the source
+     checks and the event-list bullets below, and use the file name without
+     its extension (or `csv` for pasted text) as `<source-project>` in the
+     branch name. If the user names events, say CSV mode copies the whole
+     file and ask them to trim the file or confirm.
    - If no events were given but a source branch was, call `get_amp_taxonomy`
      with `action: "branch_changes"` on the source branch, list the events it
      adds or updates, and ask the user to confirm the event list.
@@ -79,8 +88,23 @@ Important `run_amp` constraints:
      - if a branch with the planned name already exists, propose a new name,
      - keep `eventNC` / `propertyNC` (naming conventions) for step 4.
 
-3. **Export from source project for the selected events**
-   - `command: ["tracking-plan", "export"]`
+3. **Get the source CSV**
+   - **CSV mode:** do not export. Read the file (or use the pasted text)
+     as-is, then:
+     - stop unless the header row is the Amplitude export format: it must
+       include `Action`, `Object Type`, `Object Name`, `Event Property Name`
+       and `Property Type`. Import also accepts other spreadsheet formats,
+       but this skill only handles this one; say so and ask the user to
+       export a plan from Amplitude Data as a template,
+     - apply the merge rules below to the file as one CSV. A hand-edited
+       file is where a stray `Action` value is most likely, so stop on any
+       value other than empty or `IGNORE` and quote the rows,
+     - stop if it has no `Event` row or is over 262,144 characters,
+     - the selected events are the `Object Name` of every remaining `Event`
+       block,
+     - skip the source metadata reads at the end of this step.
+   - Otherwise, export from the source project:
+     `command: ["tracking-plan", "export"]`
    - The run_amp contract accepts one `event` value per call, so for multiple
      events, run one export per event from the same source branch or main:
      - `flags.project = <source_project_id>`
@@ -132,14 +156,14 @@ Important `run_amp` constraints:
 4. **Show preview**
    - For each requested event, show the event name and the row count from its
      export.
-   - In all-events mode, say so, show the event count, and list the event
-     names. Say the targets keep any events and properties they have that
-     the source lacks; nothing is removed.
+   - In all-events mode or CSV mode, say which, show the event count, and
+     list the event names. Say the targets keep any events and properties
+     they have that the source lacks; those are not removed.
    - Also show:
      - total merged row count,
      - each property group in the merged CSV, with its properties and the
        selected events that link it,
-     - source project/branch,
+     - source project/branch, or the CSV file name in CSV mode,
      - full target list with ids, names and planned branch names.
    - If step 3 dropped `IGNORE` rows, list those events and properties (per
      event) and say they are unexpected, deleted or blocked on the source, so
@@ -169,7 +193,9 @@ Important `run_amp` constraints:
      official column), the import carries it: leave that field out of this
      list and the line below, and in step 7 check the import `breakdown` for
      unmapped counts.
-     If the reads failed, say this check was skipped. Always add one line:
+     If the reads failed, say this check was skipped. In CSV mode there is
+     no source project to read: say only the file's columns are applied
+     and skip this list. Always add one line:
      event classifications and property official status were not checked,
      and custom and labeled events, value mappings, derived, lookup and
      persisted properties, and filters are never synced.
@@ -250,8 +276,8 @@ Important `run_amp` constraints:
        returns the plan-wide
        definition and misses event-level overrides, which is where the
        import writes an event's own `Property Required` and similar values.
-     In all-events mode, run the events read (with `eventTypes` in batches
-     of 100) and the per-event properties reads only for the events
+     In all-events mode and CSV mode, run the events read (with `eventTypes`
+     in batches of 100) and the per-event properties reads only for the events
      `branch_changes` marks **Added** or **Updated**. Report the count of
      the other events as unchanged by the import and not re-read.
      If `branch_changes` marks any entity **Updated**, repeat the events read
@@ -279,7 +305,8 @@ Important `run_amp` constraints:
        made on main after the branch was cut rather than an import side
        effect; say so. If it is `"3-way"`, also report any `conflicts`.
    - **Branch vs source.** For each selected event, compare the branch reads
-     with that event's rows in the merged source CSV, counting the property
+     with that event's rows in the merged CSV (the export, or the file in CSV
+     mode), counting the property
      rows of every `Property Group` block the event links as its own:
      - the event's display name, description, category and tags, and its
        sources (a CSV source the target does not have is expected to be
@@ -317,7 +344,8 @@ Important `run_amp` constraints:
      - Then read the target's main with `get_amp_taxonomy` (omit
        `branchName`): `action: "events"` for the selected events and one
        `action: "properties"` call per selected event with `eventType`, as in
-       step 7 (in all-events mode, for the same events step 7 read). Confirm
+       step 7 (in all-events and CSV mode, for the same events step 7
+       read). Confirm
        the synced events and properties are on main. Report any that are
        missing.
    - **Delete** uses `manage_amp_branches` with `action: "delete_branch"`,
@@ -325,7 +353,7 @@ Important `run_amp` constraints:
      with `confirmed: true` after the user's explicit go-ahead.
 
 9. **Final response format**
-   - Source project + branch.
+   - Source project + branch, or the CSV file name.
    - Selected events.
    - Per-event row counts used for import.
    - For each target:
