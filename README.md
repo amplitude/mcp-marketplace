@@ -193,6 +193,10 @@ plugins/
       tracking-plan-audit/
       use-mcp-analytics/
       weekly-brief/
+  amplitude-experimental/
+    skills/
+      copy-tracking-plan-to-projects/
+      event-description-generator/
 ```
 
 ---

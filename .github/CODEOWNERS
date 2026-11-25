@@ -17,4 +17,5 @@ plugins/amplitude/skills/discover-event-surfaces/** @amplitude/mcp @amplitude/am
 plugins/amplitude/skills/instrument-events/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
 plugins/amplitude/skills/taxonomy/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
 plugins/amplitude/skills/tracking-plan-audit/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
+plugins/amplitude-experimental/skills/copy-tracking-plan-to-projects/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
 plugins/amplitude-experimental/skills/event-description-generator/** @amplitude/mcp @amplitude/amplitude-mcp @amplitude/governance-pe
