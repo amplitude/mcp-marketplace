@@ -36,8 +36,10 @@ Important `run_amp` constraints:
 - For an event the target already has, import makes its sources, tags and
   property-group links match the CSV: ones the target has but the CSV lacks
   are removed. Sources are matched by name; a source name the target does
-  not have is skipped. Properties the target's event has but the CSV lacks
-  are not unlinked.
+  not have is skipped, so if none of an event's CSV sources exist on the
+  target, it ends up with no sources. Properties the target's event has but
+  the CSV lacks are not unlinked. A blank cell does not clear a value the
+  target has (seen for `Object Description`).
 
 ## Workflow
 
@@ -154,8 +156,10 @@ Important `run_amp` constraints:
      merged CSV with code rather than by retyping it. Import still takes the
      CSV inline in `flags.csv`, so the call must carry the merged text
      exactly, including trailing spaces, zero-width characters and curly
-     quotes. The larger the CSV, the easier that is to get wrong: for a
-     large plan, suggest smaller runs of named events.
+     quotes. Export output also arrives only inside the tool result, so
+     copying it into a file is itself retyping. Check the length of the text
+     you pass against the merged CSV. The larger the CSV, the easier this is
+     to get wrong: for a large plan, suggest smaller runs of named events.
    - A row count is the number of data rows, header excluded. An event's
      row count is its `Event` block in the merged CSV; rows of a property
      group it links are counted under the group.
@@ -203,12 +207,13 @@ Important `run_amp` constraints:
      If a read fails, say in step 4 that this target's existing events were
      not checked.
    - **Check owners.** Collect the distinct non-empty `Object Owner` values
-     in the merged CSV and call `get_org_users`. Import fails with a 422
-     ("Unable to find requested user") on an owner it cannot resolve. For
-     each owner that is not an active user of the targets' org, ask the
-     user before import whether to blank that owner's cells; never blank
-     them without consent. If the call fails, say in step 4 that owners
-     were not checked.
+     in the merged CSV; if there are none, skip this check. Otherwise call
+     `get_org_users` (org admins only; the list can be large). Import fails
+     with a 422 ("Unable to find requested user") on an owner it cannot
+     resolve. For each owner not in the returned users (by `loginId` or
+     `email`), ask the user before import whether to blank that owner's
+     cells; never blank them without consent. If the call fails, say in
+     step 4 that owners were not checked.
 
 4. **Show preview**
    - For each selected event, show the event name and its row count.
@@ -230,9 +235,11 @@ Important `run_amp` constraints:
      target, list the selected events it already has. Say their sources,
      tags and property-group links will be made to match the CSV, and name
      each tag and source the target event has that the CSV lacks: those
-     will be removed (an event with no `Event Source` in the CSV loses all
-     its sources). Property-group links on the target are not read before
-     import; step 7 reports any that are removed.
+     will be removed (an event with no `Event Source` in the CSV, or whose
+     CSV sources the target lacks, ends up with no sources). Say a blank
+     CSV cell does not clear the target's value, so for example an existing
+     description stays. Property-group links on the target are not read
+     before import; step 7 reports any that are removed.
    - **Sources.** Per target, name each CSV source the target does not
      have: it is skipped on every event, new or existing.
    - List any property-group conflict and owner from step 3, with the
@@ -297,7 +304,9 @@ Important `run_amp` constraints:
        counts distinct properties, not event-property links: a property on two
        events counts once. A change to one event's override of a property
        (for example its `Property Required`) counts under `events.updated`,
-       not `event_properties`. Check links and values in step 7, not here.
+       not `event_properties`. A property that only comes through a
+       property group may be counted nowhere (not in `event_properties` or
+       `template_properties`). Check links and values in step 7, not here.
        If any `removed` count in `breakdown` is above 0, import no further
        targets and report it. The counts may not include sources, tags or
        property-group links removed from existing events; step 7 checks
@@ -342,7 +351,9 @@ Important `run_amp` constraints:
    - Do not pass `detail` or `detailFor` to `branch_changes`: per-field
      detail needs an open branch review, which a fresh import branch never
      has, so it always comes back `detailUnavailable`. The reads below give
-     the field values instead.
+     the field values instead. `branch_changes` may also return a review
+     checklist or suggest starting a review or refreshing the branch;
+     ignore those.
    - **Per target, these reads** with `get_amp_taxonomy`, all with
      `projectId = <target_project_id>`:
      - `action: "branch_changes"`, `branchName = <target_branch_name>`,
@@ -359,7 +370,8 @@ Important `run_amp` constraints:
        "isRequired", "isOverridden",
        "enumValues", "constValue", "regex", "isArrayType", "isHidden"]`.
        If an event has more than 100 properties, split `names` into batches
-       of 100, as in step 3. Always pass `eventType`: without it the read
+       of 100, as in step 3. If the event has no properties in the CSV, skip
+       this read (`names` cannot be empty). Always pass `eventType`: without it the read
        returns the plan-wide
        definition and misses event-level overrides, which is where the
        import writes an event's own `Property Required` and similar values.
@@ -374,7 +386,11 @@ Important `run_amp` constraints:
      `branchName`), limited to those entities, for their before values. An
      event-level property change shows only on its event, as **Updated**
      with `propertyChangeCount` above 0 and no entry under `properties`; treat
-     such an event's properties as Updated too.
+     such an event's properties as Updated too. `propertyChangeCount`
+     counts direct properties only, not those that come through a group.
+   - For each **Updated** event, also read its properties on the branch and
+     on main with `eventType` and no `names`, and compare the two lists:
+     any property on main that is gone from the branch was unlinked.
    - **Branch vs main.**
      - From `branch_changes`, for each selected event, its properties, and
        its property groups (listed under `templates`), report whether it was
@@ -439,13 +455,17 @@ Important `run_amp` constraints:
        the synced events and properties are on main. Report any that are
        missing.
    - **Delete** uses `manage_amp_branches` with `action: "delete_branch"`,
-     `projectId`, `branchName`. It is also two-step: call once, then again
-     with `confirmed: true` after the user's explicit go-ahead.
+     `projectId`, `branchName`. It is also two-step: call once, relay its
+     warning, then call again with `confirmed: true` after the user's
+     explicit go-ahead. Then read the target's `workspace` and confirm the
+     branch is gone.
 
 9. **Final response format**
    - Source project + branch, or the CSV file name.
    - Selected events.
    - Per-event row counts used for import.
+   - What was not synced: the dropped `IGNORE` rows and the step 4 "Not
+     synced" items.
    - For each target:
      - target project id and name,
      - branch name,
