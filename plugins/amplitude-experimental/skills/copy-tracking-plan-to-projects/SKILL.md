@@ -1,10 +1,10 @@
 ---
-name: cross-project-tracking-plan-sync
-description: Syncs selected tracking-plan events from one Amplitude project's main or branch to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy tracking-plan changes or events to other projects, or to keep the same tracking-plan edits in sync across projects.
+name: copy-tracking-plan-to-projects
+description: Copies selected tracking-plan events from one Amplitude project's main or branch to other projects through run_amp tracking-plan CSV export/import, reviews each import branch, then merges, deletes, or leaves it as the user chooses. Use when asked to copy tracking-plan changes or events to other projects, or to keep the same tracking-plan edits in sync across projects.
 x-amp-flags: [mcp-run-amp]
 ---
 
-# Cross-project tracking-plan sync
+# Copy tracking plan to projects
 
 This skill covers only taxonomy data from tracking-plan CSV (events, event
 properties, and referenced property-group rows present in that CSV). It does
@@ -299,5 +299,5 @@ Important `run_amp` constraints:
        deleted, or left in place.
    - Explicitly state that no branch was approved, and list the targets whose
      main changed because of a merge (or say none did).
-   - Explicitly state: this handles only tracking-plan sync, not full cross-project
+   - Explicitly state: this copies only tracking-plan events, not full cross-project
      setup.

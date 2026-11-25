@@ -195,7 +195,7 @@ plugins/
       weekly-brief/
   amplitude-experimental/
     skills/
-      cross-project-tracking-plan-sync/
+      copy-tracking-plan-to-projects/
       event-description-generator/
 ```
 
