@@ -43,13 +43,19 @@ Important `run_amp` constraints:
 
 1. **Pre-flight**
    - Use one Amplitude MCP server (one region and environment) for every call
-     in this run. If several are connected (for example US and EU) and the
-     user did not say which, ask.
+     in this run. If several are connected (for example US and EU), use the
+     one whose `get_amplitude_context` lists every project the user named;
+     ask only if more than one does, or none does.
    - Call `run_amp` with `command: ["help", "tracking-plan", "export"]` and
      `command: ["help", "tracking-plan", "import"]`.
    - If either command is unavailable (`availableThroughRunAmp: false`) or the
      help call fails, stop and tell the user run_amp tracking-plan CSV is not
      enabled in the current MCP environment.
+   - Help does not show whether this MCP connection can write: import needs
+     the write scope listed in its `requiredScopes`, and a read-only
+     connection only fails at the first import. Step 4 says so.
+   - If a read fails with a transient error (a timeout or connection reset),
+     retry it once. Never retry an import.
 
 2. **Resolve and validate inputs**
    - Call `get_amplitude_context` with no `projectId`. Use its `projects` list
@@ -60,7 +66,9 @@ Important `run_amp` constraints:
      candidates with ids and ask which one is meant. If one project matches
      exactly but others have near-identical names (for example a `[TEMP]` copy
      or a `(Dev)` variant), use the exact match and list the look-alikes with
-     ids in the step 4 preview so the user can correct it at the gate.
+     ids in the step 4 preview so the user can correct it at the gate. Do
+     not list a project the user named as the source or a target as a
+     look-alike.
    - The source and every target must be in `projects`; stop and name any that
      is not (no access, or a different org). The source must not also be a
      target, and target ids must be unique.
@@ -119,8 +127,9 @@ Important `run_amp` constraints:
      and suggest copying named events, or a source branch's changes, in
      smaller runs.
    - Stop before import if any export fails (`ok` is false, or a tool error,
-     which includes over-cap errors), if `stderr` reports unmatched event names,
-     or if the CSV has no `Event` row.
+     which includes over-cap errors), or if an export has no `Event` block
+     whose `Object Name` is the requested event (for example a misspelled
+     name).
    - Merge exports by CSV blocks, not by individual row de-dup:
      - split each CSV into blocks: one row with non-empty `Object Type` plus
        following continuation rows until the next non-empty `Object Type`,
@@ -133,8 +142,19 @@ Important `run_amp` constraints:
        only the event row would attach its property rows to the block
        before it); keep each dropped name, and its event, for the step 4
        preview,
+     - drop a `Property Group` block that no kept `Event` block links
+       (through an `Event Property Group` row); keep its name for the
+       step 4 preview,
      - stop if any row has any other non-empty `Action`,
      - keep all other row values as-is.
+   - Copy every kept row's original text exactly. Parse the CSV only to find
+     row boundaries and column values: a quoted field can hold commas, line
+     breaks, `""` escapes and trailing spaces, and re-serializing rows can
+     change them. When a file system or code tool is available, build the
+     merged CSV with code rather than by retyping it.
+   - A row count is the number of data rows, header excluded. An event's
+     row count is its `Event` block in the merged CSV; rows of a property
+     group it links are counted under the group.
    - Stop if merged CSV is longer than 262,144 characters.
    - **Find source metadata the CSV does not carry.** Never copy it; step 4
      only warns. On the same source branch or main, call `get_amp_taxonomy`:
@@ -151,59 +171,84 @@ Important `run_amp` constraints:
      - These reads expose neither event classifications nor property
        `isOfficial`; step 4 says those were not checked.
      - A field absent from a row means it is not set.
+     - Merges hide their sources. A requested property that is a merge
+       source is not returned under its own name, and not listed in
+       `missing`: a row for its merge target comes back instead, with the
+       requested name in `mergedFrom`. Match every requested name against
+       both `name` and `mergedFrom`. A name found only in another row's
+       `mergedFrom` is merged into that row on the source. A selected event
+       whose `mergedFrom` lists other selected events means the merge target
+       and its sources are all copied as separate events.
      - If either call fails, do not stop; step 4 says the check was skipped.
+   - **Read the targets.** For each target, with `projectId = <target>`:
+     - `get_amp_taxonomy` `action: "events"`, `eventTypes` = the selected
+       events (batches of 100), `fields` = `["name", "tags", "sources"]`:
+       the selected events the target already has, with their tags and
+       sources,
+     - `get_tracking_plan_sources`: the target's source names.
+     If a read fails, say in step 4 that this target's existing events were
+     not checked.
 
 4. **Show preview**
-   - For each requested event, show the event name and the row count from its
-     export.
+   - For each selected event, show the event name and its row count.
    - In all-events mode or CSV mode, say which, show the event count, and
      list the event names. Say the targets keep any events and properties
      they have that the source lacks; those are not removed.
    - Also show:
      - total merged row count,
      - each property group in the merged CSV, with its properties and the
-       selected events that link it,
+       selected events that link it, and any group step 3 dropped because
+       no selected event links it,
      - source project/branch, or the CSV file name in CSV mode,
      - full target list with ids, names and planned branch names.
    - If step 3 dropped `IGNORE` rows, list those events and properties (per
      event) and say they are unexpected, deleted or blocked on the source, so
      they will not be synced. To sync one, plan it on the source first and
      rerun.
-   - **Replaced on existing events.** For targets that already have a
-     selected event, say its sources, tags and property-group links will be
-     made to match the CSV, and ones the CSV lacks will be removed. List each
-     selected event's `Event Source` values and say a source name the
-     target does not have is skipped, which can leave the event with fewer
-     sources than before.
-   - Naming conventions: if a target's `eventNC` or `propertyNC` is set and a
-     selected event or property name does not follow it, say which names and
-     which target. Import copies names as-is.
+   - **Replaced on existing events.** From the step 3 target reads, per
+     target, list the selected events it already has. Say their sources,
+     tags and property-group links will be made to match the CSV, and name
+     each tag and source the target event has that the CSV lacks: those
+     will be removed (an event with no `Event Source` in the CSV loses all
+     its sources). Name each CSV source the target does not have: it will
+     be skipped. Property-group links on the target are not read before
+     import; step 7 reports any that are removed.
+   - Naming conventions: if a target's `eventNC` or `propertyNC` is set,
+     compare the selected event and property names with its casing (ignore
+     a bracketed prefix such as `[Amplitude]`), and say which names do not
+     follow it on which target. For more than 10, give the count and 10
+     examples. Import copies names as-is.
    - **Not synced.** From the step 3 metadata reads, list each selected event
      or property whose source has any of the following, and say it will not
      reach the targets and must be set there by hand if wanted:
      - event `isOfficial: true`,
      - property `classifications`,
-     - `mergedFrom` on an event or property (a merge is a project-wide
-       transformation),
+     - a merge (a project-wide transformation): an event or property with
+       `mergedFrom`, or a property found only in another row's `mergedFrom`
+       (name its merge target),
      - property `isSplit: true` (property splitting is set per project),
-     - an `ampl://` image in an event description (it will not resolve in
-       another project).
+     - an `ampl://` image in an event description (the description is
+       copied, but the image will not resolve in another project).
      This list reflects the CSV columns when the skill was written. If the
      merged CSV header has a column for one of these fields (for example an
      official column), the import carries it: leave that field out of this
      list and the line below, and in step 7 check the import `breakdown` for
      unmapped counts.
-     If the reads failed, say this check was skipped. In CSV mode there is
-     no source project to read: say only the file's columns are applied
-     and skip this list. Always add one line:
-     event classifications and property official status were not checked,
-     and custom and labeled events, value mappings, derived, lookup and
+     If the reads failed, say this check was skipped. In CSV mode, skip
+     this list (there is no source project to read) and say only the
+     file's columns are applied. In every mode, add one line: event
+     classifications and property official status were not checked, and
+     custom and labeled events, value mappings, derived, lookup and
      persisted properties, and filters are never synced.
-   - Write permission: if `orgRole` is `4` or `5`, say the user is an org
-     admin and can write every target. Otherwise, ask the user to make sure
-     they have the **Update Tracking Plan** permission on every target project
-     and on any project sharing its tracking plan (for example its production
-     environment), or the import may fail with a 403.
+   - Write access needs two things; say both:
+     - Project permission: if `orgRole` is `4` or `5`, the user is an org
+       admin. Otherwise, ask the user to make sure they have the **Update
+       Tracking Plan** permission on every target project and on any
+       project sharing its tracking plan (for example its production
+       environment).
+     - Connection scope: the MCP connection must be authorized to write.
+       This was not checked; if it is read-only, the first import fails
+       and nothing is written.
 
 5. **Confirmation gate**
    - Stop and ask for explicit confirmation before any import.
@@ -238,15 +283,24 @@ Important `run_amp` constraints:
        planned name was created after step 2 checked; it is not from this run,
        so never offer to delete it, even though the message says `Import
        branch name conflict`. Ask the user for a new branch name strategy.
+     - **connection scope:** a tool error (not a run_amp result) that says
+       the token scope is insufficient. Do not retry. Import no further
+       targets. Tell the user their MCP connection is read-only and must be
+       reconnected with write access; this is not a project permission, and
+       an org admin role does not fix it.
      - **403 forbidden:** `stderr` contains `error.http_status: 403`, or the
-       error says permissions are insufficient. Do not retry. Import no further
-       targets. Tell the user they need the **Update Tracking Plan** permission
-       on that target (or org admin) and that an org admin can grant it.
+       error says the user lacks permission on the project. Do not retry.
+       Import no further targets. Tell the user they need the **Update
+       Tracking Plan** permission on that target (or org admin) and that an
+       org admin can grant it.
      - **any other failure or tool error:** import no further targets. Report
-       `stderr`, or the tool error message, verbatim. If the failure names an
-       `Import branch`, state that branch exists and must be reviewed or
-       deleted in Amplitude Data before any retry.
-   - After any failure, still run steps 7-9 for targets already imported.
+       `stderr`, or the tool error message, verbatim.
+   - After any failure other than a 409, read that target's `workspace` and
+     check for a branch with the planned name. If there is one, this run
+     created it: say so, and include it in steps 7-8. If not, say nothing
+     was created on that target.
+   - After any failure, still run steps 7-9 for targets already imported. If
+     no target was imported, skip steps 7-8.
 
 7. **Review each imported branch**
    - Never approve, and do not merge during review (merging is only a step 8
@@ -359,7 +413,9 @@ Important `run_amp` constraints:
    - For each target:
      - target project id and name,
      - branch name,
-     - import status,
+     - import status; for a failed or skipped import, the error and whether
+       a branch exists, and what the user can do (for example reconnect
+       with write access),
      - Added / Updated per event, what changed for Updated events, and any
        unexpected entries, or the import `breakdown` and a note that the
        review was skipped,
