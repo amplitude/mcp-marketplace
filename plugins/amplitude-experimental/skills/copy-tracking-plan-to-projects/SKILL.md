@@ -26,8 +26,14 @@ Important `run_amp` constraints:
 - `dry-run` is not supported for tracking-plan export/import in run_amp.
 - Import must create a new branch; never use `main` or `master`.
 - Never set or change the CSV `Action` column; a value there can make import
-  delete objects. Exports leave it empty except for `IGNORE` on properties the
-  source has seen but not planned (unexpected); step 3 drops those rows.
+  delete objects. Exports leave it empty except for `IGNORE` on events and
+  properties that are unexpected (seen but not planned), deleted or blocked
+  on the source; step 3 drops those rows.
+- For an event the target already has, import makes its sources, tags and
+  property-group links match the CSV: ones the target has but the CSV lacks
+  are removed. Sources are matched by name; a source name the target does
+  not have is skipped. Properties the target's event has but the CSV lacks
+  are not unlinked.
 
 ## Workflow
 
@@ -98,8 +104,10 @@ Important `run_amp` constraints:
      - keep each `Property Group` block once, keyed by `Object Name`,
      - keep every `Event` block,
      - emit all `Property Group` blocks first, then all `Event` blocks,
-     - drop every row whose `Action` is `IGNORE` (an unexpected property on
-       the source) and keep its property name and event for the step 4
+     - drop every property row whose `Action` is `IGNORE`, and drop the
+       whole block of an `Event` row whose `Action` is `IGNORE` (dropping
+       only the event row would attach its property rows to the block
+       before it); keep each dropped name, and its event, for the step 4
        preview,
      - stop if any row has any other non-empty `Action`,
      - keep all other row values as-is.
@@ -107,7 +115,7 @@ Important `run_amp` constraints:
    - **Find source metadata the CSV does not carry.** Never copy it; step 4
      only warns. On the same source branch or main, call `get_amp_taxonomy`:
      - `action: "events"`, `eventTypes` = the selected events, `fields` =
-       `["name", "description", "isOfficial", "sources", "mergedFrom"]`;
+       `["name", "description", "isOfficial", "mergedFrom"]`;
        for more than 100 events, split `eventTypes` into batches of 100,
      - `action: "properties"`, `propertyType: "event"`, `names` = every
        `Event Property Name` in the merged CSV, from both `Event` and
@@ -133,10 +141,16 @@ Important `run_amp` constraints:
        selected events that link it,
      - source project/branch,
      - full target list with ids, names and planned branch names.
-   - If step 3 dropped `IGNORE` rows, list those properties per event and say
-     they are unexpected on the source (seen in data but not planned), so they
-     will not be synced. To sync one, add it to the source plan first and
+   - If step 3 dropped `IGNORE` rows, list those events and properties (per
+     event) and say they are unexpected, deleted or blocked on the source, so
+     they will not be synced. To sync one, plan it on the source first and
      rerun.
+   - **Replaced on existing events.** For targets that already have a
+     selected event, say its sources, tags and property-group links will be
+     made to match the CSV, and ones the CSV lacks will be removed. List each
+     selected event's `Event Source` values and say a source name the
+     target does not have is skipped, which can leave the event with fewer
+     sources than before.
    - Naming conventions: if a target's `eventNC` or `propertyNC` is set and a
      selected event or property name does not follow it, say which names and
      which target. Import copies names as-is.
@@ -144,7 +158,6 @@ Important `run_amp` constraints:
      or property whose source has any of the following, and say it will not
      reach the targets and must be set there by hand if wanted:
      - event `isOfficial: true`,
-     - event `sources` (tracking-plan sources are per project),
      - property `classifications`,
      - `mergedFrom` on an event or property (a merge is a project-wide
        transformation),
@@ -188,8 +201,10 @@ Important `run_amp` constraints:
        (for example its `Property Required`) counts under `events.updated`,
        not `event_properties`. Check links and values in step 7, not here.
        If any `removed` count in `breakdown` is above 0, import no further
-       targets and report it; this sync only adds or updates. Import does not
-       unlink properties the target's event has but the CSV lacks; they stay.
+       targets and report it. The counts may not include sources, tags or
+       property-group links removed from existing events; step 7 checks
+       those. Import does not unlink properties the target's event has but
+       the CSV lacks; they stay.
        If every `breakdown` count is 0, say the branch was created with no
        changes (the target already matches) and suggest deleting it in step 8.
      - **409 conflict:** `ok: false`, `exitCode: 1`, and `stderr` JSON contains
@@ -220,7 +235,8 @@ Important `run_amp` constraints:
      - `action: "branch_changes"`, `branchName = <target_branch_name>`,
      - `action: "events"`, `branchName = <target_branch_name>`,
        `eventTypes` = the selected events, `fields` =
-       `["name", "description", "category"]`,
+       `["name", "displayName", "description", "category", "tags",
+       "sources"]`,
      - one `action: "properties"` call **per selected event**, with
        `propertyType: "event"`, `branchName = <target_branch_name>`,
        `eventType = <event>`, `names` = the properties in that event's block
@@ -251,7 +267,8 @@ Important `run_amp` constraints:
        the target) or **Updated** (existed on the target's main and was
        changed).
      - For each **Updated** event or property, report the fields that differ
-       between the main read and the branch read.
+       between the main read and the branch read. Call out any source, tag or
+       property-group link that main has and the branch lost.
      - No read returns a property group's own fields, so for a group marked
        **Updated** report only that it changed. Its effect is checked through
        its properties on each linking event (the per-event reads above, and
@@ -264,7 +281,9 @@ Important `run_amp` constraints:
    - **Branch vs source.** For each selected event, compare the branch reads
      with that event's rows in the merged source CSV, counting the property
      rows of every `Property Group` block the event links as its own:
-     - the event's description and category,
+     - the event's display name, description, category and tags, and its
+       sources (a CSV source the target does not have is expected to be
+       missing; say so),
      - each property's event links, `type`, `isRequired` (`Property Value
        Type`, `Property Required`), and, where the CSV sets them, enum
        values, const value, regex, `isArrayType` and `isHidden`,
